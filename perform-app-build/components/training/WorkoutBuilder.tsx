@@ -616,7 +616,7 @@ export function WorkoutBuilder({
 
           <label className="flex items-center gap-2 text-sm text-text-2 cursor-pointer">
             <input type="checkbox" checked={alsoTemplate} onChange={(e) => setAlsoTemplate(e.target.checked)} className="!w-4 !h-4" />
-            <Save size={13} /> Also save as a reusable template
+            <Save size={13} /> Also save as a reusable program
           </label>
 
           <div className="flex gap-2 pt-1">
