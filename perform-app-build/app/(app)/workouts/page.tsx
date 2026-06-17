@@ -63,15 +63,17 @@ export default function WorkoutsPage() {
     let sessions = 0;
     let sets = 0;
     let volume = 0;
+    let unit = "";
     workouts.forEach((w) => {
       if (new Date(w.session_date).getTime() < cutoff) return;
       sessions++;
       (w.sets || []).forEach((s) => {
         sets++;
         volume += (s.weight || 0) * (parseInt(s.reps || "0") || 0);
+        if (!unit && s.weight_unit) unit = s.weight_unit;
       });
     });
-    return { sessions, sets, volume: Math.round(volume) };
+    return { sessions, sets, volume: Math.round(volume), unit };
   }, [workouts]);
 
   const totalSets = useMemo(
@@ -191,8 +193,8 @@ export default function WorkoutsPage() {
       {/* stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 animate-fade-in">
         <StatCard icon={Calendar} tone="accent" label="Total Sessions" value={workouts.length} />
-        <StatCard icon={Zap} tone="amber" label="This Week" value={`${weekStats.sessions} sess`} sub={`${weekStats.sets} sets`} />
-        <StatCard icon={BarChart2} tone="green" label="7-Day Volume" value={weekStats.volume.toLocaleString()} />
+        <StatCard icon={Zap} tone="amber" label="This Week" value={`${weekStats.sessions} sessions`} sub={`${weekStats.sets} sets`} />
+        <StatCard icon={BarChart2} tone="green" label="7-Day Volume" value={`${weekStats.volume.toLocaleString()}${weekStats.unit ? ` ${weekStats.unit}` : ""}`} />
         <StatCard icon={Trophy} tone="teal" label="Exercises Tracked" value={progression.length} sub={`${totalSets} sets all-time`} />
       </div>
 

@@ -740,6 +740,15 @@ function EntryFormModal({
               + Custom marker
             </button>
           </div>
+          {/* Column labels aligned with the marker input grid below */}
+          <div className="grid grid-cols-[1.4fr_0.8fr_0.7fr_0.7fr_0.7fr_auto] gap-1.5 px-0.5 mb-1 text-[9px] uppercase tracking-wide text-text-3 font-semibold">
+            <span>Marker</span>
+            <span>Value</span>
+            <span>Unit</span>
+            <span>Range Low</span>
+            <span>Range High</span>
+            <span></span>
+          </div>
           <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
             {markers.map((m, i) => (
               <div key={i} className="grid grid-cols-[1.4fr_0.8fr_0.7fr_0.7fr_0.7fr_auto] gap-1.5 items-center">

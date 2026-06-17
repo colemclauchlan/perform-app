@@ -1,7 +1,8 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 export function Modal({
   open,
@@ -16,6 +17,9 @@ export function Modal({
   children: React.ReactNode;
   wide?: boolean;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -27,9 +31,12 @@ export function Modal({
     };
   }, [open]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  // Portal to <body> so the fixed overlay is positioned relative to the
+  // viewport, escaping any transformed ancestor (e.g. the page-transition
+  // wrapper) that would otherwise anchor it off-screen.
+  return createPortal(
     <div
       className="fixed inset-0 z-[100] bg-black/60 flex items-start justify-center overflow-y-auto p-4 pt-12 animate-overlay-in"
       onClick={onClose}
@@ -51,6 +58,7 @@ export function Modal({
         </div>
         <div className="p-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

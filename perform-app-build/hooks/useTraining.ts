@@ -501,20 +501,45 @@ export function useUpsertSteps() {
       logged_date: string;
       step_count: number;
       source?: "apple_health" | "manual";
+      // "add" sums onto any existing total for the day; "set" overwrites it.
+      mode?: "add" | "set";
     }) => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+
+      let total = entry.step_count;
+      if (entry.mode === "add") {
+        const { data: existing } = await supabase
+          .from("step_logs")
+          .select("step_count")
+          .eq("user_id", user.id)
+          .eq("logged_date", entry.logged_date)
+          .maybeSingle();
+        total = (existing?.step_count || 0) + entry.step_count;
+      }
+
       const { error } = await supabase.from("step_logs").upsert(
         {
           user_id: user.id,
           logged_date: entry.logged_date,
-          step_count: entry.step_count,
+          step_count: total,
           source: entry.source || "manual",
         },
         { onConflict: "user_id,logged_date" }
       );
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["steps"] }),
+  });
+}
+
+export function useDeleteSteps() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("step_logs").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["steps"] }),

@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { PageHeader, StatCard } from "@/components/ui/PageHeader";
-import { useSteps, useUpsertSteps } from "@/hooks/useTraining";
-import { todayISO, formatDate } from "@/lib/utils";
-import { Footprints, Smartphone, Pencil } from "lucide-react";
+import { useSteps, useUpsertSteps, useDeleteSteps } from "@/hooks/useTraining";
+import { todayISO, formatDate, cn } from "@/lib/utils";
+import { Footprints, Smartphone, Trash2, ChevronDown, Plus, Check } from "lucide-react";
 import toast from "react-hot-toast";
 
 const STEP_GOAL = 10000;
@@ -12,8 +12,11 @@ const STEP_GOAL = 10000;
 export default function StepsPage() {
   const { data: steps = [] } = useSteps();
   const upsert = useUpsertSteps();
+  const deleteSteps = useDeleteSteps();
   const [date, setDate] = useState(todayISO());
   const [count, setCount] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [editVal, setEditVal] = useState("");
 
   function handleLog() {
     const n = parseInt(count);
@@ -21,11 +24,12 @@ export default function StepsPage() {
       toast.error("Enter a step count");
       return;
     }
+    // Adds to the day's running total rather than overwriting it.
     upsert.mutate(
-      { logged_date: date, step_count: n, source: "manual" },
+      { logged_date: date, step_count: n, source: "manual", mode: "add" },
       {
         onSuccess: () => {
-          toast.success("Steps saved");
+          toast.success("Steps added to total");
           setCount("");
         },
         onError: (e) => toast.error(e.message),
@@ -33,10 +37,42 @@ export default function StepsPage() {
     );
   }
 
-  function editEntry(d: string, c: number) {
-    setDate(d);
-    setCount(String(c));
-    toast(`Editing ${formatDate(d)}`, { icon: "✏️" });
+  function toggleEntry(id: string, d: string, c: number) {
+    if (openId === id) {
+      setOpenId(null);
+    } else {
+      setOpenId(id);
+      setDate(d);
+      setEditVal(String(c));
+    }
+  }
+
+  function saveEdit(d: string) {
+    const n = parseInt(editVal);
+    if (isNaN(n)) {
+      toast.error("Enter a step count");
+      return;
+    }
+    upsert.mutate(
+      { logged_date: d, step_count: n, source: "manual", mode: "set" },
+      {
+        onSuccess: () => {
+          toast.success("Entry updated");
+          setOpenId(null);
+        },
+        onError: (e) => toast.error(e.message),
+      }
+    );
+  }
+
+  function removeEntry(id: string) {
+    deleteSteps.mutate(id, {
+      onSuccess: () => {
+        toast.success("Entry deleted");
+        setOpenId(null);
+      },
+      onError: (e) => toast.error(e.message),
+    });
   }
 
   const today = steps.find((s) => s.logged_date === todayISO());
@@ -193,18 +229,21 @@ export default function StepsPage() {
               />
             </div>
             <div className="flex-1">
-              <label className="label">Step count</label>
+              <label className="label">Steps to add</label>
               <input
                 type="number"
                 value={count}
                 onChange={(e) => setCount(e.target.value)}
-                placeholder="10000"
+                placeholder="2500"
               />
             </div>
           </div>
           <button className="btn btn-primary mt-3" onClick={handleLog}>
-            Save Steps
+            <Plus size={15} /> Add to Total
           </button>
+          <div className="text-[11px] text-text-3 mt-2">
+            Adds to the selected day&apos;s running total. To set an exact value, edit the entry below.
+          </div>
         </div>
 
         <div className="card">
@@ -215,26 +254,62 @@ export default function StepsPage() {
             </div>
           ) : (
             <div className="space-y-1.5 max-h-72 overflow-y-auto">
-              {steps.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => editEntry(s.logged_date, s.step_count)}
-                  className="w-full flex items-center justify-between bg-bg-2 rounded-lg px-3 py-2 border border-border hover:border-accent/50 hover:bg-bg-3 transition-all group/row text-left"
-                >
-                  <div className="flex items-center gap-2">
-                    <Footprints size={15} className="text-text-3" />
-                    <span className="text-sm text-text-2">
-                      {formatDate(s.logged_date)}
-                    </span>
+              {steps.map((s) => {
+                const open = openId === s.id;
+                return (
+                  <div
+                    key={s.id}
+                    className="bg-bg-2 rounded-lg border border-border overflow-hidden"
+                  >
+                    <button
+                      onClick={() => toggleEntry(s.id, s.logged_date, s.step_count)}
+                      className="w-full flex items-center justify-between px-3 py-2 hover:bg-bg-3 transition-all text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Footprints size={15} className="text-text-3" />
+                        <span className="text-sm text-text-2">
+                          {formatDate(s.logged_date)}
+                        </span>
+                      </div>
+                      <span className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-accent">
+                          {s.step_count.toLocaleString()}
+                        </span>
+                        <ChevronDown
+                          size={14}
+                          className={cn("text-text-3 transition-transform", open && "rotate-180")}
+                        />
+                      </span>
+                    </button>
+                    {open && (
+                      <div className="px-3 pb-3 pt-1 border-t border-border flex items-end gap-2">
+                        <div className="flex-1">
+                          <label className="label">Exact step count</label>
+                          <input
+                            type="number"
+                            value={editVal}
+                            onChange={(e) => setEditVal(e.target.value)}
+                          />
+                        </div>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => saveEdit(s.logged_date)}
+                          title="Save exact value"
+                        >
+                          <Check size={14} /> Save
+                        </button>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => removeEntry(s.id)}
+                          title="Delete entry"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <span className="flex items-center gap-2">
-                    <Pencil size={12} className="text-text-3 opacity-0 group-hover/row:opacity-100 transition-opacity" />
-                    <span className="text-sm font-semibold text-accent">
-                      {s.step_count.toLocaleString()}
-                    </span>
-                  </span>
-                </button>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
