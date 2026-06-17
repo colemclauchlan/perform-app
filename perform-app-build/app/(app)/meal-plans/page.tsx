@@ -16,6 +16,7 @@ import { MealPlan, MealType, FoodCatalogItem } from "@/types/database";
 import { computeMacros, round, todayISO, cn } from "@/lib/utils";
 import {
   Plus,
+  Minus,
   Trash2,
   Pencil,
   Search,
@@ -56,6 +57,7 @@ export default function MealPlansPage() {
   const addToLog = useAddPlanToLog();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<MealPlan | null>(null);
+  const [addTarget, setAddTarget] = useState<MealPlan | null>(null);
 
   function openNew() {
     setEditing(null);
@@ -101,16 +103,8 @@ export default function MealPlansPage() {
                   <div className="flex items-center gap-1">
                     <button
                       className="btn btn-ghost btn-sm !px-1.5"
-                      title="Add to today's log"
-                      onClick={() =>
-                        addToLog.mutate(
-                          { plan, date: todayISO() },
-                          {
-                            onSuccess: () => toast.success(`${plan.name} added to today`),
-                            onError: (e) => toast.error(e.message),
-                          }
-                        )
-                      }
+                      title="Add to daily intake"
+                      onClick={() => setAddTarget(plan)}
                     >
                       <CalendarPlus size={15} className="text-accent" />
                     </button>
@@ -145,7 +139,14 @@ export default function MealPlansPage() {
                         <span className="font-medium truncate">{it.name}</span>
                         <span className="text-text-3 ml-1.5 text-[11px]">{it.meal} · {round(Number(it.quantity))}{it.quantity_unit}</span>
                       </div>
-                      <span className="text-text-2 text-xs shrink-0 ml-2">{Math.round(Number(it.calories))} cal</span>
+                      <div className="shrink-0 ml-2 text-right">
+                        <div className="text-text-2 text-xs">{Math.round(Number(it.calories))} cal</div>
+                        <div className="text-[10px] flex items-center justify-end gap-1.5">
+                          <span className="text-accent">{round(Number(it.protein))}p</span>
+                          <span className="text-status-teal">{round(Number(it.carbs))}c</span>
+                          <span className="text-status-coral">{round(Number(it.fat))}f</span>
+                        </div>
+                      </div>
                     </div>
                   ))}
                   {(plan.items || []).length === 0 && (
@@ -159,7 +160,89 @@ export default function MealPlansPage() {
       )}
 
       <PlanBuilderModal open={modalOpen} onClose={() => setModalOpen(false)} editing={editing} />
+      <AddToIntakeModal
+        plan={addTarget}
+        onClose={() => setAddTarget(null)}
+        onConfirm={(plan, portions) =>
+          addToLog.mutate(
+            { plan, date: todayISO(), multiplier: portions },
+            {
+              onSuccess: () => {
+                toast.success(`${plan.name}${portions > 1 ? ` ×${portions}` : ""} added to today`);
+                setAddTarget(null);
+              },
+              onError: (e) => toast.error(e.message),
+            }
+          )
+        }
+      />
     </div>
+  );
+}
+
+function AddToIntakeModal({
+  plan,
+  onClose,
+  onConfirm,
+}: {
+  plan: MealPlan | null;
+  onClose: () => void;
+  onConfirm: (plan: MealPlan, portions: number) => void;
+}) {
+  const [portions, setPortions] = useState(1);
+  const [initId, setInitId] = useState<string | null>(null);
+
+  if (plan && initId !== plan.id) {
+    setInitId(plan.id);
+    setPortions(1);
+  }
+
+  if (!plan) return null;
+  const t = planTotals(plan);
+
+  return (
+    <Modal open={!!plan} onClose={onClose} title="Add to Daily Intake">
+      <div className="space-y-4">
+        <div>
+          <div className="text-base font-semibold">{plan.name}</div>
+          <Badge variant="teal">{plan.meal_type}</Badge>
+        </div>
+
+        <div>
+          <label className="label">Portions</label>
+          <div className="flex items-center justify-center gap-4 bg-bg-2 rounded-xl border border-border py-4">
+            <button
+              className="btn btn-ghost !w-11 !h-11 !p-0 rounded-full"
+              onClick={() => setPortions((p) => Math.max(1, p - 1))}
+              disabled={portions <= 1}
+            >
+              <Minus size={20} />
+            </button>
+            <div className="text-3xl font-bold tabular-nums w-14 text-center">{portions}</div>
+            <button
+              className="btn btn-primary !w-11 !h-11 !p-0 rounded-full"
+              onClick={() => setPortions((p) => Math.min(20, p + 1))}
+            >
+              <Plus size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-4 gap-2">
+          <MacroPill label="Cal" value={Math.round(t.calories * portions)} tone="text-status-amber" icon />
+          <MacroPill label="Protein" value={`${round(t.protein * portions)}g`} tone="text-accent" />
+          <MacroPill label="Carbs" value={`${round(t.carbs * portions)}g`} tone="text-status-teal" />
+          <MacroPill label="Fat" value={`${round(t.fat * portions)}g`} tone="text-status-coral" />
+        </div>
+
+        <div className="flex gap-2 pt-1">
+          <button className="btn btn-primary flex-1" onClick={() => onConfirm(plan, portions)}>
+            <CalendarPlus size={15} /> Add to today
+          </button>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

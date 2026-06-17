@@ -93,25 +93,26 @@ export function useDeleteMealPlan() {
 export function useAddPlanToLog() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ plan, date }: { plan: MealPlan; date: string }) => {
+    mutationFn: async ({ plan, date, multiplier = 1 }: { plan: MealPlan; date: string; multiplier?: number }) => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       const items = plan.items || [];
       if (!items.length) throw new Error("This plan has no foods yet");
+      const m = multiplier || 1;
       const rows = items.map((it) => ({
         user_id: user.id,
         food_catalog_id: it.food_catalog_id,
         name: it.name,
         meal: it.meal as MealType,
         logged_date: date,
-        quantity: it.quantity,
+        quantity: Number(it.quantity) * m,
         quantity_unit: it.quantity_unit,
-        calories: it.calories,
-        protein: it.protein,
-        carbs: it.carbs,
-        fat: it.fat,
+        calories: Number(it.calories) * m,
+        protein: Number(it.protein) * m,
+        carbs: Number(it.carbs) * m,
+        fat: Number(it.fat) * m,
       }));
       const { error } = await supabase.from("food_log").insert(rows);
       if (error) throw error;
@@ -119,6 +120,7 @@ export function useAddPlanToLog() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["food-log"] });
       qc.invalidateQueries({ queryKey: ["weekly-calories"] });
+      qc.invalidateQueries({ queryKey: ["weekly-macros"] });
     },
   });
 }
