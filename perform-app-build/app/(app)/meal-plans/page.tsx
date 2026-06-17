@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
@@ -24,6 +24,10 @@ import {
   CalendarPlus,
   UtensilsCrossed,
   Flame,
+  Sparkles,
+  Loader2,
+  ThumbsUp,
+  AlertCircle,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -58,6 +62,7 @@ export default function MealPlansPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<MealPlan | null>(null);
   const [addTarget, setAddTarget] = useState<MealPlan | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<MealPlan | null>(null);
 
   function openNew() {
     setEditing(null);
@@ -101,6 +106,13 @@ export default function MealPlansPage() {
                     <Badge variant="teal">{plan.meal_type}</Badge>
                   </div>
                   <div className="flex items-center gap-1">
+                    <button
+                      className="btn btn-ghost btn-sm !px-1.5"
+                      title="AI nutritionist review"
+                      onClick={() => setReviewTarget(plan)}
+                    >
+                      <Sparkles size={15} className="text-status-teal" />
+                    </button>
                     <button
                       className="btn btn-ghost btn-sm !px-1.5"
                       title="Add to daily intake"
@@ -159,6 +171,7 @@ export default function MealPlansPage() {
         </div>
       )}
 
+      <NutritionReviewModal plan={reviewTarget} onClose={() => setReviewTarget(null)} />
       <PlanBuilderModal open={modalOpen} onClose={() => setModalOpen(false)} editing={editing} />
       <AddToIntakeModal
         plan={addTarget}
@@ -240,6 +253,203 @@ function AddToIntakeModal({
             <CalendarPlus size={15} /> Add to today
           </button>
           <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+type AIReview = {
+  rating?: number;
+  grade?: string;
+  headline?: string;
+  summary?: string;
+  strengths?: string[];
+  improvements?: string[];
+  macro_balance?: string;
+};
+
+function ratingTone(rating: number): string {
+  if (rating >= 8) return "#22d3a5";
+  if (rating >= 6) return "#fbbf24";
+  if (rating >= 4) return "#fb923c";
+  return "#fb7185";
+}
+
+function NutritionReviewModal({
+  plan,
+  onClose,
+}: {
+  plan: MealPlan | null;
+  onClose: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [review, setReview] = useState<AIReview | null>(null);
+  const planId = plan?.id ?? null;
+
+  // Fetch a fresh review whenever a new plan is opened.
+  useEffect(() => {
+    if (!plan) return;
+    let cancelled = false;
+    setReview(null);
+    setError(null);
+    setLoading(true);
+    const payload = {
+      plan: {
+        name: plan.name,
+        meal_type: plan.meal_type,
+        notes: plan.notes,
+        items: (plan.items || []).map((it) => ({
+          name: it.name,
+          meal: it.meal,
+          quantity: Number(it.quantity),
+          unit: it.quantity_unit,
+          calories: Number(it.calories),
+          protein: Number(it.protein),
+          carbs: Number(it.carbs),
+          fat: Number(it.fat),
+        })),
+      },
+    };
+    fetch("/api/nutrition-review", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Review failed");
+        if (!cancelled) setReview(data.review as AIReview);
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setError(e.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planId]);
+
+  if (!plan) return null;
+
+  const rating = Math.max(0, Math.min(10, Math.round(review?.rating ?? 0)));
+  const tone = ratingTone(rating);
+
+  return (
+    <Modal open={!!plan} onClose={onClose} title="AI Nutritionist Review" wide>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Sparkles size={16} className="text-status-teal" />
+          <span className="font-semibold">{plan.name}</span>
+          <Badge variant="teal">{plan.meal_type}</Badge>
+        </div>
+
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-12 text-text-3">
+            <Loader2 size={28} className="animate-spin text-status-teal mb-3" />
+            <div className="text-sm">Analyzing your meal plan…</div>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="flex items-start gap-2 rounded-lg border border-status-amber/30 bg-status-amber/10 px-3 py-3 text-sm text-status-amber">
+            <AlertCircle size={16} className="mt-0.5 shrink-0" />
+            <div>{error}</div>
+          </div>
+        )}
+
+        {review && !loading && (
+          <div className="space-y-4 animate-fade-in">
+            {/* Score */}
+            <div className="flex items-center gap-4 rounded-xl border border-border bg-bg-2 p-4">
+              <div className="relative w-20 h-20 shrink-0">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#1a2235" strokeWidth="3" />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.9"
+                    fill="none"
+                    stroke={tone}
+                    strokeWidth="3"
+                    strokeDasharray={`${rating * 10} ${100 - rating * 10}`}
+                    strokeLinecap="round"
+                    style={{ transition: "stroke-dasharray 0.6s ease" }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-xl font-bold" style={{ color: tone }}>
+                    {rating}
+                  </span>
+                  <span className="text-[9px] text-text-3">/ 10</span>
+                </div>
+              </div>
+              <div className="min-w-0">
+                {review.grade && (
+                  <div className="text-2xl font-bold" style={{ color: tone }}>
+                    {review.grade}
+                  </div>
+                )}
+                {review.headline && (
+                  <div className="text-sm font-medium text-text-1">{review.headline}</div>
+                )}
+                {review.macro_balance && (
+                  <div className="text-[11px] text-text-3 mt-1">{review.macro_balance}</div>
+                )}
+              </div>
+            </div>
+
+            {review.summary && (
+              <p className="text-sm text-text-2 leading-relaxed">{review.summary}</p>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {!!review.strengths?.length && (
+                <div className="card-sm">
+                  <div className="text-[11px] uppercase tracking-wide text-status-green font-semibold mb-2 flex items-center gap-1.5">
+                    <ThumbsUp size={12} /> Strengths
+                  </div>
+                  <ul className="space-y-1.5">
+                    {review.strengths.map((s, i) => (
+                      <li key={i} className="text-[13px] text-text-2 flex gap-2">
+                        <span className="text-status-green">•</span>
+                        <span>{s}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {!!review.improvements?.length && (
+                <div className="card-sm">
+                  <div className="text-[11px] uppercase tracking-wide text-status-amber font-semibold mb-2 flex items-center gap-1.5">
+                    <AlertCircle size={12} /> Improvements
+                  </div>
+                  <ul className="space-y-1.5">
+                    {review.improvements.map((s, i) => (
+                      <li key={i} className="text-[13px] text-text-2 flex gap-2">
+                        <span className="text-status-amber">•</span>
+                        <span>{s}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div className="text-[10px] text-text-3 text-center">
+              AI-generated guidance — not medical advice.
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <button className="btn btn-ghost" onClick={onClose}>
+            Close
+          </button>
         </div>
       </div>
     </Modal>
