@@ -10,9 +10,9 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex justify-between items-start mb-6 flex-wrap gap-3">
+    <div className="flex justify-between items-start mb-6 flex-wrap gap-3 animate-fade-in">
       <div>
-        <h1 className="text-xl font-semibold">{title}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
         {subtitle && <p className="text-sm text-text-2 mt-1">{subtitle}</p>}
       </div>
       {action}
@@ -34,9 +34,9 @@ export function StatCard({
   trend?: "up" | "down" | "neutral";
 }) {
   return (
-    <div className="card-sm">
-      <div className="text-[11px] text-text-3">{label}</div>
-      <div className="text-2xl font-semibold mt-1.5 leading-none">
+    <div className="card-sm card-hover">
+      <div className="text-[11px] text-text-3 uppercase tracking-wide">{label}</div>
+      <div className="text-2xl font-semibold mt-1.5 leading-none tabular-nums">
         {value}
         {unit && <span className="text-sm text-text-2 ml-1">{unit}</span>}
       </div>

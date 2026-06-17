@@ -38,20 +38,21 @@ export function Modal({
   // wrapper) that would otherwise anchor it off-screen.
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] bg-black/60 flex items-start justify-center overflow-y-auto p-4 pt-12 animate-overlay-in"
+      className="fixed inset-0 z-[100] bg-black/65 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 pt-12 animate-overlay-in"
       onClick={onClose}
     >
       <div
-        className={`bg-bg-1 border border-border rounded-xl w-full ${
+        className={`bg-bg-1/95 border border-border-2/60 rounded-2xl shadow-lift w-full ${
           wide ? "max-w-2xl" : "max-w-md"
         } my-auto animate-modal-in`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2 className="text-base font-semibold">{title}</h2>
+        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-border bg-bg-1/95 backdrop-blur-md rounded-t-2xl">
+          <h2 className="text-base font-semibold tracking-tight">{title}</h2>
           <button
             onClick={onClose}
-            className="text-text-3 hover:text-text-1 transition-colors"
+            aria-label="Close"
+            className="text-text-3 hover:text-text-1 hover:bg-bg-3 rounded-md p-1 -mr-1 transition-colors active:scale-90"
           >
             <X size={18} />
           </button>

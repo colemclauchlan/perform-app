@@ -134,8 +134,8 @@ export function Sidebar() {
         className={cn(
           "flex items-center gap-2.5 px-3 py-2 mx-1 text-[13px] transition-all border-l-2 rounded-r-lg group",
           active
-            ? "text-accent bg-accent-dim border-accent font-medium"
-            : "text-text-2 border-transparent hover:text-text-1 hover:bg-bg-2"
+            ? "text-accent bg-accent-dim border-accent font-medium shadow-[inset_0_0_18px_-8px_rgba(37,99,235,0.5)]"
+            : "text-text-2 border-transparent hover:text-text-1 hover:bg-bg-2 hover:translate-x-0.5"
         )}
       >
         <Icon size={15} />
@@ -145,7 +145,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-[230px] flex-shrink-0 bg-bg-1 border-r border-border flex flex-col py-4 h-screen sticky top-0">
+    <aside className="w-[230px] flex-shrink-0 bg-bg-1/80 backdrop-blur-xl border-r border-border flex flex-col py-4 h-screen sticky top-0">
       {/* Logo + brand — click returns to Health Dashboard */}
       <Link href="/dashboard" className="px-3 pb-5 flex items-center justify-center group">
         <Logo
@@ -197,7 +197,7 @@ export function Sidebar() {
                 className={cn(
                   "flex-1 flex items-center gap-2.5 px-2 py-2 mr-1 text-[13px] transition-all border-l-2 rounded-r-lg",
                   active
-                    ? "text-accent bg-accent-dim border-accent font-medium"
+                    ? "text-accent bg-accent-dim border-accent font-medium shadow-[inset_0_0_18px_-8px_rgba(37,99,235,0.5)]"
                     : "text-text-2 border-transparent hover:text-text-1 hover:bg-bg-2"
                 )}
               >

@@ -14,6 +14,19 @@ body {
   color: #e8edf5;
   font-family: "Inter", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Ambient depth — subtle accent glow anchored to the top of the viewport */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(80% 50% at 50% -10%, rgba(37, 99, 235, 0.10), transparent 70%),
+    radial-gradient(60% 40% at 100% 0%, rgba(99, 102, 241, 0.06), transparent 60%);
 }
 
 * {
@@ -54,8 +67,13 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+input:hover:not(:focus),
+select:hover:not(:focus),
+textarea:hover:not(:focus) {
+  border-color: #2a3f5e;
 }
 input::placeholder,
 textarea::placeholder {
@@ -100,6 +118,21 @@ textarea {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35); }
+  50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
 }
@@ -118,6 +151,42 @@ textarea {
 
 .animate-modal-in {
   animation: modalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float {
+  animation: floatY 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.4s ease-in-out infinite;
+}
+
+/* Skeleton loading shimmer */
+.skeleton {
+  background: linear-gradient(100deg, #131922 30%, #1a2235 50%, #131922 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: 8px;
+}
+
+/* Reusable gradient text accent */
+.text-gradient {
+  background: linear-gradient(135deg, #93c5fd 0%, #3b82f6 55%, #818cf8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Keep interactive content above the ambient backdrop */
+#__next,
+main,
+.app-shell {
+  position: relative;
+  z-index: 1;
 }
 
 /* Honor users who prefer reduced motion */
@@ -166,22 +235,28 @@ textarea {
 
 @layer components {
   .card {
-    @apply bg-bg-1 border border-border rounded-xl p-4;
+    @apply bg-bg-1 border border-border rounded-xl p-4 shadow-card transition-colors;
   }
   .card-sm {
-    @apply bg-bg-2 border border-border rounded-lg p-3;
+    @apply bg-bg-2 border border-border rounded-lg p-3 transition-colors;
+  }
+  .card-hover {
+    @apply transition-all duration-200 hover:-translate-y-0.5 hover:border-border-2 hover:shadow-lift;
+  }
+  .glass {
+    @apply bg-bg-1/70 border border-white/5 backdrop-blur-xl shadow-card;
   }
   .card-title {
     @apply text-[11px] uppercase tracking-wider text-text-3 font-semibold mb-3;
   }
   .btn {
-    @apply inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all border-none active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 border-none active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none select-none;
   }
   .btn-primary {
-    @apply bg-accent text-white hover:bg-accent-dark shadow-sm;
+    @apply bg-accent-gradient text-white shadow-soft hover:shadow-glow hover:brightness-110;
   }
   .btn-ghost {
-    @apply bg-bg-3 text-text-2 border border-border hover:text-text-1 hover:border-border-2;
+    @apply bg-bg-3/80 text-text-2 border border-border hover:text-text-1 hover:border-border-2 hover:bg-bg-3;
   }
   .btn-danger {
     @apply bg-status-red/10 text-status-red border border-status-red/30 hover:bg-status-red/20;
@@ -196,6 +271,6 @@ textarea {
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium;
   }
   .stat-card {
-    @apply bg-bg-2 border border-border rounded-xl p-4 transition-all hover:border-border-2;
+    @apply bg-bg-2/90 border border-border rounded-xl p-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-border-2 hover:shadow-lift;
   }
 }
