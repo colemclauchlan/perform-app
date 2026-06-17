@@ -7,16 +7,25 @@ const variants: Record<string, string> = {
   amber: "bg-status-amber/15 text-status-amber",
   teal: "bg-status-teal/15 text-status-teal",
   coral: "bg-status-coral/15 text-status-coral",
+  default: "bg-bg-3 text-text-2 border border-border",
 };
 
 export function Badge({
   children,
   variant = "accent",
+  className,
+  style,
 }: {
   children: React.ReactNode;
   variant?: keyof typeof variants;
+  className?: string;
+  style?: React.CSSProperties;
 }) {
-  return <span className={cn("badge", variants[variant])}>{children}</span>;
+  return (
+    <span className={cn("badge", variants[variant], className)} style={style}>
+      {children}
+    </span>
+  );
 }
 
 // Map compound types to badge colors
