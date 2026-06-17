@@ -235,7 +235,24 @@ export function useLogDose() {
         .insert({ ...dose, user_id: user.id });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["protocols"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["protocols"] });
+      qc.invalidateQueries({ queryKey: ["all-doses"] });
+    },
+  });
+}
+
+export function useDeleteDose() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("dose_logs").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["protocols"] });
+      qc.invalidateQueries({ queryKey: ["all-doses"] });
+    },
   });
 }
 

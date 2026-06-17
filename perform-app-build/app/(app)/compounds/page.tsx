@@ -12,6 +12,7 @@ import {
   useToggleProtocol,
   useDeleteProtocol,
   useLogDose,
+  useDeleteDose,
   useDoseHistory,
   useFavoriteCompounds,
   useToggleFavoriteCompound,
@@ -52,6 +53,40 @@ const FREQUENCIES: Frequency[] = [
   "Weekly",
   "Twice/day",
 ];
+
+// Hours until the next dose is due for a compound (negative = overdue / never logged)
+function hoursUntilDose(c: ProtocolCompound): number {
+  if (!c.last_dose?.logged_at) return -1; // never logged → due now
+  const hrs = FREQUENCY_HOURS[c.frequency] || 24;
+  const next = new Date(c.last_dose.logged_at).getTime() + hrs * 3600000;
+  return (next - Date.now()) / 3600000;
+}
+
+// Whether an ISO timestamp falls on the current calendar day
+function isToday(iso?: string | null): boolean {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
+// Compact "time remaining" countdown
+function formatCountdown(h: number): string {
+  if (h <= 0) return "due now";
+  if (h < 1) return `${Math.max(1, Math.round(h * 60))}m`;
+  if (h < 24) {
+    const hours = Math.floor(h);
+    const mins = Math.round((h - hours) * 60);
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  }
+  const days = Math.floor(h / 24);
+  const rem = Math.round(h % 24);
+  return rem > 0 ? `${days}d ${rem}h` : `${days}d`;
+}
 
 export default function CompoundsPage() {
   const [protoModal, setProtoModal] = useState(false);
@@ -127,11 +162,9 @@ export default function CompoundsPage() {
           <div className="stat-card">
             <div className="text-[11px] text-text-3 mb-1">Due Soon</div>
             <div className="text-2xl font-bold text-status-amber">
-              {allCompounds.filter((c) => {
-                const info = getNextDoseInfo(c.last_dose?.logged_at || null, c.frequency);
-                return info.status === "urgent";
-              }).length}
+              {allCompounds.filter((c) => hoursUntilDose(c) >= 0 && hoursUntilDose(c) <= 72).length}
             </div>
+            <div className="text-[11px] text-text-3 mt-0.5">within 72h</div>
           </div>
         </div>
       )}
@@ -240,37 +273,47 @@ type ChecklistEntry = {
   protocolName: string;
   hoursUntil: number; // negative = overdue
   info: ReturnType<typeof getNextDoseInfo>;
+  doneToday: boolean; // a dose was already logged today (persisted in DB)
 };
 
 function TodayChecklist({ protocols }: { protocols: CompoundProtocol[] }) {
   const logDose = useLogDose();
-  const [done, setDone] = useState<Record<string, boolean>>({});
+  const deleteDose = useDeleteDose();
+  // Tracks compounds with an in-flight log/unlog so the button can't double-fire
+  const [pending, setPending] = useState<Record<string, boolean>>({});
 
   const entries: ChecklistEntry[] = protocols.flatMap((p) =>
     (p.compounds ?? []).map((c) => {
       const info = getNextDoseInfo(c.last_dose?.logged_at || null, c.frequency);
-      const hrs = FREQUENCY_HOURS[c.frequency] || 24;
-      let hoursUntil = Infinity;
-      if (c.last_dose?.logged_at) {
-        const next = new Date(c.last_dose.logged_at).getTime() + hrs * 3600000;
-        hoursUntil = (next - Date.now()) / 3600000;
-      } else {
-        hoursUntil = -1; // never logged → due now
-      }
-      return { c, protocolId: p.id, protocolName: p.name, hoursUntil, info };
+      const hoursUntil = hoursUntilDose(c);
+      const doneToday = isToday(c.last_dose?.logged_at);
+      return { c, protocolId: p.id, protocolName: p.name, hoursUntil, info, doneToday };
     })
   );
 
+  // Done-today doses stay visible in the top group regardless of the next-dose clock.
   const dueToday = entries
-    .filter((e) => e.hoursUntil < 24)
+    .filter((e) => e.doneToday || e.hoursUntil < 24)
     .sort((a, b) => a.hoursUntil - b.hoursUntil);
+  // Due-soon = next dose within 72h (but not already taken today).
   const upcoming = entries
-    .filter((e) => e.hoursUntil >= 24 && e.hoursUntil < 96)
+    .filter((e) => !e.doneToday && e.hoursUntil >= 24 && e.hoursUntil < 72)
     .sort((a, b) => a.hoursUntil - b.hoursUntil);
 
-  function complete(e: ChecklistEntry) {
-    if (done[e.c.id]) return;
-    setDone((d) => ({ ...d, [e.c.id]: true }));
+  function toggle(e: ChecklistEntry) {
+    if (pending[e.c.id]) return;
+    setPending((d) => ({ ...d, [e.c.id]: true }));
+
+    if (e.doneToday && e.c.last_dose?.id) {
+      // Uncheck → remove today's dose (persists because it's DB-backed)
+      deleteDose.mutate(e.c.last_dose.id, {
+        onSuccess: () => toast.success(`${e.c.compound_name} dose removed`),
+        onError: (err) => toast.error(err.message),
+        onSettled: () => setPending((d) => ({ ...d, [e.c.id]: false })),
+      });
+      return;
+    }
+
     logDose.mutate(
       {
         protocol_id: e.protocolId,
@@ -282,10 +325,8 @@ function TodayChecklist({ protocols }: { protocols: CompoundProtocol[] }) {
       },
       {
         onSuccess: () => toast.success(`${e.c.compound_name} logged`),
-        onError: (err) => {
-          toast.error(err.message);
-          setDone((d) => ({ ...d, [e.c.id]: false }));
-        },
+        onError: (err) => toast.error(err.message),
+        onSettled: () => setPending((d) => ({ ...d, [e.c.id]: false })),
       }
     );
   }
@@ -307,7 +348,7 @@ function TodayChecklist({ protocols }: { protocols: CompoundProtocol[] }) {
           <div className="text-[10px] uppercase tracking-wide text-text-3 mb-1.5">Due now / today</div>
           <div className="space-y-1.5">
             {dueToday.map((e) => (
-              <ChecklistItem key={e.c.id} entry={e} done={!!done[e.c.id]} onComplete={() => complete(e)} />
+              <ChecklistItem key={e.c.id} entry={e} pending={!!pending[e.c.id]} onToggle={() => toggle(e)} />
             ))}
           </div>
         </div>
@@ -315,10 +356,10 @@ function TodayChecklist({ protocols }: { protocols: CompoundProtocol[] }) {
 
       {upcoming.length > 0 && (
         <div>
-          <div className="text-[10px] uppercase tracking-wide text-text-3 mb-1.5">Next 4 days</div>
+          <div className="text-[10px] uppercase tracking-wide text-text-3 mb-1.5">Due soon · next 72h</div>
           <div className="space-y-1.5">
             {upcoming.map((e) => (
-              <ChecklistItem key={e.c.id} entry={e} done={!!done[e.c.id]} onComplete={() => complete(e)} />
+              <ChecklistItem key={e.c.id} entry={e} pending={!!pending[e.c.id]} onToggle={() => toggle(e)} />
             ))}
           </div>
         </div>
@@ -329,58 +370,59 @@ function TodayChecklist({ protocols }: { protocols: CompoundProtocol[] }) {
 
 function ChecklistItem({
   entry,
-  done,
-  onComplete,
+  pending,
+  onToggle,
 }: {
   entry: ChecklistEntry;
-  done: boolean;
-  onComplete: () => void;
+  pending: boolean;
+  onToggle: () => void;
 }) {
-  const { c, info } = entry;
+  const { c, info, hoursUntil, doneToday } = entry;
   return (
     <div
       className={cn(
         "flex items-center gap-2.5 rounded-lg border px-2.5 py-2 transition-all duration-300",
-        done
+        doneToday
           ? "border-status-green/40 bg-status-green/10"
           : "border-border bg-bg-2 hover:border-border-2"
       )}
     >
       <button
-        onClick={onComplete}
-        disabled={done}
+        onClick={onToggle}
+        disabled={pending}
         className={cn(
-          "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
-          done
-            ? "bg-status-green border-status-green scale-110"
+          "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all disabled:opacity-50",
+          doneToday
+            ? "bg-status-green border-status-green scale-110 hover:bg-status-green/80"
             : "border-border-2 hover:border-accent"
         )}
-        title="Mark dose taken"
+        title={doneToday ? "Uncheck — remove today's dose" : "Mark dose taken"}
       >
-        {done && <Check size={14} className="text-white animate-fade-in" strokeWidth={3} />}
+        {doneToday && <Check size={14} className="text-white animate-fade-in" strokeWidth={3} />}
       </button>
       <div className="min-w-0 flex-1">
-        <div className={cn("text-[13px] font-medium truncate", done && "line-through text-text-3")}>
+        <div className={cn("text-[13px] font-medium truncate", doneToday && "line-through text-text-3")}>
           {c.compound_name}
         </div>
         <div className="text-[10px] text-text-3">
           {c.dose} {c.compound_unit} · {c.frequency}
         </div>
       </div>
-      {!done && (
+      {!doneToday && (
         <span
           className={cn(
-            "text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full shrink-0",
+            "text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1",
             info.status === "overdue" && "bg-status-red/10 text-status-red",
             info.status === "urgent" && "bg-status-amber/10 text-status-amber",
             info.status === "ok" && "bg-status-green/10 text-status-green",
             info.status === "none" && "bg-bg-3 text-text-3"
           )}
         >
-          {info.status === "none" ? "Due" : info.label.replace("Overdue ", "−")}
+          <Clock size={9} />
+          {hoursUntil <= 0 ? "due now" : formatCountdown(hoursUntil)}
         </span>
       )}
-      {done && <span className="text-[10px] text-status-green font-semibold shrink-0">Done</span>}
+      {doneToday && <span className="text-[10px] text-status-green font-semibold shrink-0">Done</span>}
     </div>
   );
 }
