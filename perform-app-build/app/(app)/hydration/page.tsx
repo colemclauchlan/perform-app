@@ -8,27 +8,107 @@ import {
   useDeleteHydration,
   useWeeklyHydration,
 } from "@/hooks/useBodyMetrics";
+import { useProfile, useUpdateProfile } from "@/hooks/useNutrition";
 import { todayISO } from "@/lib/utils";
-import { Droplets, Plus, Trash2 } from "lucide-react";
+import { Droplets, Plus, Trash2, Settings2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 const QUICK_ML = [150, 250, 350, 500, 750, 1000];
-const DAILY_TARGET_ML = 2500;
+const DEFAULT_TARGET_ML = 2500;
 
 function mlToOz(ml: number) {
   return Math.round(ml * 0.03381 * 10) / 10;
 }
 
+// Bottle "drains" as the user drinks toward their goal: water shown = remaining intake.
+function WaterBottle({ pct, onAdd }: { pct: number; onAdd: () => void }) {
+  const remaining = Math.max(0, 100 - pct); // fill level = how much is left to drink
+  const fillY = 18 + (84 * (100 - remaining)) / 100; // y where water surface sits (more drunk = lower water)
+  const done = pct >= 100;
+  return (
+    <button
+      onClick={onAdd}
+      title="Tap to add 250ml"
+      className="relative group focus:outline-none"
+      aria-label="Add water"
+    >
+      <svg width="92" height="150" viewBox="0 0 92 150" className="overflow-visible">
+        <defs>
+          <clipPath id="bottleClip">
+            <path d="M30 18 q0 -8 8 -8 h16 q8 0 8 8 v6 q0 4 4 8 q12 12 12 30 v54 q0 14 -14 14 h-36 q-14 0 -14 -14 v-54 q0 -18 12 -30 q4 -4 4 -8 z" />
+          </clipPath>
+          <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={done ? "#22d3a5" : "#38bdf8"} />
+            <stop offset="100%" stopColor={done ? "#10b981" : "#2563eb"} />
+          </linearGradient>
+        </defs>
+        {/* water (clipped to bottle) */}
+        <g clipPath="url(#bottleClip)">
+          <rect x="18" y="0" width="60" height="120" fill="#0e1626" />
+          <rect
+            x="18"
+            y={fillY}
+            width="60"
+            height={120 - fillY + 10}
+            fill="url(#waterGrad)"
+            style={{ transition: "y 0.7s cubic-bezier(0.4,0,0.2,1)" }}
+          />
+          {/* surface highlight */}
+          <rect
+            x="18"
+            y={fillY}
+            width="60"
+            height="3"
+            fill="#ffffff"
+            opacity="0.35"
+            style={{ transition: "y 0.7s cubic-bezier(0.4,0,0.2,1)" }}
+          />
+        </g>
+        {/* bottle outline */}
+        <path
+          d="M30 18 q0 -8 8 -8 h16 q8 0 8 8 v6 q0 4 4 8 q12 12 12 30 v54 q0 14 -14 14 h-36 q-14 0 -14 -14 v-54 q0 -18 12 -30 q4 -4 4 -8 z"
+          fill="none"
+          stroke="#2a3f5e"
+          strokeWidth="2.5"
+          className="group-hover:stroke-accent transition-colors"
+        />
+        {/* cap */}
+        <rect x="36" y="2" width="20" height="9" rx="2" fill="#2a3f5e" className="group-hover:fill-accent transition-colors" />
+      </svg>
+      <span className="block text-center text-[10px] text-text-3 mt-1 group-hover:text-accent transition-colors">
+        {done ? "Goal reached" : "Tap to add 250ml"}
+      </span>
+    </button>
+  );
+}
+
 export default function HydrationPage() {
   const [date, setDate] = useState(todayISO());
   const [amount, setAmount] = useState("");
+  const [goalOpen, setGoalOpen] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
   const { data: logs = [] } = useHydrationLogs(date);
   const { data: weekly = [] } = useWeeklyHydration();
+  const { data: profile } = useProfile();
+  const updateProfile = useUpdateProfile();
   const addHydration = useAddHydration();
   const deleteHydration = useDeleteHydration();
 
+  const DAILY_TARGET_ML = profile?.preferences?.hydration_goal_ml || DEFAULT_TARGET_ML;
   const todayTotal = logs.reduce((a, l) => a + l.amount_ml, 0);
   const pct = Math.min(100, Math.round((todayTotal / DAILY_TARGET_ML) * 100));
+
+  function saveGoal() {
+    const ml = parseInt(goalInput);
+    if (!ml || ml < 250) { toast.error("Enter a goal of at least 250ml"); return; }
+    updateProfile.mutate(
+      { preferences: { ...(profile?.preferences || {}), hydration_goal_ml: ml } },
+      {
+        onSuccess: () => { toast.success("Goal updated"); setGoalOpen(false); },
+        onError: (e) => toast.error(e.message),
+      }
+    );
+  }
 
   function handleAdd(ml: number) {
     addHydration.mutate(
@@ -75,8 +155,30 @@ export default function HydrationPage() {
           </div>
 
           <div className="flex-1">
-            <div className="text-3xl font-bold">{todayTotal}<span className="text-base font-normal text-text-2 ml-1">ml</span></div>
+            <div className="flex items-center gap-2">
+              <div className="text-3xl font-bold">{todayTotal}<span className="text-base font-normal text-text-2 ml-1">ml</span></div>
+              <button
+                className="btn btn-ghost btn-sm ml-auto"
+                onClick={() => { setGoalInput(String(DAILY_TARGET_ML)); setGoalOpen((v) => !v); }}
+              >
+                <Settings2 size={13} /> Goal
+              </button>
+            </div>
             <div className="text-sm text-text-3 mt-0.5">{mlToOz(todayTotal)} fl oz · goal: {DAILY_TARGET_ML}ml</div>
+
+            {goalOpen && (
+              <div className="flex gap-2 mt-2">
+                <input
+                  type="number"
+                  value={goalInput}
+                  onChange={(e) => setGoalInput(e.target.value)}
+                  placeholder="Daily goal (ml)"
+                  className="flex-1"
+                  onKeyDown={(e) => e.key === "Enter" && saveGoal()}
+                />
+                <button className="btn btn-primary btn-sm" onClick={saveGoal}>Save</button>
+              </div>
+            )}
 
             {/* Progress bar */}
             <div className="mt-3 h-2 bg-bg-3 rounded-full overflow-hidden">
@@ -86,6 +188,11 @@ export default function HydrationPage() {
               />
             </div>
             <div className="text-[11px] text-text-3 mt-1">{DAILY_TARGET_ML - todayTotal > 0 ? `${DAILY_TARGET_ML - todayTotal}ml remaining` : "Goal reached!"}</div>
+          </div>
+
+          {/* Draining water bottle */}
+          <div className="hidden sm:block flex-shrink-0">
+            <WaterBottle pct={pct} onAdd={() => handleAdd(250)} />
           </div>
         </div>
       </div>

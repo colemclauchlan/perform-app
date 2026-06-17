@@ -37,6 +37,9 @@ export interface UserPreferences {
   hidden_tabs?: string[];
   dashboard_widgets?: { id: string; w: number; h: number; order: number; hidden?: boolean }[];
   available_equipment?: string[];
+  hydration_goal_ml?: number;
+  sleep_weekly_goal_hours?: number;
+  custom_blood_markers?: { name: string; unit: string }[];
 }
 
 export interface FoodCatalogItem {
