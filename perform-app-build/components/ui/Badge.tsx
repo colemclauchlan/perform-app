@@ -33,6 +33,7 @@ export function compoundBadgeVariant(type: string): keyof typeof variants {
   const map: Record<string, keyof typeof variants> = {
     Steroid: "accent",
     Peptide: "teal",
+    "GLP-1": "green",
     "AI / SERM": "amber",
     Ancillary: "red",
     SARMs: "green",

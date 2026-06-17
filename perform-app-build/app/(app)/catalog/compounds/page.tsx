@@ -9,13 +9,14 @@ import {
   useAddCompound,
   useDeleteCompound,
 } from "@/hooks/useCompounds";
-import { CompoundType, CompoundUnit } from "@/types/database";
-import { Plus, Trash2, Search } from "lucide-react";
+import { CompoundCatalogItem, CompoundType, CompoundUnit } from "@/types/database";
+import { Plus, Trash2, Search, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 
 const TYPES: CompoundType[] = [
   "Steroid",
   "Peptide",
+  "GLP-1",
   "SARMs",
   "Ancillary",
   "AI / SERM",
@@ -27,6 +28,7 @@ const UNITS: CompoundUnit[] = ["mg", "mcg", "IU", "ml", "capsules", "g"];
 export default function CompoundCatalogPage() {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [infoFor, setInfoFor] = useState<CompoundCatalogItem | null>(null);
   const { data: compounds = [] } = useCompoundCatalog(search);
   const deleteCompound = useDeleteCompound();
 
@@ -82,17 +84,26 @@ export default function CompoundCatalogPage() {
                     {c.notes || "—"}
                   </td>
                   <td className="py-2.5 px-2">
-                    {!c.is_global && (
+                    <div className="flex items-center justify-end gap-1">
                       <button
-                        className="btn btn-ghost btn-sm !px-1.5"
-                        onClick={() => {
-                          deleteCompound.mutate(c.id);
-                          toast.success("Removed");
-                        }}
+                        className="btn btn-ghost btn-sm !px-1.5 text-accent"
+                        title="AI description"
+                        onClick={() => setInfoFor(c)}
                       >
-                        <Trash2 size={13} />
+                        <Sparkles size={13} />
                       </button>
-                    )}
+                      {!c.is_global && (
+                        <button
+                          className="btn btn-ghost btn-sm !px-1.5"
+                          onClick={() => {
+                            deleteCompound.mutate(c.id);
+                            toast.success("Removed");
+                          }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -102,7 +113,133 @@ export default function CompoundCatalogPage() {
       </div>
 
       <AddCompoundModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <CompoundInfoModal compound={infoFor} onClose={() => setInfoFor(null)} />
     </div>
+  );
+}
+
+function renderMarkdown(text: string) {
+  return text.split("\n").map((line, i) => {
+    const bullet = line.match(/^\s*[-*]\s+(.*)$/);
+    const heading = line.match(/^\s*#{1,3}\s+(.*)$/);
+    const raw = heading ? heading[1] : bullet ? bullet[1] : line;
+    const parts = raw.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
+      p.startsWith("**") && p.endsWith("**") ? (
+        <strong key={j} className="text-text-1 font-semibold">
+          {p.slice(2, -2)}
+        </strong>
+      ) : (
+        <span key={j}>{p}</span>
+      )
+    );
+    if (heading) return <div key={i} className="text-text-1 font-semibold mt-2">{parts}</div>;
+    if (bullet)
+      return (
+        <div key={i} className="flex gap-2 pl-1">
+          <span className="text-accent mt-px">•</span>
+          <span>{parts}</span>
+        </div>
+      );
+    if (!line.trim()) return <div key={i} className="h-1.5" />;
+    return <div key={i}>{parts}</div>;
+  });
+}
+
+function CompoundInfoModal({
+  compound,
+  onClose,
+}: {
+  compound: CompoundCatalogItem | null;
+  onClose: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [text, setText] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loadedId, setLoadedId] = useState<string | null>(null);
+
+  async function load(refresh = false) {
+    if (!compound) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/compound-info", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: compound.id, name: compound.name, type: compound.type, refresh }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error || "Could not generate a description.");
+        return;
+      }
+      setText(data.description);
+    } catch {
+      setError("Network error reaching the AI service.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Init on open: show cached text immediately, otherwise fetch.
+  if (compound && loadedId !== compound.id) {
+    setLoadedId(compound.id);
+    setError(null);
+    if (compound.ai_description) {
+      setText(compound.ai_description);
+      setLoading(false);
+    } else {
+      setText(null);
+      load(false);
+    }
+  }
+  if (!compound && loadedId !== null) {
+    setLoadedId(null);
+    setText(null);
+  }
+
+  return (
+    <Modal open={!!compound} onClose={onClose} title={compound?.name || "Compound"} wide>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          {compound && <Badge variant={compoundBadgeVariant(compound.type)}>{compound.type}</Badge>}
+          <span className="text-xs text-text-3 flex items-center gap-1">
+            <Sparkles size={12} className="text-accent" /> AI-generated
+          </span>
+        </div>
+
+        {loading && (
+          <div className="flex items-center gap-2 text-text-3 text-sm py-6 justify-center">
+            <span className="w-1.5 h-1.5 rounded-full bg-text-3 animate-bounce [animation-delay:-0.3s]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-text-3 animate-bounce [animation-delay:-0.15s]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-text-3 animate-bounce" />
+            <span className="ml-1">Generating description…</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2.5 text-sm text-text-2">
+            {error}
+          </div>
+        )}
+
+        {!loading && text && (
+          <div className="text-sm text-text-2 leading-relaxed space-y-0.5">
+            {renderMarkdown(text)}
+          </div>
+        )}
+
+        {!loading && (
+          <div className="flex gap-2 pt-1">
+            <button className="btn btn-ghost btn-sm" onClick={() => load(true)}>
+              {text ? "Regenerate" : "Generate"}
+            </button>
+            <button className="btn btn-ghost btn-sm ml-auto" onClick={onClose}>
+              Close
+            </button>
+          </div>
+        )}
+      </div>
+    </Modal>
   );
 }
 
