@@ -136,6 +136,40 @@ export function useWeeklyCalories() {
   });
 }
 
+// Last 7 days of calorie + macro totals per day (for the weekly goal graph)
+export function useWeeklyMacros() {
+  return useQuery({
+    queryKey: ["weekly-macros"],
+    queryFn: async () => {
+      const start = new Date();
+      start.setDate(start.getDate() - 6);
+      const startISO = start.toISOString().slice(0, 10);
+      const { data, error } = await supabase
+        .from("food_log")
+        .select("logged_date, calories, protein, carbs, fat")
+        .gte("logged_date", startISO);
+      if (error) throw error;
+      const byDate: Record<string, { cal: number; p: number; c: number; f: number }> = {};
+      (data || []).forEach((row) => {
+        const d = (byDate[row.logged_date] ||= { cal: 0, p: 0, c: 0, f: 0 });
+        d.cal += Number(row.calories) || 0;
+        d.p += Number(row.protein) || 0;
+        d.c += Number(row.carbs) || 0;
+        d.f += Number(row.fat) || 0;
+      });
+      const result: { date: string; cal: number; p: number; c: number; f: number }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const dt = new Date();
+        dt.setDate(dt.getDate() - i);
+        const ds = dt.toISOString().slice(0, 10);
+        const v = byDate[ds] || { cal: 0, p: 0, c: 0, f: 0 };
+        result.push({ date: ds, cal: Math.round(v.cal), p: Math.round(v.p), c: Math.round(v.c), f: Math.round(v.f) });
+      }
+      return result;
+    },
+  });
+}
+
 export function useAddFoodLog() {
   const qc = useQueryClient();
   return useMutation({
@@ -152,6 +186,7 @@ export function useAddFoodLog() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["food-log"] });
       qc.invalidateQueries({ queryKey: ["weekly-calories"] });
+      qc.invalidateQueries({ queryKey: ["weekly-macros"] });
     },
   });
 }
@@ -166,6 +201,7 @@ export function useUpdateFoodLog() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["food-log"] });
       qc.invalidateQueries({ queryKey: ["weekly-calories"] });
+      qc.invalidateQueries({ queryKey: ["weekly-macros"] });
     },
   });
 }
@@ -180,6 +216,7 @@ export function useDeleteFoodLog() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["food-log"] });
       qc.invalidateQueries({ queryKey: ["weekly-calories"] });
+      qc.invalidateQueries({ queryKey: ["weekly-macros"] });
     },
   });
 }

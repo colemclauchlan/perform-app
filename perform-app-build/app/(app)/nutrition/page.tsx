@@ -5,13 +5,16 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { MacroRing } from "@/components/nutrition/MacroBar";
+import { WeeklyMacroGoals } from "@/components/nutrition/WeeklyMacroGoals";
 import {
   useProfile,
   useFoodLog,
   useFoodCatalog,
+  useAddFood,
   useAddFoodLog,
   useUpdateFoodLog,
   useDeleteFoodLog,
+  useWeeklyMacros,
 } from "@/hooks/useNutrition";
 import { FoodCatalogItem, FoodLogEntry, MealType } from "@/types/database";
 import { todayISO, formatDate, computeMacros, round } from "@/lib/utils";
@@ -40,9 +43,13 @@ export default function NutritionPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const { data: profile } = useProfile();
   const { data: log = [] } = useFoodLog(date);
+  const { data: weekly = [] } = useWeeklyMacros();
   const addLog = useAddFoodLog();
   const updateLog = useUpdateFoodLog();
   const deleteLog = useDeleteFoodLog();
+
+  const calGoal = profile?.target_calories || 2500;
+  const proteinGoal = profile?.target_protein || 200;
 
   function adjustPortion(e: FoodLogEntry, dir: 1 | -1) {
     const step = portionStep(e.quantity_unit);
@@ -127,6 +134,9 @@ export default function NutritionPage() {
         ))}
       </div>
 
+      {/* Weekly macro goal graph */}
+      <WeeklyMacroGoals data={weekly} calGoal={calGoal} proteinGoal={proteinGoal} />
+
       {/* Daily log */}
       <div className="card">
         <div className="flex justify-between items-center mb-3">
@@ -158,10 +168,27 @@ export default function NutritionPage() {
             {MEALS.map((meal) => {
               const mealLog = log.filter((e) => e.meal === meal);
               if (mealLog.length === 0) return null;
+              const mealCal = mealLog.reduce((a, e) => a + Number(e.calories), 0);
+              const mealP = mealLog.reduce((a, e) => a + Number(e.protein), 0);
+              const calPct = calGoal > 0 ? Math.round((mealCal / calGoal) * 100) : 0;
+              const pPct = proteinGoal > 0 ? Math.round((mealP / proteinGoal) * 100) : 0;
+              // color the share of daily goal: bigger share = warmer
+              const shareTone =
+                calPct >= 40 ? "bg-status-red/15 text-status-red"
+                  : calPct >= 25 ? "bg-status-amber/15 text-status-amber"
+                  : "bg-status-green/15 text-status-green";
               return (
                 <div key={meal}>
-                  <div className="text-[11px] uppercase tracking-wider text-text-3 mb-1.5">
-                    {meal}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="text-[11px] uppercase tracking-wider text-text-3">{meal}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${shareTone}`}>
+                        {calPct}% kcal
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-accent-dim text-accent">
+                        {pPct}% protein
+                      </span>
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     {mealLog.map((e) => (
@@ -266,7 +293,9 @@ function LogFoodModal({
   const [mP, setMP] = useState("");
   const [mC, setMC] = useState("");
   const [mF, setMF] = useState("");
+  const [saveToLibrary, setSaveToLibrary] = useState(false);
 
+  const addFood = useAddFood();
   const { data: catalog = [] } = useFoodCatalog(search.length >= 2 ? search : "");
 
   const matches = useMemo(() => {
@@ -290,16 +319,39 @@ function LogFoodModal({
 
   function handleLog() {
     if (tab === "manual") {
+      const cal = parseFloat(mCal) || 0;
+      const p = parseFloat(mP) || 0;
+      const c = parseFloat(mC) || 0;
+      const f = parseFloat(mF) || 0;
+      // Optionally remember this custom food for future logging. The entered
+      // macros are stored as the per-serving (≈per-100g) basis.
+      if (saveToLibrary && mName.trim()) {
+        addFood.mutate(
+          {
+            name: mName.trim(),
+            category: "Custom",
+            calories_per_100g: cal,
+            protein_per_100g: p,
+            carbs_per_100g: c,
+            fat_per_100g: f,
+            is_global: false,
+          },
+          {
+            onSuccess: () => toast.success("Saved to your food library"),
+            onError: (e) => toast.error(e.message),
+          }
+        );
+      }
       onLog({
         name: mName || "Custom Food",
         meal,
         logged_date: date,
         quantity: 1,
         quantity_unit: "serving",
-        calories: parseFloat(mCal) || 0,
-        protein: parseFloat(mP) || 0,
-        carbs: parseFloat(mC) || 0,
-        fat: parseFloat(mF) || 0,
+        calories: cal,
+        protein: p,
+        carbs: c,
+        fat: f,
       });
     } else {
       if (!selected || !preview) {
@@ -324,6 +376,7 @@ function LogFoodModal({
     setMP("");
     setMC("");
     setMF("");
+    setSaveToLibrary(false);
   }
 
   return (
@@ -482,6 +535,15 @@ function LogFoodModal({
               />
             </div>
           </div>
+          <label className="flex items-center gap-2 text-sm text-text-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={saveToLibrary}
+              onChange={(e) => setSaveToLibrary(e.target.checked)}
+              className="!w-4 !h-4"
+            />
+            Save to my food library for reuse
+          </label>
         </div>
       )}
 
