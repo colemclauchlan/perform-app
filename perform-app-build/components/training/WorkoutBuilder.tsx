@@ -9,6 +9,8 @@ import {
   useSaveTemplate,
   useFavorites,
   useToggleFavorite,
+  useWorkoutPhotoUrls,
+  uploadWorkoutPhoto,
   SetInput,
 } from "@/hooks/useTraining";
 import { useProfile } from "@/hooks/useNutrition";
@@ -32,6 +34,7 @@ import {
   Star,
   Save,
   Link2,
+  ImagePlus,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -119,6 +122,20 @@ export function WorkoutBuilder({
   const [exercises, setExercises] = useState<BuilderExercise[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [alsoTemplate, setAlsoTemplate] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // photos: existing storage paths kept on the session + freshly picked files
+  const [photoPaths, setPhotoPaths] = useState<string[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const { data: signedPhotos = {} } = useWorkoutPhotoUrls(photoPaths);
+
+  const pendingPreviews = useMemo(
+    () => pendingFiles.map((f) => ({ file: f, url: URL.createObjectURL(f) })),
+    [pendingFiles]
+  );
+  useEffect(() => {
+    return () => pendingPreviews.forEach((p) => URL.revokeObjectURL(p.url));
+  }, [pendingPreviews]);
 
   // rest timer
   const [restSignal, setRestSignal] = useState(0);
@@ -134,6 +151,8 @@ export function WorkoutBuilder({
   // initialize when opened
   useEffect(() => {
     if (!open) return;
+    setPendingFiles([]);
+    setPhotoPaths(editSession?.photo_urls || []);
     if (editSession) {
       setName(editSession.name);
       setDate(editSession.session_date);
@@ -290,21 +309,32 @@ export function WorkoutBuilder({
     return out;
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!name.trim()) return toast.error("Name your workout");
     if (exercises.length === 0) return toast.error("Add at least one exercise");
     const sets = buildSetInputs();
     if (sets.length === 0) return toast.error("Add at least one set");
+
+    setSaving(true);
+    let uploaded: string[] = [];
+    try {
+      uploaded = await Promise.all(pendingFiles.map((f) => uploadWorkoutPhoto(f)));
+    } catch (e) {
+      setSaving(false);
+      return toast.error(e instanceof Error ? e.message : "Photo upload failed");
+    }
 
     const input = {
       name: name.trim(),
       session_date: date,
       duration_minutes: duration ? parseInt(duration) : null,
       notes: notes || null,
+      photo_urls: [...photoPaths, ...uploaded],
       sets,
     };
 
     const onSuccess = () => {
+      setSaving(false);
       if (alsoTemplate) {
         saveTemplate.mutate({
           name: name.trim(),
@@ -327,10 +357,15 @@ export function WorkoutBuilder({
       onClose();
     };
 
+    const onError = (e: Error) => {
+      setSaving(false);
+      toast.error(e.message);
+    };
+
     if (editSession) {
-      updateWorkout.mutate({ id: editSession.id, input }, { onSuccess, onError: (e) => toast.error(e.message) });
+      updateWorkout.mutate({ id: editSession.id, input }, { onSuccess, onError });
     } else {
-      createWorkout.mutate(input, { onSuccess, onError: (e) => toast.error(e.message) });
+      createWorkout.mutate(input, { onSuccess, onError });
     }
   }
 
@@ -500,16 +535,68 @@ export function WorkoutBuilder({
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="How did it feel?" />
           </div>
 
+          {/* photos */}
+          <div>
+            <label className="label">Progress photos</label>
+            <div className="flex flex-wrap gap-2">
+              {photoPaths.map((p) => (
+                <div key={p} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border group">
+                  {signedPhotos[p] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={signedPhotos[p]} alt="Workout" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-bg-2 animate-pulse" />
+                  )}
+                  <button
+                    type="button"
+                    className="absolute top-0.5 right-0.5 bg-bg-1/80 rounded-full p-0.5 text-text-2 hover:text-status-red"
+                    onClick={() => setPhotoPaths((ps) => ps.filter((x) => x !== p))}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+              {pendingPreviews.map((p, i) => (
+                <div key={p.url} className="relative w-20 h-20 rounded-lg overflow-hidden border border-accent/40 group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.url} alt="New" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    className="absolute top-0.5 right-0.5 bg-bg-1/80 rounded-full p-0.5 text-text-2 hover:text-status-red"
+                    onClick={() => setPendingFiles((fs) => fs.filter((_, j) => j !== i))}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+              <label className="w-20 h-20 rounded-lg border border-dashed border-border hover:border-accent/50 flex flex-col items-center justify-center text-text-3 hover:text-accent cursor-pointer transition-colors">
+                <ImagePlus size={18} />
+                <span className="text-[9px] mt-0.5">Add</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length) setPendingFiles((fs) => [...fs, ...files]);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+
           <label className="flex items-center gap-2 text-sm text-text-2 cursor-pointer">
             <input type="checkbox" checked={alsoTemplate} onChange={(e) => setAlsoTemplate(e.target.checked)} className="!w-4 !h-4" />
             <Save size={13} /> Also save as a reusable template
           </label>
 
           <div className="flex gap-2 pt-1">
-            <button className="btn btn-primary" onClick={handleSave}>
-              {editSession ? "Update Session" : "Save Session"}
+            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+              {saving ? "Saving…" : editSession ? "Update Session" : "Save Session"}
             </button>
-            <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+            <button className="btn btn-ghost" onClick={onClose} disabled={saving}>Cancel</button>
           </div>
         </div>
       </Modal>

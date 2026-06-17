@@ -9,6 +9,7 @@ import {
   useLiftProgression,
   useTemplates,
   useDeleteTemplate,
+  useWorkoutPhotoUrls,
   LiftProgression,
 } from "@/hooks/useTraining";
 import { WorkoutSession, WorkoutSet, WorkoutTemplate } from "@/types/database";
@@ -250,6 +251,7 @@ export default function WorkoutsPage() {
                     {expanded === s.id && s.sets && (
                       <div className="mt-1.5 mb-2 animate-fade-in">
                         <ExerciseBreakdown sets={s.sets} catalogByName={catalogByName} />
+                        {s.photo_urls?.length > 0 && <SessionPhotos paths={s.photo_urls} />}
                       </div>
                     )}
                   </div>
@@ -356,6 +358,24 @@ function StatCard({
         <div className="text-xl font-bold truncate">{value}</div>
         {sub && <div className="text-[10px] text-text-3">{sub}</div>}
       </div>
+    </div>
+  );
+}
+
+function SessionPhotos({ paths }: { paths: string[] }) {
+  const { data: signed = {} } = useWorkoutPhotoUrls(paths);
+  return (
+    <div className="flex flex-wrap gap-2 mt-2 px-1">
+      {paths.map((p) =>
+        signed[p] ? (
+          <a key={p} href={signed[p]} target="_blank" rel="noreferrer" className="block w-20 h-20 rounded-lg overflow-hidden border border-border hover:border-accent/50 transition-colors">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={signed[p]} alt="Workout" className="w-full h-full object-cover" />
+          </a>
+        ) : (
+          <div key={p} className="w-20 h-20 rounded-lg bg-bg-2 animate-pulse" />
+        )
+      )}
     </div>
   );
 }

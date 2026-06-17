@@ -37,6 +37,7 @@ export type WorkoutInput = {
   session_date: string;
   duration_minutes?: number | null;
   notes?: string | null;
+  photo_urls?: string[];
   sets: SetInput[];
 };
 
@@ -111,6 +112,38 @@ export function useWorkouts() {
   });
 }
 
+const WORKOUT_PHOTO_BUCKET = "workout-photos";
+
+// Upload a workout photo to the per-user folder; returns the storage path.
+export async function uploadWorkoutPhoto(file: File): Promise<string> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from(WORKOUT_PHOTO_BUCKET).upload(path, file, { upsert: false });
+  if (error) throw error;
+  return path;
+}
+
+// Resolve workout photo storage paths to short-lived signed URLs for display.
+export function useWorkoutPhotoUrls(paths: string[]) {
+  const key = [...paths].sort().join(",");
+  return useQuery({
+    queryKey: ["workout-photo-urls", key],
+    enabled: paths.length > 0,
+    queryFn: async (): Promise<Record<string, string>> => {
+      const { data } = await supabase.storage.from(WORKOUT_PHOTO_BUCKET).createSignedUrls(paths, 3600);
+      const map: Record<string, string> = {};
+      (data || []).forEach((d) => {
+        if (d.path && d.signedUrl) map[d.path] = d.signedUrl;
+      });
+      return map;
+    },
+  });
+}
+
 function buildSetRows(sets: SetInput[], sessionId: string, userId: string) {
   return sets.map((s) => ({
     session_id: sessionId,
@@ -148,6 +181,7 @@ export function useCreateWorkout() {
           session_date: payload.session_date,
           duration_minutes: payload.duration_minutes ?? null,
           notes: payload.notes ?? null,
+          photo_urls: payload.photo_urls ?? [],
         })
         .select()
         .single();
@@ -182,6 +216,7 @@ export function useUpdateWorkout() {
           session_date: input.session_date,
           duration_minutes: input.duration_minutes ?? null,
           notes: input.notes ?? null,
+          ...(input.photo_urls !== undefined ? { photo_urls: input.photo_urls } : {}),
         })
         .eq("id", id);
       if (error) throw error;
