@@ -3,10 +3,11 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { useWorkouts, useLiftProgression } from "@/hooks/useTraining";
+import { useWorkouts, useLiftProgression, useExercises } from "@/hooks/useTraining";
 import { useProtocols } from "@/hooks/useCompounds";
 import { formatDate, getNextDoseInfo } from "@/lib/utils";
 import { Frequency } from "@/types/database";
+import { WorkoutVolumeChart, MuscleSplitChart } from "@/components/charts/WorkoutAnalytics";
 import {
   Dumbbell,
   Trophy,
@@ -15,6 +16,8 @@ import {
   CalendarClock,
   ArrowRight,
   Syringe,
+  BarChart3,
+  PieChart,
 } from "lucide-react";
 
 function estimate1RM(weight: number, reps: number): number {
@@ -27,6 +30,18 @@ export default function GymDashboardPage() {
   const { data: workouts = [], isLoading: loadingW } = useWorkouts();
   const { data: lifts = [] } = useLiftProgression();
   const { data: protocols = [] } = useProtocols();
+  const { data: exercises = [] } = useExercises();
+
+  // exercise name → muscle group for the split chart
+  const muscleMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    exercises.forEach((e) => {
+      if (e.muscle_group) m[e.name.toLowerCase()] = e.muscle_group;
+    });
+    return m;
+  }, [exercises]);
+
+  const sessionUnit = workouts.find((w) => w.sets?.length)?.sets?.[0]?.weight_unit || "";
 
   // Recent sessions (latest 5)
   const recent = workouts.slice(0, 5);
@@ -125,6 +140,22 @@ export default function GymDashboardPage() {
         <div className="stat-card animate-fade-in">
           <div className="text-[11px] text-text-3 uppercase tracking-wider">Tracked lifts</div>
           <div className="text-2xl font-bold mt-1.5 leading-none">{lifts.length}</div>
+        </div>
+      </div>
+
+      {/* Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+        <div className="card">
+          <div className="card-title flex items-center gap-2 mb-3">
+            <BarChart3 size={13} className="text-accent" /> Training Volume — Last 8 Weeks
+          </div>
+          <WorkoutVolumeChart workouts={workouts} unit={sessionUnit} />
+        </div>
+        <div className="card">
+          <div className="card-title flex items-center gap-2 mb-3">
+            <PieChart size={13} className="text-accent" /> Set Split by Muscle — Last 30 Days
+          </div>
+          <MuscleSplitChart workouts={workouts} muscleMap={muscleMap} />
         </div>
       </div>
 
