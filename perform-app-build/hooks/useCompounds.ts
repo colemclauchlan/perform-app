@@ -238,6 +238,25 @@ export function useLogDose() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["protocols"] });
       qc.invalidateQueries({ queryKey: ["all-doses"] });
+      qc.invalidateQueries({ queryKey: ["dose-history"] });
+    },
+  });
+}
+
+export function useUpdateDose() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...patch }: { id: string } & Partial<DoseLog>) => {
+      const { error } = await supabase
+        .from("dose_logs")
+        .update(patch)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["protocols"] });
+      qc.invalidateQueries({ queryKey: ["all-doses"] });
+      qc.invalidateQueries({ queryKey: ["dose-history"] });
     },
   });
 }
@@ -252,6 +271,7 @@ export function useDeleteDose() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["protocols"] });
       qc.invalidateQueries({ queryKey: ["all-doses"] });
+      qc.invalidateQueries({ queryKey: ["dose-history"] });
     },
   });
 }

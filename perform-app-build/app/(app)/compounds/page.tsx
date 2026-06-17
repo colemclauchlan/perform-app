@@ -13,6 +13,8 @@ import {
   useDeleteProtocol,
   useLogDose,
   useDeleteDose,
+  useUpdateDose,
+  useAllDoses,
   useDoseHistory,
   useFavoriteCompounds,
   useToggleFavoriteCompound,
@@ -22,6 +24,7 @@ import {
   ProtocolCompound,
   CompoundCatalogItem,
   CompoundType,
+  DoseLog,
   Frequency,
 } from "@/types/database";
 import { todayISO, formatDate, getNextDoseInfo, FREQUENCY_HOURS, cn } from "@/lib/utils";
@@ -41,6 +44,8 @@ import {
   Star,
   Search,
   ListChecks,
+  Pencil,
+  History,
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -235,6 +240,8 @@ export default function CompoundsPage() {
               <TodayChecklist protocols={activeProtocols} />
             </div>
           )}
+
+          {protocols.length > 0 && <RecentDoses protocols={protocols} />}
         </div>
       )}
 
@@ -424,6 +431,233 @@ function ChecklistItem({
       )}
       {doneToday && <span className="text-[10px] text-status-green font-semibold shrink-0">Done</span>}
     </div>
+  );
+}
+
+// ─── RECENT DOSES (edit / delete logged injections) ──────────────────────────
+function RecentDoses({ protocols }: { protocols: CompoundProtocol[] }) {
+  const { data: doses = [] } = useAllDoses();
+  const deleteDose = useDeleteDose();
+  const [editing, setEditing] = useState<DoseLog | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+
+  const protoName = new Map(protocols.map((p) => [p.id, p.name]));
+
+  // useAllDoses returns ascending; show most-recent first.
+  const sorted = [...doses].sort(
+    (a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime()
+  );
+  const visible = showAll ? sorted : sorted.slice(0, 8);
+
+  function handleDelete(id: string) {
+    deleteDose.mutate(id, {
+      onSuccess: () => toast.success("Dose deleted"),
+      onError: (e) => toast.error(e.message),
+    });
+    setConfirmId(null);
+  }
+
+  return (
+    <div className="card mt-4 animate-fade-in">
+      <div className="card-title flex items-center gap-2">
+        <History size={15} className="text-accent" /> Recent Doses
+      </div>
+
+      {sorted.length === 0 ? (
+        <div className="text-xs text-text-3 py-6 text-center">
+          No doses logged yet. Use &quot;Log Dose&quot; or the checklist to record an injection.
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          {visible.map((d) => (
+            <div
+              key={d.id}
+              className="group flex items-center gap-3 rounded-lg border border-border bg-bg-2 px-3 py-2 transition-all hover:border-border-2"
+            >
+              <div className="w-8 h-8 rounded-lg bg-accent-dim flex items-center justify-center shrink-0">
+                <Syringe size={14} className="text-accent" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px] font-medium truncate">
+                  {d.compound_name}
+                  <span className="text-text-3 font-normal">
+                    {" "}· {d.dose_amount} {d.compound_unit}
+                  </span>
+                </div>
+                <div className="text-[10px] text-text-3 truncate">
+                  {new Date(d.logged_at).toLocaleString([], {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                  {protoName.get(d.protocol_id) ? ` · ${protoName.get(d.protocol_id)}` : ""}
+                  {d.injection_site ? ` · ${d.injection_site}` : ""}
+                  {d.notes ? ` · ${d.notes}` : ""}
+                </div>
+              </div>
+
+              {confirmId === d.id ? (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => handleDelete(d.id)}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setConfirmId(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    className="p-1.5 rounded-md text-text-3 hover:text-accent hover:bg-bg-3 transition-colors"
+                    onClick={() => setEditing(d)}
+                    title="Edit dose"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    className="p-1.5 rounded-md text-text-3 hover:text-status-red hover:bg-bg-3 transition-colors"
+                    onClick={() => setConfirmId(d.id)}
+                    title="Delete dose"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {sorted.length > 8 && (
+            <button
+              className="btn btn-ghost btn-sm w-full mt-1"
+              onClick={() => setShowAll((s) => !s)}
+            >
+              {showAll ? "Show less" : `Show all ${sorted.length} doses`}
+            </button>
+          )}
+        </div>
+      )}
+
+      <EditDoseModal dose={editing} onClose={() => setEditing(null)} />
+    </div>
+  );
+}
+
+function EditDoseModal({
+  dose,
+  onClose,
+}: {
+  dose: DoseLog | null;
+  onClose: () => void;
+}) {
+  const updateDose = useUpdateDose();
+  const [amount, setAmount] = useState("");
+  const [datetime, setDatetime] = useState("");
+  const [site, setSite] = useState("");
+  const [notes, setNotes] = useState("");
+
+  // Hydrate fields whenever a new dose is selected for editing.
+  useEffect(() => {
+    if (dose) {
+      setAmount(String(dose.dose_amount ?? ""));
+      // Convert the stored UTC timestamp to a local datetime-local value.
+      const d = new Date(dose.logged_at);
+      const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 16);
+      setDatetime(local);
+      setSite(dose.injection_site ?? "");
+      setNotes(dose.notes ?? "");
+    }
+  }, [dose]);
+
+  function handleSave() {
+    if (!dose) return;
+    if (!datetime) {
+      toast.error("Pick a date & time");
+      return;
+    }
+    updateDose.mutate(
+      {
+        id: dose.id,
+        dose_amount: parseFloat(amount) || 0,
+        logged_at: new Date(datetime).toISOString(),
+        injection_site: site || null,
+        notes: notes || null,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Dose updated");
+          onClose();
+        },
+        onError: (e) => toast.error(e.message),
+      }
+    );
+  }
+
+  return (
+    <Modal open={!!dose} onClose={onClose} title="Edit Dose">
+      <div className="space-y-3">
+        <div className="text-sm font-medium">
+          {dose?.compound_name}
+          <span className="text-text-3"> ({dose?.compound_unit})</span>
+        </div>
+        <div className="flex gap-2.5">
+          <div className="flex-1">
+            <label className="label">Dose amount</label>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="200"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="label">Date &amp; Time</label>
+            <input
+              type="datetime-local"
+              value={datetime}
+              onChange={(e) => setDatetime(e.target.value)}
+            />
+          </div>
+        </div>
+        <div>
+          <label className="label">Injection site</label>
+          <input
+            value={site}
+            onChange={(e) => setSite(e.target.value)}
+            placeholder="e.g. left delt, right glute"
+          />
+        </div>
+        <div>
+          <label className="label">Notes (batch/lot, etc.)</label>
+          <input
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Optional"
+          />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button
+            className="btn btn-primary"
+            onClick={handleSave}
+            disabled={updateDose.isPending}
+          >
+            Save Changes
+          </button>
+          <button className="btn btn-ghost" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

@@ -2,11 +2,37 @@
 
 import { useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
-import { useFoodCatalog, useAddFood, useDeleteFood } from "@/hooks/useNutrition";
+import {
+  useFoodCatalog,
+  useAddFood,
+  useDeleteFood,
+  useProfile,
+} from "@/hooks/useNutrition";
+import { foodCategoryColor } from "@/lib/utils";
 import { Plus, Trash2, Search } from "lucide-react";
 import toast from "react-hot-toast";
+
+// Small colored pill for a food category. Colors come from the shared
+// foodCategoryColor map (with custom user categories merged in).
+function CategoryTag({
+  category,
+  custom,
+}: {
+  category: string | null | undefined;
+  custom?: { name: string; color: string }[];
+}) {
+  const color = foodCategoryColor(category, custom);
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium"
+      style={{ backgroundColor: `${color}22`, color }}
+    >
+      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+      {category || "Other"}
+    </span>
+  );
+}
 
 const CATEGORIES = [
   "Protein",
@@ -23,6 +49,8 @@ export default function FoodCatalogPage() {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const { data: foods = [] } = useFoodCatalog(search);
+  const { data: profile } = useProfile();
+  const customCategories = profile?.preferences?.custom_food_categories ?? [];
   const deleteFood = useDeleteFood();
 
   return (
@@ -68,7 +96,7 @@ export default function FoodCatalogPage() {
                 <tr key={f.id} className="border-b border-border/40 hover:bg-bg-2">
                   <td className="py-2.5 px-2 font-medium">{f.name}</td>
                   <td className="py-2.5 px-2">
-                    <Badge variant="teal">{f.category}</Badge>
+                    <CategoryTag category={f.category} custom={customCategories} />
                   </td>
                   <td className="py-2.5 px-2 text-text-2">
                     {f.calories_per_100g}
