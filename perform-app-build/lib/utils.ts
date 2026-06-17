@@ -1,4 +1,4 @@
-import { Frequency } from "@/types/database";
+import { ExerciseCatalogItem, Frequency } from "@/types/database";
 
 export function cn(...classes: (string | boolean | undefined | null)[]): string {
   return classes.filter(Boolean).join(" ");
@@ -110,6 +110,53 @@ export function getNextDoseInfo(
   }
   const days = Math.floor(hrs / 24);
   return { label: `${days}d ${hrs % 24}h`, status: "ok" };
+}
+
+// Rank alternative exercises that hit the same muscle, for in-builder swaps.
+function splitMuscles(s: string | null | undefined): string[] {
+  return String(s || "")
+    .split(/[,/]/)
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function suggestSubstitutions(
+  target: ExerciseCatalogItem,
+  catalog: ExerciseCatalogItem[],
+  limit = 6
+): ExerciseCatalogItem[] {
+  const tMuscle = (target.muscle_group || "").toLowerCase();
+  const tPattern = (target.movement_pattern || "").toLowerCase();
+  const tCategory = String(target.category || "").toLowerCase();
+  const tEquip = (target.equipment || "").toLowerCase();
+  const tSecondary = new Set(splitMuscles(target.secondary_muscles));
+
+  const scored = catalog
+    .filter((e) => e.id !== target.id && e.name !== target.name)
+    .map((e) => {
+      let score = 0;
+      const eMuscle = (e.muscle_group || "").toLowerCase();
+      if (eMuscle && eMuscle === tMuscle) score += 100;
+      else if (eMuscle && tSecondary.has(eMuscle)) score += 40; // hits target as a secondary
+
+      const ePattern = (e.movement_pattern || "").toLowerCase();
+      if (ePattern && tPattern && ePattern === tPattern) score += 25;
+
+      if (Boolean(e.is_compound) === Boolean(target.is_compound)) score += 10;
+
+      const eSecondary = splitMuscles(e.secondary_muscles);
+      const shared = eSecondary.filter((m) => tSecondary.has(m)).length;
+      score += Math.min(shared, 3) * 6;
+
+      if (String(e.category || "").toLowerCase() === tCategory) score += 6;
+      if ((e.equipment || "").toLowerCase() === tEquip) score += 4;
+
+      return { e, score };
+    })
+    .filter((x) => x.score >= 40) // must at least train the same primary/secondary muscle
+    .sort((a, b) => b.score - a.score);
+
+  return scored.slice(0, limit).map((x) => x.e);
 }
 
 // Compute macro totals from a quantity given per-100g values

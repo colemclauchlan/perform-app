@@ -21,7 +21,7 @@ import {
   SetType,
   ExerciseCategory,
 } from "@/types/database";
-import { todayISO, cn, muscleColor } from "@/lib/utils";
+import { todayISO, cn, muscleColor, suggestSubstitutions } from "@/lib/utils";
 import { RestTimer } from "./RestTimer";
 import {
   Plus,
@@ -35,6 +35,7 @@ import {
   Save,
   Link2,
   ImagePlus,
+  Repeat,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -121,6 +122,7 @@ export function WorkoutBuilder({
   const [notes, setNotes] = useState("");
   const [exercises, setExercises] = useState<BuilderExercise[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [swapKey, setSwapKey] = useState<string | null>(null);
   const [alsoTemplate, setAlsoTemplate] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -280,6 +282,28 @@ export function WorkoutBuilder({
     setExercises((xs) => [...xs, fromCatalog(ex)]);
   }
 
+  // Replace an exercise in-place (keeping its sets/rest/superset) with a chosen alternative.
+  function swapExercise(key: string, alt: ExerciseCatalogItem) {
+    setExercises((xs) =>
+      xs.map((x) =>
+        x.key === key
+          ? {
+              ...x,
+              exercise_name: alt.name,
+              exercise_catalog_id: alt.id,
+              muscle_group: alt.muscle_group,
+              category: alt.category || "",
+            }
+          : x
+      )
+    );
+  }
+
+  const swapTarget = useMemo(
+    () => (swapKey ? exercises.find((x) => x.key === swapKey) || null : null),
+    [swapKey, exercises]
+  );
+
   function startRest(seconds: number) {
     setRestSeconds(seconds);
     setRestSignal((s) => s + 1);
@@ -435,6 +459,9 @@ export function WorkoutBuilder({
                       <div className="text-[10px] text-text-3">{ex.muscle_group}{ex.category ? ` · ${ex.category}` : ""}</div>
                     </div>
                     <div className="ml-auto flex items-center gap-0.5">
+                      <button className="btn btn-ghost btn-sm !px-1.5" title="Swap exercise" onClick={() => setSwapKey(ex.key)}>
+                        <Repeat size={13} />
+                      </button>
                       <button className="btn btn-ghost btn-sm !px-1.5" title="Superset group" onClick={() => cycleSuperset(ex.key)}>
                         <Link2 size={13} />
                       </button>
@@ -613,10 +640,100 @@ export function WorkoutBuilder({
         }}
       />
 
+      <SubstituteModal
+        target={swapTarget}
+        catalog={catalog}
+        onClose={() => setSwapKey(null)}
+        onPick={(alt) => {
+          if (swapKey) {
+            swapExercise(swapKey, alt);
+            toast.success(`Swapped to ${alt.name}`);
+          }
+          setSwapKey(null);
+        }}
+      />
+
       {timerOpen && (
         <RestTimer startSignal={restSignal} startSeconds={restSeconds} onClose={() => setTimerOpen(false)} />
       )}
     </>
+  );
+}
+
+function SubstituteModal({
+  target,
+  catalog,
+  onClose,
+  onPick,
+}: {
+  target: BuilderExercise | null;
+  catalog: ExerciseCatalogItem[];
+  onClose: () => void;
+  onPick: (ex: ExerciseCatalogItem) => void;
+}) {
+  const targetItem = useMemo(() => {
+    if (!target) return null;
+    if (target.exercise_catalog_id) {
+      const byId = catalog.find((e) => e.id === target.exercise_catalog_id);
+      if (byId) return byId;
+    }
+    return catalog.find((e) => e.name === target.exercise_name) || null;
+  }, [target, catalog]);
+
+  const suggestions = useMemo(
+    () => (targetItem ? suggestSubstitutions(targetItem, catalog, 8) : []),
+    [targetItem, catalog]
+  );
+
+  return (
+    <Modal open={!!target} onClose={onClose} title="Swap Exercise" wide>
+      {target && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2.5 text-sm text-text-2">
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: muscleColor(target.muscle_group) }} />
+            <span>
+              Alternatives for <span className="font-semibold text-text-1">{target.exercise_name}</span>
+              <span className="text-text-3"> · {target.muscle_group}</span>
+            </span>
+          </div>
+
+          {suggestions.length === 0 ? (
+            <div className="text-center text-text-3 text-sm py-6 border border-dashed border-border rounded-xl">
+              No close alternatives found in your library.
+            </div>
+          ) : (
+            <div className="space-y-1 max-h-[52vh] overflow-y-auto">
+              {suggestions.map((ex) => (
+                <div
+                  key={ex.id}
+                  className="flex items-center gap-2.5 bg-bg-2 hover:bg-bg-3 border border-border rounded-lg px-3 py-2 transition-all"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: muscleColor(ex.muscle_group) }} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium truncate flex items-center gap-1.5">
+                      {ex.name}
+                      {ex.is_compound && <span className="text-[9px] font-bold text-status-amber bg-status-amber/15 px-1 rounded">CMP</span>}
+                    </div>
+                    <div className="text-[10px] text-text-3">
+                      {ex.muscle_group}
+                      {ex.movement_pattern ? ` · ${ex.movement_pattern}` : ""}
+                      {ex.equipment ? ` · ${ex.equipment}` : ""}
+                    </div>
+                  </div>
+                  <button className="btn btn-primary btn-sm" onClick={() => onPick(ex)}>
+                    <Repeat size={13} /> Swap
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }
 
