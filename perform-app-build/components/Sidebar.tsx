@@ -59,7 +59,7 @@ const TRACK_DEFAULT: NavItem[] = [
 const PINNED_BOTTOM: NavItem[] = [
   { href: "/catalog/food", label: "Food Catalog", icon: BookOpen },
   { href: "/catalog/compounds", label: "Compound Catalog", icon: Pill },
-  { href: "/catalog/exercises", label: "Exercises", icon: ListChecks },
+  { href: "/catalog/exercises", label: "Exercise Catalog", icon: ListChecks },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -144,20 +144,20 @@ export function Sidebar() {
 
   return (
     <aside className="w-[230px] flex-shrink-0 bg-bg-1 border-r border-border flex flex-col py-4 h-screen sticky top-0">
-      {/* Logo + brand */}
-      <div className="px-4 pb-5 flex items-center gap-2.5">
-        <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-accent-dim border border-accent/20 overflow-hidden">
-          <Logo variant="icon" size={28} />
+      {/* Logo + brand — click returns to Health Dashboard */}
+      <Link href="/dashboard" className="px-4 pb-5 flex items-center gap-2.5 group">
+        <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-accent-dim border border-accent/20 overflow-hidden transition-transform group-hover:scale-105">
+          <Logo variant="icon" size={40} />
         </div>
         <div>
-          <span className="text-[15px] font-bold tracking-tight leading-none block">
+          <span className="text-[17px] font-bold tracking-tight leading-none block">
             Body<span className="text-accent">Tracker</span>
           </span>
           <span className="text-[9px] uppercase tracking-widest text-text-3 leading-none">
             Performance
           </span>
         </div>
-      </div>
+      </Link>
 
       <nav className="flex-1 overflow-y-auto">
         {/* Overview (pinned) */}
