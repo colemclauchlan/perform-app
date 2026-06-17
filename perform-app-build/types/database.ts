@@ -39,7 +39,13 @@ export interface UserPreferences {
   available_equipment?: string[];
   hydration_goal_ml?: number;
   sleep_weekly_goal_hours?: number;
-  custom_blood_markers?: { name: string; unit: string }[];
+  custom_blood_markers?: {
+    name: string;
+    unit: string;
+    ref_low?: number | null;
+    ref_high?: number | null;
+    category?: string;
+  }[];
 }
 
 export interface FoodCatalogItem {

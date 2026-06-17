@@ -12,6 +12,7 @@ import {
   MarkerInput,
   EntryInput,
 } from "@/hooks/useBloodwork";
+import { useProfile, useUpdateProfile } from "@/hooks/useNutrition";
 import { BloodworkEntry } from "@/types/database";
 import { todayISO, formatDate } from "@/lib/utils";
 import {
@@ -79,7 +80,53 @@ const PRESETS: PresetMarker[] = [
   { marker: "Lp(a)", unit: "nmol/L", ref_low: 0, ref_high: 75, category: "Cardiovascular / Inflammation" },
 ];
 
-const CATEGORIES = Array.from(new Set(PRESETS.map((p) => p.category)));
+// Controlled list of common lab units (imperial + metric). No custom entries.
+const UNIT_OPTIONS: string[] = [
+  // Concentration (mass)
+  "mg/dL",
+  "g/dL",
+  "ug/dL",
+  "ng/dL",
+  "pg/mL",
+  "ng/mL",
+  "ug/mL",
+  "mg/L",
+  "g/L",
+  "ng/L",
+  // Concentration (molar)
+  "mmol/L",
+  "umol/L",
+  "nmol/L",
+  "pmol/L",
+  "mEq/L",
+  // Cell counts
+  "10^3/uL",
+  "10^6/uL",
+  "cells/uL",
+  "fL",
+  "pg",
+  // Enzyme / activity
+  "U/L",
+  "IU/L",
+  "mIU/mL",
+  "uIU/mL",
+  "mIU/L",
+  // Rates / ratios / misc
+  "mL/min",
+  "mL/min/1.73m²",
+  "%",
+  "ratio",
+  "index",
+];
+
+// Build the full unit dropdown list, always including any units already in use
+// (e.g. from older entries) so editing never loses an existing value.
+function unitChoices(extra?: (string | null | undefined)[]): string[] {
+  const set = new Set<string>(UNIT_OPTIONS);
+  PRESETS.forEach((p) => p.unit && set.add(p.unit));
+  (extra || []).forEach((u) => u && set.add(u));
+  return Array.from(set);
+}
 
 function flagFor(value: number | null, low: number | null, high: number | null): string | null {
   if (value === null) return null;
@@ -110,9 +157,57 @@ function emptyFormMarker(p?: PresetMarker): FormMarker {
 
 export default function BloodworkPage() {
   const { data: entries = [], isLoading } = useBloodwork();
+  const { data: profile } = useProfile();
+  const updateProfile = useUpdateProfile();
   const addEntry = useAddBloodwork();
   const updateEntry = useUpdateBloodwork();
   const deleteEntry = useDeleteBloodwork();
+
+  // Saved custom markers → reusable quick-add presets.
+  const customMarkers = profile?.preferences?.custom_blood_markers ?? [];
+  const customPresets: PresetMarker[] = customMarkers.map((m) => ({
+    marker: m.name,
+    unit: m.unit ?? "",
+    ref_low: m.ref_low ?? null,
+    ref_high: m.ref_high ?? null,
+    category: m.category || "My Markers",
+  }));
+
+  // After a save, remember any non-preset markers so they show in quick-add later.
+  function rememberCustomMarkers(input: EntryInput) {
+    const builtIn = new Set(PRESETS.map((p) => p.marker.toLowerCase()));
+    const existing = new Map(customMarkers.map((m) => [m.name.toLowerCase(), m]));
+    let changed = false;
+    input.markers.forEach((m) => {
+      const key = m.marker.toLowerCase();
+      if (builtIn.has(key)) return;
+      const prior = existing.get(key);
+      // add new, or refresh stored unit/ranges if they changed
+      if (
+        !prior ||
+        prior.unit !== (m.unit ?? "") ||
+        prior.ref_low !== (m.ref_low ?? null) ||
+        prior.ref_high !== (m.ref_high ?? null)
+      ) {
+        existing.set(key, {
+          name: m.marker,
+          unit: m.unit ?? "",
+          ref_low: m.ref_low ?? null,
+          ref_high: m.ref_high ?? null,
+          category: m.category || "My Markers",
+        });
+        changed = true;
+      }
+    });
+    if (changed) {
+      updateProfile.mutate({
+        preferences: {
+          ...(profile?.preferences ?? {}),
+          custom_blood_markers: Array.from(existing.values()),
+        },
+      });
+    }
+  }
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<BloodworkEntry | null>(null);
@@ -478,8 +573,10 @@ export default function BloodworkPage() {
       {modalOpen && (
         <EntryFormModal
           entry={editing}
+          customPresets={customPresets}
           onClose={() => setModalOpen(false)}
           onSave={(input) => {
+            rememberCustomMarkers(input);
             if (editing) {
               updateEntry.mutate(
                 { id: editing.id, input },
@@ -511,15 +608,20 @@ export default function BloodworkPage() {
 // ─── Entry form modal ───────────────────────────────────────────────────────
 function EntryFormModal({
   entry,
+  customPresets,
   onClose,
   onSave,
   saving,
 }: {
   entry: BloodworkEntry | null;
+  customPresets: PresetMarker[];
   onClose: () => void;
   onSave: (input: EntryInput) => void;
   saving: boolean;
 }) {
+  // Presets = built-ins + the user's saved custom markers ("My Markers").
+  const allPresets = [...PRESETS, ...customPresets];
+  const allCategories = Array.from(new Set(allPresets.map((p) => p.category)));
   const [drawnDate, setDrawnDate] = useState(entry?.drawn_date ?? todayISO());
   const [labName, setLabName] = useState(entry?.lab_name ?? "");
   const [notes, setNotes] = useState(entry?.notes ?? "");
@@ -535,7 +637,10 @@ function EntryFormModal({
         }))
       : [emptyFormMarker()]
   );
-  const [presetCat, setPresetCat] = useState(CATEGORIES[0]);
+  const [presetCat, setPresetCat] = useState(allCategories[0]);
+
+  // Unit dropdown choices, always including units already used by this panel.
+  const units = unitChoices(markers.map((m) => m.unit).concat(customPresets.map((p) => p.unit)));
 
   function updateMarker(i: number, patch: Partial<FormMarker>) {
     setMarkers((prev) => prev.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
@@ -606,7 +711,7 @@ function EntryFormModal({
               onChange={(e) => setPresetCat(e.target.value)}
               className="text-sm flex-1"
             >
-              {CATEGORIES.map((c) => (
+              {allCategories.map((c) => (
                 <option key={c} value={c}>
                   {c}
                 </option>
@@ -614,7 +719,7 @@ function EntryFormModal({
             </select>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {PRESETS.filter((p) => p.category === presetCat).map((p) => (
+            {allPresets.filter((p) => p.category === presetCat).map((p) => (
               <button
                 key={p.marker}
                 type="button"
@@ -652,12 +757,19 @@ function EntryFormModal({
                   inputMode="decimal"
                   className="text-xs"
                 />
-                <input
+                <select
                   value={m.unit}
                   onChange={(e) => updateMarker(i, { unit: e.target.value })}
-                  placeholder="Unit"
                   className="text-xs"
-                />
+                  title="Unit"
+                >
+                  <option value="">Unit</option>
+                  {units.map((u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                </select>
                 <input
                   value={m.ref_low}
                   onChange={(e) => updateMarker(i, { ref_low: e.target.value })}
