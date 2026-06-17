@@ -29,7 +29,7 @@ export default async function AppLayout({
         {/* Top bar — brand logo pinned to the top right of every page */}
         <div className="sticky top-0 z-20 flex justify-end px-6 py-3 bg-bg-0/80 backdrop-blur-sm border-b border-border">
           <Link href="/dashboard" className="transition-transform hover:scale-105">
-            <Logo variant="full" size={56} className="rounded-lg" />
+            <Logo variant="icon" size={56} className="rounded-lg" />
           </Link>
         </div>
         <PageTransition>{children}</PageTransition>
