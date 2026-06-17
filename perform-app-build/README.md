@@ -2,7 +2,7 @@
 
 A personal performance-tracking dashboard. Dark, sleek, mobile-friendly. Tracks nutrition & macros, compound protocols with dose countdowns, workouts & lift progression, body weight, and steps.
 
-**→ New here? Open [`SETUP_GUIDE.md`](./SETUP_GUIDE.md) for plain-English, step-by-step setup.**
+**→ Ne w here? Open [`SETUP_GUIDE.md`](./SETUP_GUIDE.md) for plain-English, step-by-step setup.**
 
 ## Stack
 
