@@ -13,9 +13,17 @@ import {
   useDeleteProtocol,
   useLogDose,
   useDoseHistory,
+  useFavoriteCompounds,
+  useToggleFavoriteCompound,
 } from "@/hooks/useCompounds";
-import { CompoundProtocol, Frequency } from "@/types/database";
-import { todayISO, formatDate, getNextDoseInfo, cn } from "@/lib/utils";
+import {
+  CompoundProtocol,
+  ProtocolCompound,
+  CompoundCatalogItem,
+  CompoundType,
+  Frequency,
+} from "@/types/database";
+import { todayISO, formatDate, getNextDoseInfo, FREQUENCY_HOURS, cn } from "@/lib/utils";
 import {
   Plus,
   Trash2,
@@ -27,6 +35,11 @@ import {
   Activity,
   Clock,
   Calendar,
+  Calculator,
+  Check,
+  Star,
+  Search,
+  ListChecks,
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -68,6 +81,9 @@ export default function CompoundsPage() {
         subtitle="Track your cycles, peptides, ancillaries, and supplements"
         action={
           <div className="flex gap-2">
+            <Link href="/peptide-calculator" className="btn btn-ghost">
+              <Calculator size={16} /> Dose Calculator
+            </Link>
             <Link href="/catalog/compounds" className="btn btn-ghost">
               <Pill size={16} /> Catalog
             </Link>
@@ -76,7 +92,7 @@ export default function CompoundsPage() {
               onClick={() => setDoseModal(true)}
               disabled={protocols.length === 0}
             >
-              <Syringe size={16} /> Log Dose
+              Log Dose <Syringe size={16} />
             </button>
             <button className="btn btn-primary" onClick={() => setProtoModal(true)}>
               <Plus size={16} /> New Protocol
@@ -163,24 +179,27 @@ export default function CompoundsPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-2">
-              {protocols.map((p) => (
-                <ProtocolRow
-                  key={p.id}
-                  protocol={p}
-                  expanded={expanded === p.id}
-                  onToggleExpand={() =>
-                    setExpanded(expanded === p.id ? null : p.id)
-                  }
-                  onToggleActive={() =>
-                    toggleProto.mutate({ id: p.id, active: !p.is_active })
-                  }
-                  onDelete={() => {
-                    deleteProto.mutate(p.id);
-                    toast.success("Protocol deleted");
-                  }}
-                />
-              ))}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
+              <div className="space-y-2">
+                {protocols.map((p) => (
+                  <ProtocolRow
+                    key={p.id}
+                    protocol={p}
+                    expanded={expanded === p.id}
+                    onToggleExpand={() =>
+                      setExpanded(expanded === p.id ? null : p.id)
+                    }
+                    onToggleActive={() =>
+                      toggleProto.mutate({ id: p.id, active: !p.is_active })
+                    }
+                    onDelete={() => {
+                      deleteProto.mutate(p.id);
+                      toast.success("Protocol deleted");
+                    }}
+                  />
+                ))}
+              </div>
+              <TodayChecklist protocols={activeProtocols} />
             </div>
           )}
         </div>
@@ -210,6 +229,158 @@ export default function CompoundsPage() {
         onClose={() => setDoseModal(false)}
         protocols={protocols}
       />
+    </div>
+  );
+}
+
+// ─── TODAY CHECKLIST ──────────────────────────────────────────────────────────
+type ChecklistEntry = {
+  c: ProtocolCompound;
+  protocolId: string;
+  protocolName: string;
+  hoursUntil: number; // negative = overdue
+  info: ReturnType<typeof getNextDoseInfo>;
+};
+
+function TodayChecklist({ protocols }: { protocols: CompoundProtocol[] }) {
+  const logDose = useLogDose();
+  const [done, setDone] = useState<Record<string, boolean>>({});
+
+  const entries: ChecklistEntry[] = protocols.flatMap((p) =>
+    (p.compounds ?? []).map((c) => {
+      const info = getNextDoseInfo(c.last_dose?.logged_at || null, c.frequency);
+      const hrs = FREQUENCY_HOURS[c.frequency] || 24;
+      let hoursUntil = Infinity;
+      if (c.last_dose?.logged_at) {
+        const next = new Date(c.last_dose.logged_at).getTime() + hrs * 3600000;
+        hoursUntil = (next - Date.now()) / 3600000;
+      } else {
+        hoursUntil = -1; // never logged → due now
+      }
+      return { c, protocolId: p.id, protocolName: p.name, hoursUntil, info };
+    })
+  );
+
+  const dueToday = entries
+    .filter((e) => e.hoursUntil < 24)
+    .sort((a, b) => a.hoursUntil - b.hoursUntil);
+  const upcoming = entries
+    .filter((e) => e.hoursUntil >= 24 && e.hoursUntil < 96)
+    .sort((a, b) => a.hoursUntil - b.hoursUntil);
+
+  function complete(e: ChecklistEntry) {
+    if (done[e.c.id]) return;
+    setDone((d) => ({ ...d, [e.c.id]: true }));
+    logDose.mutate(
+      {
+        protocol_id: e.protocolId,
+        protocol_compound_id: e.c.id,
+        compound_name: e.c.compound_name,
+        compound_unit: e.c.compound_unit,
+        dose_amount: e.c.dose,
+        logged_at: new Date().toISOString(),
+      },
+      {
+        onSuccess: () => toast.success(`${e.c.compound_name} logged`),
+        onError: (err) => {
+          toast.error(err.message);
+          setDone((d) => ({ ...d, [e.c.id]: false }));
+        },
+      }
+    );
+  }
+
+  return (
+    <div className="card h-fit lg:sticky lg:top-4 animate-fade-in">
+      <div className="card-title flex items-center gap-2 mb-3">
+        <ListChecks size={15} className="text-accent" /> Today&apos;s Checklist
+      </div>
+
+      {dueToday.length === 0 && upcoming.length === 0 && (
+        <div className="text-xs text-text-3 py-4 text-center">
+          Nothing scheduled. Log a dose to start tracking timing.
+        </div>
+      )}
+
+      {dueToday.length > 0 && (
+        <div className="mb-3">
+          <div className="text-[10px] uppercase tracking-wide text-text-3 mb-1.5">Due now / today</div>
+          <div className="space-y-1.5">
+            {dueToday.map((e) => (
+              <ChecklistItem key={e.c.id} entry={e} done={!!done[e.c.id]} onComplete={() => complete(e)} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {upcoming.length > 0 && (
+        <div>
+          <div className="text-[10px] uppercase tracking-wide text-text-3 mb-1.5">Next 4 days</div>
+          <div className="space-y-1.5">
+            {upcoming.map((e) => (
+              <ChecklistItem key={e.c.id} entry={e} done={!!done[e.c.id]} onComplete={() => complete(e)} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChecklistItem({
+  entry,
+  done,
+  onComplete,
+}: {
+  entry: ChecklistEntry;
+  done: boolean;
+  onComplete: () => void;
+}) {
+  const { c, info } = entry;
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2.5 rounded-lg border px-2.5 py-2 transition-all duration-300",
+        done
+          ? "border-status-green/40 bg-status-green/10"
+          : "border-border bg-bg-2 hover:border-border-2"
+      )}
+    >
+      <button
+        onClick={onComplete}
+        disabled={done}
+        className={cn(
+          "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+          done
+            ? "bg-status-green border-status-green scale-110"
+            : "border-border-2 hover:border-accent"
+        )}
+        title="Mark dose taken"
+      >
+        {done && <Check size={14} className="text-white animate-fade-in" strokeWidth={3} />}
+      </button>
+      <div className="min-w-0 flex-1">
+        <div className={cn("text-[13px] font-medium truncate", done && "line-through text-text-3")}>
+          {c.compound_name}
+        </div>
+        <div className="text-[10px] text-text-3">
+          {c.dose} {c.compound_unit} · {c.frequency}
+        </div>
+      </div>
+      {!done && (
+        <span
+          className={cn(
+            "text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full shrink-0",
+            info.status === "overdue" && "bg-status-red/10 text-status-red",
+            info.status === "urgent" && "bg-status-amber/10 text-status-amber",
+            info.status === "ok" && "bg-status-green/10 text-status-green",
+            info.status === "none" && "bg-bg-3 text-text-3"
+          )}
+        >
+          {info.status === "none" ? "Due" : info.label.replace("Overdue ", "−")}
+        </span>
+      )}
+      {done && <span className="text-[10px] text-status-green font-semibold shrink-0">Done</span>}
     </div>
   );
 }
@@ -412,6 +583,7 @@ function NewProtocolModal({
   const [name, setName] = useState("");
   const [start, setStart] = useState(todayISO());
   const [end, setEnd] = useState("");
+  const [pickerFor, setPickerFor] = useState<number | null>(null);
   const [compounds, setCompounds] = useState<DraftCompound[]>([
     { compound_catalog_id: "", dose: "", frequency: "Daily", scheduled_time: "08:00" },
   ]);
@@ -477,6 +649,7 @@ function NewProtocolModal({
   }
 
   return (
+    <>
     <Modal open={open} onClose={onClose} title="Create Protocol / Cycle" wide>
       <div className="space-y-3">
         <div className="flex gap-2.5 flex-wrap">
@@ -514,19 +687,16 @@ function NewProtocolModal({
               <div className="flex gap-2.5 items-end flex-wrap">
                 <div className="flex-1 min-w-[160px]">
                   <label className="label">Compound</label>
-                  <select
-                    value={c.compound_catalog_id}
-                    onChange={(e) =>
-                      updateCompound(i, { compound_catalog_id: e.target.value })
-                    }
+                  <button
+                    type="button"
+                    className="w-full text-left flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-border bg-bg-2 hover:border-border-2 transition-colors text-sm"
+                    onClick={() => setPickerFor(i)}
                   >
-                    <option value="">Select...</option>
-                    {catalog.map((cc) => (
-                      <option key={cc.id} value={cc.id}>
-                        {cc.name}
-                      </option>
-                    ))}
-                  </select>
+                    <span className={cn("truncate", !cat && "text-text-3")}>
+                      {cat ? cat.name : "Select compound..."}
+                    </span>
+                    <Search size={13} className="text-text-3 shrink-0" />
+                  </button>
                 </div>
                 <div className="w-24">
                   <label className="label">Dose ({cat?.unit || "mg"})</label>
@@ -585,6 +755,126 @@ function NewProtocolModal({
           <button className="btn btn-ghost" onClick={onClose}>
             Cancel
           </button>
+        </div>
+      </div>
+    </Modal>
+
+    <CompoundPicker
+      open={pickerFor !== null}
+      onClose={() => setPickerFor(null)}
+      catalog={catalog}
+      onPick={(cc) => {
+        if (pickerFor !== null) updateCompound(pickerFor, { compound_catalog_id: cc.id });
+        setPickerFor(null);
+      }}
+    />
+    </>
+  );
+}
+
+// ─── COMPOUND PICKER (search + category filter + favorites) ───────────────────
+function CompoundPicker({
+  open,
+  onClose,
+  catalog,
+  onPick,
+}: {
+  open: boolean;
+  onClose: () => void;
+  catalog: CompoundCatalogItem[];
+  onPick: (c: CompoundCatalogItem) => void;
+}) {
+  const { data: favorites = [] } = useFavoriteCompounds();
+  const toggleFav = useToggleFavoriteCompound();
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<CompoundType | "All" | "Favorites">("All");
+
+  const favSet = new Set(favorites);
+  const types: (CompoundType | "All" | "Favorites")[] = [
+    "All",
+    "Favorites",
+    "Steroid",
+    "Peptide",
+    "GLP-1",
+    "SARMs",
+    "Ancillary",
+    "AI / SERM",
+    "Supplement",
+  ];
+
+  const filtered = catalog
+    .filter((c) => {
+      if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
+      if (typeFilter === "All") return true;
+      if (typeFilter === "Favorites") return favSet.has(c.id);
+      return c.type === typeFilter;
+    })
+    .sort((a, b) => {
+      const fa = favSet.has(a.id) ? 0 : 1;
+      const fb = favSet.has(b.id) ? 0 : 1;
+      return fa - fb || a.name.localeCompare(b.name);
+    });
+
+  return (
+    <Modal open={open} onClose={onClose} title="Select Compound" wide>
+      <div className="space-y-3">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-3" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search compounds..."
+            className="!pl-9"
+            autoFocus
+          />
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {types.map((t) => (
+            <button
+              key={t}
+              onClick={() => setTypeFilter(t)}
+              className={cn(
+                "px-2.5 py-1 text-xs rounded-full border transition-all",
+                typeFilter === t
+                  ? "bg-accent-dim text-accent border-accent/40"
+                  : "border-border text-text-3 hover:text-text-1"
+              )}
+            >
+              {t === "Favorites" ? "★ Favorites" : t}
+            </button>
+          ))}
+        </div>
+        <div className="space-y-1 max-h-[50vh] overflow-y-auto">
+          {filtered.map((c) => (
+            <div
+              key={c.id}
+              className="flex items-center gap-2 bg-bg-2 hover:bg-bg-3 border border-border rounded-lg px-3 py-2 transition-all"
+            >
+              <button
+                className="text-text-3 hover:text-status-amber transition-colors shrink-0"
+                onClick={() => toggleFav.mutate(c.id)}
+                title="Favorite"
+              >
+                <Star size={15} className={favSet.has(c.id) ? "fill-status-amber text-status-amber" : ""} />
+              </button>
+              <button className="min-w-0 flex-1 text-left" onClick={() => onPick(c)}>
+                <div className="text-sm font-medium truncate">{c.name}</div>
+                <div className="text-[10px] text-text-3">
+                  {c.type} · {c.unit}
+                  {c.half_life_hours ? ` · t½ ${c.half_life_hours}h` : ""}
+                </div>
+              </button>
+              <button className="btn btn-primary btn-sm shrink-0" onClick={() => onPick(c)}>
+                <Plus size={13} />
+              </button>
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div className="text-center text-text-3 text-sm py-6">No compounds match.</div>
+          )}
+        </div>
+        <div className="flex justify-end">
+          <button className="btn btn-ghost" onClick={onClose}>Done</button>
         </div>
       </div>
     </Modal>
