@@ -46,6 +46,7 @@ export interface UserPreferences {
     ref_high?: number | null;
     category?: string;
   }[];
+  favorite_compounds?: string[];
 }
 
 export interface FoodCatalogItem {

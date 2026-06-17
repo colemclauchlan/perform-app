@@ -8,9 +8,12 @@ import {
   useCompoundCatalog,
   useAddCompound,
   useDeleteCompound,
+  useFavoriteCompounds,
+  useToggleFavoriteCompound,
 } from "@/hooks/useCompounds";
 import { CompoundCatalogItem, CompoundType, CompoundUnit } from "@/types/database";
-import { Plus, Trash2, Search, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Plus, Trash2, Search, Sparkles, Star } from "lucide-react";
 import toast from "react-hot-toast";
 
 const TYPES: CompoundType[] = [
@@ -25,18 +28,47 @@ const TYPES: CompoundType[] = [
 ];
 const UNITS: CompoundUnit[] = ["mg", "mcg", "IU", "ml", "capsules", "g"];
 
+type SortKey = "alpha" | "type" | "fav" | "recent";
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: "alpha", label: "A–Z" },
+  { key: "type", label: "Type" },
+  { key: "fav", label: "Favorites" },
+  { key: "recent", label: "Recent" },
+];
+
 export default function CompoundCatalogPage() {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [infoFor, setInfoFor] = useState<CompoundCatalogItem | null>(null);
+  const [typeFilter, setTypeFilter] = useState<CompoundType | "All">("All");
+  const [sort, setSort] = useState<SortKey>("alpha");
   const { data: compounds = [] } = useCompoundCatalog(search);
+  const { data: favorites = [] } = useFavoriteCompounds();
+  const toggleFav = useToggleFavoriteCompound();
   const deleteCompound = useDeleteCompound();
+
+  const favSet = new Set(favorites);
+
+  const visible = compounds
+    .filter((c) => typeFilter === "All" || c.type === typeFilter)
+    .slice()
+    .sort((a, b) => {
+      if (sort === "alpha") return a.name.localeCompare(b.name);
+      if (sort === "type") return a.type.localeCompare(b.type) || a.name.localeCompare(b.name);
+      if (sort === "fav") {
+        const fa = favSet.has(a.id) ? 0 : 1;
+        const fb = favSet.has(b.id) ? 0 : 1;
+        return fa - fb || a.name.localeCompare(b.name);
+      }
+      // recent
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
         title="Compound Catalog"
-        subtitle="Manage your compound library"
+        subtitle="Browse and manage your compound library"
         action={
           <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
             <Plus size={16} /> Add Compound
@@ -45,22 +77,59 @@ export default function CompoundCatalogPage() {
       />
 
       <div className="card">
-        <div className="relative mb-3">
-          <Search
-            size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-3"
-          />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search compounds..."
-            className="!pl-9"
-          />
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-3"
+            />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search compounds..."
+              className="!pl-9"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            {SORTS.map((s) => (
+              <button
+                key={s.key}
+                onClick={() => setSort(s.key)}
+                className={cn(
+                  "px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all",
+                  sort === s.key
+                    ? "bg-accent text-white border-accent"
+                    : "border-border text-text-2 hover:text-text-1"
+                )}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
+
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {(["All", ...TYPES] as (CompoundType | "All")[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTypeFilter(t)}
+              className={cn(
+                "px-2.5 py-1 text-xs rounded-full border transition-all",
+                typeFilter === t
+                  ? "bg-accent-dim text-accent border-accent/40"
+                  : "border-border text-text-3 hover:text-text-1"
+              )}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
               <tr className="text-[10px] uppercase tracking-wide text-text-3 border-b border-border">
+                <th className="py-2 px-2 w-8"></th>
                 <th className="text-left py-2 px-2">Name</th>
                 <th className="text-left py-2 px-2">Type</th>
                 <th className="text-left py-2 px-2">Unit</th>
@@ -70,8 +139,22 @@ export default function CompoundCatalogPage() {
               </tr>
             </thead>
             <tbody>
-              {compounds.map((c) => (
+              {visible.map((c) => {
+                const isFav = favSet.has(c.id);
+                return (
                 <tr key={c.id} className="border-b border-border/40 hover:bg-bg-2">
+                  <td className="py-2.5 px-2">
+                    <button
+                      className="text-text-3 hover:text-status-amber transition-colors"
+                      title={isFav ? "Unfavorite" : "Favorite"}
+                      onClick={() => toggleFav.mutate(c.id)}
+                    >
+                      <Star
+                        size={15}
+                        className={isFav ? "fill-status-amber text-status-amber" : ""}
+                      />
+                    </button>
+                  </td>
                   <td className="py-2.5 px-2 font-medium">{c.name}</td>
                   <td className="py-2.5 px-2">
                     <Badge variant={compoundBadgeVariant(c.type)}>{c.type}</Badge>
@@ -106,7 +189,15 @@ export default function CompoundCatalogPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
+              {visible.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="text-center text-text-3 text-sm py-6">
+                    No compounds match.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

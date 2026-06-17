@@ -12,6 +12,53 @@ import {
 
 const supabase = createClient();
 
+// ─── FAVORITES (stored in profiles.preferences.favorite_compounds) ──────────
+export function useFavoriteCompounds() {
+  return useQuery({
+    queryKey: ["favorite-compounds"],
+    queryFn: async (): Promise<string[]> => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data } = await supabase
+        .from("profiles")
+        .select("preferences")
+        .eq("id", user.id)
+        .single();
+      return (data?.preferences?.favorite_compounds as string[] | undefined) ?? [];
+    },
+  });
+}
+
+export function useToggleFavoriteCompound() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (catalogId: string) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { data } = await supabase
+        .from("profiles")
+        .select("preferences")
+        .eq("id", user.id)
+        .single();
+      const prefs = data?.preferences ?? {};
+      const favs: string[] = prefs.favorite_compounds ?? [];
+      const next = favs.includes(catalogId)
+        ? favs.filter((x) => x !== catalogId)
+        : [...favs, catalogId];
+      const { error } = await supabase
+        .from("profiles")
+        .update({ preferences: { ...prefs, favorite_compounds: next } })
+        .eq("id", user.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["favorite-compounds"] }),
+  });
+}
+
 // ─── COMPOUND CATALOG ───────────────────────────────────────────────────────
 export function useCompoundCatalog(search?: string) {
   return useQuery({
