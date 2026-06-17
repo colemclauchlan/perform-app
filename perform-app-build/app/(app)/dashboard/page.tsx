@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { MacroBar } from "@/components/nutrition/MacroBar";
+import { DashboardSwitcher } from "@/components/DashboardSwitcher";
 import { WeightChart } from "@/components/charts/WeightChart";
 import { useProfile, useFoodLog, useWeeklyCalories, useUpdateProfile } from "@/hooks/useNutrition";
 import { useProtocols, useLogDose } from "@/hooks/useCompounds";
@@ -309,6 +310,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-6 max-w-[1200px]">
+      <DashboardSwitcher />
       <PageHeader
         title="Health Dashboard"
         subtitle={new Date().toLocaleDateString("en-US", {

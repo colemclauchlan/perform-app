@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { DashboardSwitcher } from "@/components/DashboardSwitcher";
 import { useWorkouts, useLiftProgression, useExercises } from "@/hooks/useTraining";
 import { useProtocols } from "@/hooks/useCompounds";
 import { formatDate, getNextDoseInfo } from "@/lib/utils";
@@ -106,6 +107,7 @@ export default function GymDashboardPage() {
 
   return (
     <div className="p-6 max-w-[1200px]">
+      <DashboardSwitcher />
       <PageHeader
         title="Gym Dashboard"
         subtitle={new Date().toLocaleDateString("en-US", {

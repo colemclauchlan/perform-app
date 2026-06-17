@@ -28,6 +28,7 @@ import {
   Calculator,
   UtensilsCrossed,
   Activity,
+  Syringe,
   GripVertical,
 } from "lucide-react";
 
@@ -37,6 +38,7 @@ type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?:
 const PINNED_TOP: NavItem[] = [
   { href: "/dashboard", label: "Health Dashboard", icon: LayoutDashboard },
   { href: "/gym", label: "Gym Dashboard", icon: Activity },
+  { href: "/ped-dashboard", label: "PED Dashboard", icon: Syringe },
   { href: "/coach", label: "AI Coach", icon: Sparkles },
 ];
 
