@@ -1,18 +1,27 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // If the Supabase keys aren't available, skip the auth check
+  // instead of crashing the whole site with a 500.
+  if (!supabaseUrl || !supabaseKey) {
+    return supabaseResponse;
+  }
+
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(
+          cookiesToSet: { name: string; value: string; options: CookieOptions }[]
+        ) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
@@ -22,28 +31,29 @@ export async function middleware(request: NextRequest) {
           );
         },
       },
+    });
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const isAuthRoute = request.nextUrl.pathname.startsWith("/auth");
+    const isPublicRoute = request.nextUrl.pathname === "/";
+
+    if (!user && !isAuthRoute && !isPublicRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      return NextResponse.redirect(url);
     }
-  );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Protect app routes — redirect to login if not authenticated
-  const isAuthRoute = request.nextUrl.pathname.startsWith("/auth");
-  const isPublicRoute = request.nextUrl.pathname === "/";
-
-  if (!user && !isAuthRoute && !isPublicRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
-    return NextResponse.redirect(url);
-  }
-
-  // Redirect logged-in users away from auth pages
-  if (user && isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+    if (user && isAuthRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+  } catch {
+    // If the auth check throws, let the request through rather than 500.
+    return supabaseResponse;
   }
 
   return supabaseResponse;
