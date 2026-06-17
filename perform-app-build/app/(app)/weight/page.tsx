@@ -6,23 +6,49 @@ import { WeightChart } from "@/components/charts/WeightChart";
 import {
   useBodyWeights,
   useAddBodyWeight,
+  useUpdateBodyWeight,
   useDeleteBodyWeight,
 } from "@/hooks/useTraining";
 import { useProfile } from "@/hooks/useNutrition";
 import { todayISO, formatDate, round } from "@/lib/utils";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil, Check, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function WeightPage() {
   const { data: profile } = useProfile();
   const { data: weights = [] } = useBodyWeights();
   const addWeight = useAddBodyWeight();
+  const updateWeight = useUpdateBodyWeight();
   const deleteWeight = useDeleteBodyWeight();
 
   const [val, setVal] = useState("");
   const [unit, setUnit] = useState(profile?.weight_unit || "lbs");
   const [date, setDate] = useState(todayISO());
   const [notes, setNotes] = useState("");
+
+  // inline edit state
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editVal, setEditVal] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+
+  function startEdit(id: string, weight: number, logged_date: string, n: string | null) {
+    setEditId(id);
+    setEditVal(String(weight));
+    setEditDate(logged_date);
+    setEditNotes(n || "");
+  }
+  function saveEdit() {
+    const weight = parseFloat(editVal);
+    if (!weight) { toast.error("Enter a valid weight"); return; }
+    updateWeight.mutate(
+      { id: editId!, updates: { weight, logged_date: editDate, notes: editNotes || null } },
+      {
+        onSuccess: () => { toast.success("Entry updated"); setEditId(null); },
+        onError: (e) => toast.error(e.message),
+      }
+    );
+  }
 
   function handleLog() {
     const weight = parseFloat(val);
@@ -135,6 +161,28 @@ export default function WeightPage() {
             .map((w, i, arr) => {
               const prev = arr[i + 1];
               const delta = prev ? round(w.weight - prev.weight) : null;
+              if (editId === w.id) {
+                return (
+                  <div key={w.id} className="bg-bg-2 rounded-lg px-3 py-2 border border-accent/50">
+                    <div className="flex gap-2 items-end flex-wrap">
+                      <div className="w-24">
+                        <label className="label">Weight</label>
+                        <input type="number" step="0.1" value={editVal} onChange={(e) => setEditVal(e.target.value)} className="!py-1.5" />
+                      </div>
+                      <div className="w-36">
+                        <label className="label">Date</label>
+                        <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="!py-1.5" />
+                      </div>
+                      <div className="flex-1 min-w-[120px]">
+                        <label className="label">Notes</label>
+                        <input value={editNotes} onChange={(e) => setEditNotes(e.target.value)} className="!py-1.5" placeholder="Optional" />
+                      </div>
+                      <button className="btn btn-primary btn-sm" onClick={saveEdit}><Check size={13} /></button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setEditId(null)}><X size={13} /></button>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div
                   key={w.id}
@@ -164,6 +212,12 @@ export default function WeightPage() {
                         {delta}
                       </span>
                     )}
+                    <button
+                      className="btn btn-ghost btn-sm !px-1.5"
+                      onClick={() => startEdit(w.id, w.weight, w.logged_date, w.notes)}
+                    >
+                      <Pencil size={13} />
+                    </button>
                     <button
                       className="btn btn-ghost btn-sm !px-1.5"
                       onClick={() => {

@@ -450,6 +450,20 @@ export function useAddBodyWeight() {
   });
 }
 
+export function useUpdateBodyWeight() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<BodyWeightLog> }) => {
+      const { error } = await supabase
+        .from("body_weight_logs")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["body-weights"] }),
+  });
+}
+
 export function useDeleteBodyWeight() {
   const qc = useQueryClient();
   return useMutation({
