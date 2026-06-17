@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase-client";
+import { useProfile, useUpdateProfile } from "@/hooks/useNutrition";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/ui/Logo";
 import {
   LayoutDashboard,
   Salad,
@@ -19,54 +22,78 @@ import {
   Ruler,
   Droplets,
   Moon,
+  Sparkles,
+  Camera,
+  TestTubes,
+  Calculator,
+  UtensilsCrossed,
+  Activity,
+  GripVertical,
 } from "lucide-react";
 
-const navGroups = [
-  {
-    label: "Overview",
-    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
-  },
-  {
-    label: "Track",
-    items: [
-      { href: "/nutrition", label: "Nutrition", icon: Salad },
-      { href: "/compounds", label: "Compounds", icon: FlaskConical },
-      { href: "/workouts", label: "Workouts", icon: Dumbbell },
-      { href: "/weight", label: "Body Weight", icon: Scale },
-      { href: "/measurements", label: "Measurements", icon: Ruler },
-      { href: "/steps", label: "Steps", icon: Footprints },
-      { href: "/hydration", label: "Hydration", icon: Droplets },
-      { href: "/sleep", label: "Sleep", icon: Moon },
-    ],
-  },
-  {
-    label: "Manage",
-    items: [
-      { href: "/catalog/food", label: "Food Catalog", icon: BookOpen },
-      { href: "/catalog/compounds", label: "Compound Catalog", icon: Pill },
-      { href: "/catalog/exercises", label: "Exercises", icon: ListChecks },
-      { href: "/settings", label: "Settings", icon: Settings },
-    ],
-  },
+type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?: number }> };
+
+// Pinned top — primary dashboards + AI
+const PINNED_TOP: NavItem[] = [
+  { href: "/dashboard", label: "Health Dashboard", icon: LayoutDashboard },
+  { href: "/gym", label: "Gym Dashboard", icon: Activity },
+  { href: "/coach", label: "AI Coach", icon: Sparkles },
 ];
 
-function BodyTrackerLogo() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="2" y="11" width="5" height="6" rx="1.5" fill="#2563eb" />
-      <rect x="21" y="11" width="5" height="6" rx="1.5" fill="#2563eb" />
-      <rect x="5" y="9" width="3" height="10" rx="1" fill="#3b82f6" />
-      <rect x="20" y="9" width="3" height="10" rx="1" fill="#3b82f6" />
-      <rect x="8" y="13" width="12" height="2" rx="1" fill="#1d4ed8" />
-      <path d="M10 7 L12 4 L14 10 L16 7 L18 7" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+// Reorderable "Track" list (drag to reorder; persists to preferences)
+const TRACK_DEFAULT: NavItem[] = [
+  { href: "/nutrition", label: "Nutrition", icon: Salad },
+  { href: "/meal-plans", label: "Meal Plans", icon: UtensilsCrossed },
+  { href: "/workouts", label: "Workouts", icon: Dumbbell },
+  { href: "/compounds", label: "Compounds", icon: FlaskConical },
+  { href: "/checkin", label: "Check-in", icon: Camera },
+  { href: "/bloodwork", label: "Bloodwork", icon: TestTubes },
+  { href: "/peptide-calculator", label: "Peptide Calculator", icon: Calculator },
+  { href: "/weight", label: "Body Weight", icon: Scale },
+  { href: "/measurements", label: "Measurements", icon: Ruler },
+  { href: "/steps", label: "Steps", icon: Footprints },
+  { href: "/hydration", label: "Hydration", icon: Droplets },
+  { href: "/sleep", label: "Sleep", icon: Moon },
+];
+
+const PINNED_BOTTOM: NavItem[] = [
+  { href: "/catalog/food", label: "Food Catalog", icon: BookOpen },
+  { href: "/catalog/compounds", label: "Compound Catalog", icon: Pill },
+  { href: "/catalog/exercises", label: "Exercises", icon: ListChecks },
+  { href: "/settings", label: "Settings", icon: Settings },
+];
+
+function orderTrack(saved: string[] | undefined): NavItem[] {
+  if (!saved || saved.length === 0) return TRACK_DEFAULT;
+  const map = new Map(TRACK_DEFAULT.map((i) => [i.href, i]));
+  const out: NavItem[] = [];
+  saved.forEach((href) => {
+    const item = map.get(href);
+    if (item) {
+      out.push(item);
+      map.delete(href);
+    }
+  });
+  // append any new items not in saved order
+  map.forEach((item) => out.push(item));
+  return out;
 }
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const { data: profile } = useProfile();
+  const updateProfile = useUpdateProfile();
+
+  const [track, setTrack] = useState<NavItem[]>(TRACK_DEFAULT);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  // Sync ordering from saved preferences once profile loads
+  useEffect(() => {
+    setTrack(orderTrack(profile?.preferences?.tab_order));
+  }, [profile?.preferences?.tab_order]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -74,12 +101,53 @@ export function Sidebar() {
     router.refresh();
   }
 
+  function persistOrder(items: NavItem[]) {
+    const tab_order = items.map((i) => i.href);
+    updateProfile.mutate({
+      preferences: { ...(profile?.preferences || {}), tab_order },
+    });
+  }
+
+  function onDrop(targetIndex: number) {
+    if (dragIndex === null || dragIndex === targetIndex) {
+      setDragIndex(null);
+      setOverIndex(null);
+      return;
+    }
+    const next = [...track];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(targetIndex, 0, moved);
+    setTrack(next);
+    persistOrder(next);
+    setDragIndex(null);
+    setOverIndex(null);
+  }
+
+  const renderLink = (item: NavItem) => {
+    const active = pathname === item.href;
+    const Icon = item.icon;
+    return (
+      <Link
+        href={item.href}
+        className={cn(
+          "flex items-center gap-2.5 px-3 py-2 mx-1 text-[13px] transition-all border-l-2 rounded-r-lg group",
+          active
+            ? "text-accent bg-accent-dim border-accent font-medium"
+            : "text-text-2 border-transparent hover:text-text-1 hover:bg-bg-2"
+        )}
+      >
+        <Icon size={15} />
+        {item.label}
+      </Link>
+    );
+  };
+
   return (
-    <aside className="w-[220px] flex-shrink-0 bg-bg-1 border-r border-border flex flex-col py-4 h-screen sticky top-0">
+    <aside className="w-[230px] flex-shrink-0 bg-bg-1 border-r border-border flex flex-col py-4 h-screen sticky top-0">
       {/* Logo + brand */}
       <div className="px-4 pb-5 flex items-center gap-2.5">
-        <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-accent-dim border border-accent/20">
-          <BodyTrackerLogo />
+        <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-accent-dim border border-accent/20 overflow-hidden">
+          <Logo variant="icon" size={28} />
         </div>
         <div>
           <span className="text-[15px] font-bold tracking-tight leading-none block">
@@ -92,31 +160,64 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto">
-        {navGroups.map((group) => (
-          <div key={group.label}>
-            <div className="px-4 pt-4 pb-1.5 text-[9px] uppercase tracking-widest text-text-3 font-semibold">
-              {group.label}
+        {/* Overview (pinned) */}
+        <div className="px-4 pt-1 pb-1.5 text-[9px] uppercase tracking-widest text-text-3 font-semibold">
+          Overview
+        </div>
+        {PINNED_TOP.map((item) => (
+          <div key={item.href}>{renderLink(item)}</div>
+        ))}
+
+        {/* Track (reorderable) */}
+        <div className="px-4 pt-4 pb-1.5 text-[9px] uppercase tracking-widest text-text-3 font-semibold flex items-center gap-1">
+          Track <span className="text-text-3/50 normal-case tracking-normal">· drag to reorder</span>
+        </div>
+        {track.map((item, i) => {
+          const Icon = item.icon;
+          const active = pathname === item.href;
+          return (
+            <div
+              key={item.href}
+              draggable
+              onDragStart={() => setDragIndex(i)}
+              onDragEnter={() => setOverIndex(i)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => onDrop(i)}
+              onDragEnd={() => {
+                setDragIndex(null);
+                setOverIndex(null);
+              }}
+              className={cn(
+                "group/item flex items-center transition-all",
+                dragIndex === i && "opacity-40",
+                overIndex === i && dragIndex !== null && dragIndex !== i && "border-t-2 border-accent"
+              )}
+            >
+              <span className="pl-2 text-text-3/40 group-hover/item:text-text-3 cursor-grab active:cursor-grabbing">
+                <GripVertical size={13} />
+              </span>
+              <Link
+                href={item.href}
+                className={cn(
+                  "flex-1 flex items-center gap-2.5 px-2 py-2 mr-1 text-[13px] transition-all border-l-2 rounded-r-lg",
+                  active
+                    ? "text-accent bg-accent-dim border-accent font-medium"
+                    : "text-text-2 border-transparent hover:text-text-1 hover:bg-bg-2"
+                )}
+              >
+                <Icon size={15} />
+                {item.label}
+              </Link>
             </div>
-            {group.items.map((item) => {
-              const active = pathname === item.href;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-2.5 px-3 py-2 mx-1 text-[13px] transition-all border-l-2 rounded-r-lg",
-                    active
-                      ? "text-accent bg-accent-dim border-accent font-medium"
-                      : "text-text-2 border-transparent hover:text-text-1 hover:bg-bg-2"
-                  )}
-                >
-                  <Icon size={15} />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
+          );
+        })}
+
+        {/* Manage (pinned) */}
+        <div className="px-4 pt-4 pb-1.5 text-[9px] uppercase tracking-widest text-text-3 font-semibold">
+          Manage
+        </div>
+        {PINNED_BOTTOM.map((item) => (
+          <div key={item.href}>{renderLink(item)}</div>
         ))}
       </nav>
 

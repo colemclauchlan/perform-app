@@ -6,17 +6,17 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Salad,
-  FlaskConical,
+  Activity,
   Dumbbell,
-  Scale,
+  Sparkles,
 } from "lucide-react";
 
 const items = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Health", icon: LayoutDashboard },
+  { href: "/gym", label: "Gym", icon: Activity },
+  { href: "/coach", label: "Coach", icon: Sparkles },
   { href: "/nutrition", label: "Food", icon: Salad },
-  { href: "/compounds", label: "Compounds", icon: FlaskConical },
   { href: "/workouts", label: "Workouts", icon: Dumbbell },
-  { href: "/weight", label: "Weight", icon: Scale },
 ];
 
 export function MobileNav() {

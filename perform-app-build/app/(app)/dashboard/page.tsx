@@ -108,7 +108,7 @@ export default function DashboardPage() {
   return (
     <div className="p-6 max-w-[1200px]">
       <PageHeader
-        title="Dashboard"
+        title="Health Dashboard"
         subtitle={new Date().toLocaleDateString("en-US", {
           weekday: "long",
           year: "numeric",

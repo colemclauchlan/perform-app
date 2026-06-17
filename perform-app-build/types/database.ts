@@ -2,7 +2,17 @@
 
 export type WeightUnit = "lbs" | "kg";
 export type MealType = "Breakfast" | "Lunch" | "Dinner" | "Snack" | "Pre-workout" | "Post-workout";
-export type CompoundType = "Steroid" | "Peptide" | "SARMs" | "Ancillary" | "AI / SERM" | "Supplement" | "Other";
+export type CompoundType = "Steroid" | "Peptide" | "GLP-1" | "SARMs" | "Ancillary" | "AI / SERM" | "Supplement" | "Other";
+
+export type ExerciseCategory =
+  | "Free Weights"
+  | "Cable Machines"
+  | "Plate Loaded Machines"
+  | "Selectorized Machines"
+  | "Bodyweight / Calisthenics"
+  | "Cardio";
+
+export type SetType = "Warmup" | "Working" | "Failure" | "Backoff" | "Dropset";
 export type CompoundUnit = "mg" | "mcg" | "IU" | "ml" | "capsules" | "g";
 export type Frequency = "Daily" | "EOD" | "E3D" | "Twice/week" | "Weekly" | "Twice/day";
 
@@ -16,8 +26,17 @@ export interface Profile {
   target_carbs: number;
   target_fat: number;
   weight_unit: WeightUnit;
+  height_cm: number | null;
+  preferences: UserPreferences;
   created_at: string;
   updated_at: string;
+}
+
+export interface UserPreferences {
+  tab_order?: string[];
+  hidden_tabs?: string[];
+  dashboard_widgets?: { id: string; w: number; h: number; order: number; hidden?: boolean }[];
+  available_equipment?: string[];
 }
 
 export interface FoodCatalogItem {
@@ -57,6 +76,7 @@ export interface CompoundCatalogItem {
   unit: CompoundUnit;
   half_life_hours: number | null;
   notes: string | null;
+  ai_description: string | null;
   is_global: boolean;
   created_at: string;
 }
@@ -111,6 +131,15 @@ export interface ExerciseCatalogItem {
   muscle_group: string;
   equipment: string;
   exercise_type: string;
+  category: ExerciseCategory | string;
+  secondary_muscles: string | null;
+  movement_pattern: string | null;
+  difficulty: string;
+  equipment_detail: string | null;
+  instructions: string | null;
+  tips: string | null;
+  common_mistakes: string | null;
+  is_compound: boolean;
   is_global: boolean;
   created_at: string;
 }
@@ -122,6 +151,8 @@ export interface WorkoutSession {
   session_date: string;
   duration_minutes: number | null;
   notes: string | null;
+  template_id: string | null;
+  photo_urls: string[];
   created_at: string;
   sets?: WorkoutSet[];
 }
@@ -137,6 +168,100 @@ export interface WorkoutSet {
   weight: number | null;
   weight_unit: string;
   rpe: number | null;
+  rest_seconds: number | null;
+  set_type: SetType;
+  superset_group: string | null;
+  e1rm: number | null;
+  position: number;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface WorkoutTemplate {
+  id: string;
+  user_id: string;
+  name: string;
+  notes: string | null;
+  data: TemplateExercise[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TemplateExercise {
+  exercise_name: string;
+  category?: string;
+  muscle_group?: string;
+  superset_group?: string | null;
+  sets: { weight: number | null; reps: string; rpe?: number | null; set_type?: SetType }[];
+}
+
+export interface ExerciseFavorite {
+  id: string;
+  user_id: string;
+  exercise_name: string;
+  created_at: string;
+}
+
+export interface MealPlan {
+  id: string;
+  user_id: string | null;
+  name: string;
+  meal_type: "Breakfast" | "Lunch" | "Dinner" | "Snack" | "Pre-workout" | "Post-workout" | "Full Day";
+  notes: string | null;
+  is_global: boolean;
+  created_at: string;
+  items?: MealPlanItem[];
+}
+
+export interface MealPlanItem {
+  id: string;
+  meal_plan_id: string;
+  user_id: string | null;
+  food_catalog_id: string | null;
+  name: string;
+  meal: MealType;
+  quantity: number;
+  quantity_unit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  created_at: string;
+}
+
+export interface BloodworkEntry {
+  id: string;
+  user_id: string;
+  drawn_date: string;
+  lab_name: string | null;
+  notes: string | null;
+  created_at: string;
+  markers?: BloodworkMarker[];
+}
+
+export interface BloodworkMarker {
+  id: string;
+  entry_id: string;
+  user_id: string;
+  marker: string;
+  value: number | null;
+  unit: string | null;
+  ref_low: number | null;
+  ref_high: number | null;
+  category: string;
+  flag: string | null;
+  created_at: string;
+}
+
+export interface CheckinPhoto {
+  id: string;
+  user_id: string;
+  taken_date: string;
+  front_url: string | null;
+  side_url: string | null;
+  back_url: string | null;
+  weight: number | null;
+  body_fat: number | null;
   notes: string | null;
   created_at: string;
 }
