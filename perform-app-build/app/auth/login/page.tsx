@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 import toast from "react-hot-toast";
@@ -14,19 +15,45 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Surface auth-callback errors (expired/invalid links) passed via ?error=.
+  useEffect(() => {
+    const err = new URLSearchParams(window.location.search).get("error");
+    if (err) {
+      toast.error(err);
+      window.history.replaceState({}, "", "/auth/login");
+    }
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
 
     if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({ email, password });
+      if (password.length < 8) {
+        toast.error("Use at least 8 characters for your password.");
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
       if (error) {
         toast.error(error.message);
         setLoading(false);
         return;
       }
-      toast.success("Account created! Check your email to confirm, then log in.");
-      setMode("login");
+      // If email confirmation is enabled, there is no session yet — send the
+      // user to the verify screen. Otherwise they are signed in immediately.
+      if (data.session) {
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
+      }
       setLoading(false);
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -69,13 +96,23 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="label">Password</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="label mb-0">Password</label>
+                {mode === "login" && (
+                  <Link
+                    href="/auth/forgot-password"
+                    className="text-xs text-accent hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                minLength={6}
+                minLength={mode === "signup" ? 8 : 6}
                 required
               />
             </div>

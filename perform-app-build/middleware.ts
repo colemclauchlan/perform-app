@@ -37,8 +37,12 @@ export async function middleware(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const isAuthRoute = request.nextUrl.pathname.startsWith("/auth");
-    const isPublicRoute = request.nextUrl.pathname === "/";
+    const pathname = request.nextUrl.pathname;
+    const isAuthRoute = pathname.startsWith("/auth");
+    const isPublicRoute = pathname === "/";
+    // Recovery: a logged-in (recovery-session) user must be allowed to reach the
+    // password-reset screen instead of being bounced to the dashboard.
+    const isResetRoute = pathname.startsWith("/auth/reset-password");
 
     if (!user && !isAuthRoute && !isPublicRoute) {
       const url = request.nextUrl.clone();
@@ -46,7 +50,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (user && isAuthRoute) {
+    if (user && isAuthRoute && !isResetRoute) {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
