@@ -156,6 +156,20 @@ export function useAddFoodLog() {
   });
 }
 
+export function useUpdateFoodLog() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<FoodLogEntry> }) => {
+      const { error } = await supabase.from("food_log").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["food-log"] });
+      qc.invalidateQueries({ queryKey: ["weekly-calories"] });
+    },
+  });
+}
+
 export function useDeleteFoodLog() {
   const qc = useQueryClient();
   return useMutation({

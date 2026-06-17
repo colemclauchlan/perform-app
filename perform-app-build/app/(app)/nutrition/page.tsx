@@ -10,12 +10,21 @@ import {
   useFoodLog,
   useFoodCatalog,
   useAddFoodLog,
+  useUpdateFoodLog,
   useDeleteFoodLog,
 } from "@/hooks/useNutrition";
-import { FoodCatalogItem, MealType } from "@/types/database";
-import { todayISO, formatDate, computeMacros } from "@/lib/utils";
-import { Plus, Trash2, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { FoodCatalogItem, FoodLogEntry, MealType } from "@/types/database";
+import { todayISO, formatDate, computeMacros, round } from "@/lib/utils";
+import { Plus, Trash2, ChevronLeft, ChevronRight, Search, Minus } from "lucide-react";
 import toast from "react-hot-toast";
+
+function portionStep(unit: string): number {
+  const u = (unit || "").toLowerCase();
+  if (u === "g") return 10;
+  if (u === "oz") return 1;
+  if (u === "cup" || u === "serving") return 0.5;
+  return 1;
+}
 
 const MEALS: MealType[] = [
   "Breakfast",
@@ -32,7 +41,25 @@ export default function NutritionPage() {
   const { data: profile } = useProfile();
   const { data: log = [] } = useFoodLog(date);
   const addLog = useAddFoodLog();
+  const updateLog = useUpdateFoodLog();
   const deleteLog = useDeleteFoodLog();
+
+  function adjustPortion(e: FoodLogEntry, dir: 1 | -1) {
+    const step = portionStep(e.quantity_unit);
+    const newQty = round(Math.max(step, Number(e.quantity) + dir * step));
+    if (newQty === Number(e.quantity)) return;
+    const factor = newQty / Number(e.quantity);
+    updateLog.mutate({
+      id: e.id,
+      updates: {
+        quantity: newQty,
+        calories: round(Number(e.calories) * factor),
+        protein: round(Number(e.protein) * factor),
+        carbs: round(Number(e.carbs) * factor),
+        fat: round(Number(e.fat) * factor),
+      },
+    });
+  }
 
   const totals = log.reduce(
     (acc, e) => ({
@@ -143,21 +170,35 @@ export default function NutritionPage() {
                         className="flex items-center justify-between bg-bg-2 rounded-lg px-3 py-2.5 border border-border"
                       >
                         <div>
-                          <div className="text-sm">
-                            {e.name}{" "}
-                            {e.quantity && (
-                              <span className="text-text-3">
-                                {e.quantity}
-                                {e.quantity_unit}
-                              </span>
-                            )}
-                          </div>
+                          <div className="text-sm">{e.name}</div>
                           <div className="text-[11px] text-text-2">
                             {Math.round(e.protein)}g P · {Math.round(e.carbs)}g C
                             · {Math.round(e.fat)}g F
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 bg-bg-3 rounded-lg border border-border px-1">
+                            <button
+                              className="p-1 text-text-3 hover:text-text-1 disabled:opacity-30"
+                              title="Decrease portion"
+                              disabled={updateLog.isPending}
+                              onClick={() => adjustPortion(e, -1)}
+                            >
+                              <Minus size={12} />
+                            </button>
+                            <span className="text-[11px] text-text-2 min-w-[52px] text-center tabular-nums">
+                              {e.quantity}
+                              {e.quantity_unit}
+                            </span>
+                            <button
+                              className="p-1 text-text-3 hover:text-text-1 disabled:opacity-30"
+                              title="Increase portion"
+                              disabled={updateLog.isPending}
+                              onClick={() => adjustPortion(e, 1)}
+                            >
+                              <Plus size={12} />
+                            </button>
+                          </div>
                           <span className="text-sm font-semibold text-accent">
                             {Math.round(e.calories)}
                           </span>
