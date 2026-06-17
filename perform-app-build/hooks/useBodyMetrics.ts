@@ -25,7 +25,23 @@ export function useAddBodyMeasurement() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (m: Partial<BodyMeasurement>) => {
-      const { error } = await supabase.from("body_measurements").insert(m);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase.from("body_measurements").insert({ ...m, user_id: user.id });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["body_measurements"] }),
+  });
+}
+
+export function useUpdateBodyMeasurement() {
+  const supabase = createClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<BodyMeasurement> }) => {
+      const { error } = await supabase.from("body_measurements").update(updates).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["body_measurements"] }),
@@ -64,10 +80,29 @@ export function useAddHydration() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (log: Partial<HydrationLog>) => {
-      const { error } = await supabase.from("hydration_logs").insert(log);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase.from("hydration_logs").insert({ ...log, user_id: user.id });
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["hydration_logs"] }),
+  });
+}
+
+export function useUpdateHydration() {
+  const supabase = createClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<HydrationLog> }) => {
+      const { error } = await supabase.from("hydration_logs").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["hydration_logs"] });
+      qc.invalidateQueries({ queryKey: ["weekly_hydration"] });
+    },
   });
 }
 
@@ -127,7 +162,23 @@ export function useAddSleepLog() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (log: Partial<SleepLog>) => {
-      const { error } = await supabase.from("sleep_logs").insert(log);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase.from("sleep_logs").insert({ ...log, user_id: user.id });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sleep_logs"] }),
+  });
+}
+
+export function useUpdateSleepLog() {
+  const supabase = createClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<SleepLog> }) => {
+      const { error } = await supabase.from("sleep_logs").update(updates).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["sleep_logs"] }),
