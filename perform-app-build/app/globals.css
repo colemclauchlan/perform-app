@@ -90,6 +90,16 @@ textarea {
   to { transform: scaleY(1); transform-origin: bottom; }
 }
 
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
 }
@@ -100,6 +110,26 @@ textarea {
 
 .animate-bar-grow {
   animation: barGrow 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-overlay-in {
+  animation: overlayIn 0.18s ease-out forwards;
+}
+
+.animate-modal-in {
+  animation: modalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Honor users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Glow effects */
@@ -145,7 +175,7 @@ textarea {
     @apply text-[11px] uppercase tracking-wider text-text-3 font-semibold mb-3;
   }
   .btn {
-    @apply inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all border-none;
+    @apply inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all border-none active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
     @apply bg-accent text-white hover:bg-accent-dark shadow-sm;
