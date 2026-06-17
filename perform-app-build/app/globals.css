@@ -1,0 +1,102 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #0a0a0f;
+  color: #e8e8f0;
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a3a4d;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4a4a5d;
+}
+
+/* Form element base styling */
+input,
+select,
+textarea {
+  background: #18181f;
+  border: 1px solid #3a3a4d;
+  border-radius: 6px;
+  color: #e8e8f0;
+  font-size: 14px;
+  padding: 9px 11px;
+  width: 100%;
+  outline: none;
+  transition: border 0.15s;
+  font-family: inherit;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #7c6af7;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #5a5a72;
+}
+select option {
+  background: #18181f;
+}
+textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+@layer components {
+  .card {
+    @apply bg-bg-1 border border-border rounded-xl p-4;
+  }
+  .card-sm {
+    @apply bg-bg-2 border border-border rounded-lg p-3;
+  }
+  .card-title {
+    @apply text-[11px] uppercase tracking-wider text-text-3 font-medium mb-3;
+  }
+  .btn {
+    @apply inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm font-medium cursor-pointer transition-all border-none;
+  }
+  .btn-primary {
+    @apply bg-accent text-white hover:bg-accent-dark;
+  }
+  .btn-ghost {
+    @apply bg-bg-3 text-text-2 border border-border hover:text-text-1 hover:border-border-2;
+  }
+  .btn-danger {
+    @apply bg-status-red/10 text-status-red border border-status-red/30 hover:bg-status-red/20;
+  }
+  .btn-sm {
+    @apply px-2.5 py-1.5 text-xs;
+  }
+  .label {
+    @apply text-xs text-text-2 block mb-1;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium;
+  }
+}
