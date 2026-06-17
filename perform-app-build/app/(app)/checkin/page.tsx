@@ -4,12 +4,13 @@
 import { useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Modal } from "@/components/ui/Modal";
-import { useCheckins, useAddCheckin, useDeleteCheckin, CheckinView } from "@/hooks/useCheckins";
+import { useCheckins, useAddCheckin, useUpdateCheckin, useDeleteCheckin, CheckinView } from "@/hooks/useCheckins";
 import { useProfile } from "@/hooks/useNutrition";
 import { todayISO, formatDate, cn } from "@/lib/utils";
 import {
   Plus,
   Trash2,
+  Pencil,
   Camera,
   Images,
   GitCompareArrows,
@@ -40,6 +41,7 @@ export default function CheckinPage() {
 
   const [mode, setMode] = useState<Mode>("gallery");
   const [modalOpen, setModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<CheckinView | null>(null);
 
   return (
     <div className="p-6 max-w-[1100px]">
@@ -88,7 +90,12 @@ export default function CheckinPage() {
           </div>
 
           {mode === "gallery" && (
-            <GalleryView checkins={checkins} wu={wu} onDelete={(c) => { deleteCheckin.mutate(c); toast.success("Deleted"); }} />
+            <GalleryView
+              checkins={checkins}
+              wu={wu}
+              onDelete={(c) => { deleteCheckin.mutate(c); toast.success("Deleted"); }}
+              onEdit={(c) => setEditTarget(c)}
+            />
           )}
           {mode === "compare" && <CompareView checkins={checkins} wu={wu} />}
           {mode === "slideshow" && <SlideshowView checkins={checkins} wu={wu} />}
@@ -96,6 +103,7 @@ export default function CheckinPage() {
       )}
 
       <UploadModal open={modalOpen} onClose={() => setModalOpen(false)} wu={wu} />
+      <EditModal target={editTarget} onClose={() => setEditTarget(null)} wu={wu} />
     </div>
   );
 }
@@ -116,7 +124,7 @@ function PhotoFrame({ src, label }: { src: string | null; label: string }) {
   );
 }
 
-function GalleryView({ checkins, wu, onDelete }: { checkins: CheckinView[]; wu: string; onDelete: (c: CheckinView) => void }) {
+function GalleryView({ checkins, wu, onDelete, onEdit }: { checkins: CheckinView[]; wu: string; onDelete: (c: CheckinView) => void; onEdit: (c: CheckinView) => void }) {
   const ordered = [...checkins].reverse();
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -130,9 +138,14 @@ function GalleryView({ checkins, wu, onDelete }: { checkins: CheckinView[]; wu: 
                 {c.body_fat != null ? ` · ${c.body_fat}% bf` : ""}
               </div>
             </div>
-            <button className="btn btn-ghost btn-sm !px-1.5" onClick={() => onDelete(c)}>
-              <Trash2 size={14} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button className="btn btn-ghost btn-sm !px-1.5" onClick={() => onEdit(c)} title="Edit check-in">
+                <Pencil size={14} />
+              </button>
+              <button className="btn btn-ghost btn-sm !px-1.5" onClick={() => onDelete(c)}>
+                <Trash2 size={14} />
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
             {ANGLES.map((a) => (
@@ -318,6 +331,147 @@ function FileSlot({
         </button>
       )}
     </div>
+  );
+}
+
+function EditFileSlot({
+  angle,
+  file,
+  existing,
+  onPick,
+  onClear,
+}: {
+  angle: Angle;
+  file: File | null;
+  existing: string | null;
+  onPick: (f: File) => void;
+  onClear: () => void;
+}) {
+  const preview = file ? URL.createObjectURL(file) : existing;
+  return (
+    <div className="relative">
+      <label className="block aspect-[3/4] rounded-xl overflow-hidden bg-bg-2 border border-dashed border-border hover:border-accent/50 cursor-pointer flex items-center justify-center transition-all">
+        {preview ? (
+          <img src={preview} alt={angle} className="w-full h-full object-cover" />
+        ) : (
+          <div className="flex flex-col items-center text-text-3">
+            <Upload size={18} />
+            <span className="text-[10px] mt-1">{ANGLE_LABEL[angle]}</span>
+          </div>
+        )}
+        <span className="absolute top-1.5 left-1.5 text-[10px] font-medium bg-black/55 text-white px-1.5 py-0.5 rounded">
+          {ANGLE_LABEL[angle]}
+        </span>
+        {file && (
+          <span className="absolute bottom-1.5 left-1.5 text-[9px] font-medium bg-accent text-white px-1.5 py-0.5 rounded">
+            New
+          </span>
+        )}
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) onPick(f); }}
+        />
+      </label>
+      {file && (
+        <button
+          className="absolute top-1 right-1 bg-black/60 rounded-full p-1 text-white"
+          onClick={(e) => { e.preventDefault(); onClear(); }}
+          title="Discard replacement"
+        >
+          <X size={12} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function EditModal({ target, onClose, wu }: { target: CheckinView | null; onClose: () => void; wu: string }) {
+  const updateCheckin = useUpdateCheckin();
+  const [date, setDate] = useState(todayISO());
+  const [weight, setWeight] = useState("");
+  const [bf, setBf] = useState("");
+  const [notes, setNotes] = useState("");
+  const [front, setFront] = useState<File | null>(null);
+  const [side, setSide] = useState<File | null>(null);
+  const [back, setBack] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [initId, setInitId] = useState<string | null>(null);
+
+  // init form when a new target opens
+  if (target && initId !== target.id) {
+    setInitId(target.id);
+    setDate(target.taken_date);
+    setWeight(target.weight != null ? String(target.weight) : "");
+    setBf(target.body_fat != null ? String(target.body_fat) : "");
+    setNotes(target.notes || "");
+    setFront(null);
+    setSide(null);
+    setBack(null);
+  }
+
+  function handleSave() {
+    if (!target) return;
+    setBusy(true);
+    updateCheckin.mutate(
+      {
+        id: target.id,
+        taken_date: date,
+        weight: weight ? parseFloat(weight) : null,
+        body_fat: bf ? parseFloat(bf) : null,
+        notes: notes || null,
+        front_url: target.front_url,
+        side_url: target.side_url,
+        back_url: target.back_url,
+        front,
+        side,
+        back,
+      },
+      {
+        onSuccess: () => { toast.success("Check-in updated"); setBusy(false); setInitId(null); onClose(); },
+        onError: (e) => { toast.error(e.message); setBusy(false); },
+      }
+    );
+  }
+
+  return (
+    <Modal open={!!target} onClose={onClose} title="Edit Check-in" wide>
+      {target && (
+        <div className="space-y-3">
+          <div className="text-[11px] text-text-3">Tap a photo to replace it. Untouched photos are kept.</div>
+          <div className="grid grid-cols-3 gap-2">
+            <EditFileSlot angle="front" file={front} existing={target.front_signed} onPick={setFront} onClear={() => setFront(null)} />
+            <EditFileSlot angle="side" file={side} existing={target.side_signed} onPick={setSide} onClear={() => setSide(null)} />
+            <EditFileSlot angle="back" file={back} existing={target.back_signed} onPick={setBack} onClear={() => setBack(null)} />
+          </div>
+          <div className="flex gap-2.5 flex-wrap">
+            <div className="flex-1 min-w-[110px]">
+              <label className="label">Date</label>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+            <div className="w-28">
+              <label className="label">Weight ({wu})</label>
+              <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="—" />
+            </div>
+            <div className="w-24">
+              <label className="label">Body fat %</label>
+              <input type="number" value={bf} onChange={(e) => setBf(e.target.value)} placeholder="—" />
+            </div>
+          </div>
+          <div>
+            <label className="label">Notes</label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Conditions, pump, lighting..." />
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button className="btn btn-primary" onClick={handleSave} disabled={busy}>
+              {busy ? "Saving..." : "Save Changes"}
+            </button>
+            <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }
 

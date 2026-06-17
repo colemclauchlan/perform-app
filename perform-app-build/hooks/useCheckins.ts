@@ -97,6 +97,67 @@ export function useAddCheckin() {
   });
 }
 
+export type CheckinUpdate = {
+  id: string;
+  taken_date: string;
+  weight: number | null;
+  body_fat: number | null;
+  notes: string | null;
+  // existing stored paths (kept if no replacement)
+  front_url: string | null;
+  side_url: string | null;
+  back_url: string | null;
+  // new files replacing the matching slot
+  front?: File | null;
+  side?: File | null;
+  back?: File | null;
+};
+
+export function useUpdateCheckin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: CheckinUpdate) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const removePaths: string[] = [];
+      async function resolveSlot(file: File | null | undefined, existing: string | null) {
+        if (file) {
+          const path = await uploadOne(file, user!.id);
+          if (existing) removePaths.push(existing);
+          return path;
+        }
+        return existing;
+      }
+
+      const [front_url, side_url, back_url] = await Promise.all([
+        resolveSlot(input.front, input.front_url),
+        resolveSlot(input.side, input.side_url),
+        resolveSlot(input.back, input.back_url),
+      ]);
+
+      const { error } = await supabase
+        .from("checkin_photos")
+        .update({
+          taken_date: input.taken_date,
+          weight: input.weight,
+          body_fat: input.body_fat,
+          notes: input.notes,
+          front_url,
+          side_url,
+          back_url,
+        })
+        .eq("id", input.id);
+      if (error) throw error;
+
+      if (removePaths.length) await supabase.storage.from(BUCKET).remove(removePaths);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["checkins"] }),
+  });
+}
+
 export function useDeleteCheckin() {
   const qc = useQueryClient();
   return useMutation({
