@@ -113,6 +113,16 @@ export async function POST(req: Request) {
     );
   }
 
+  // Require an authenticated user (defense in depth — also avoids abuse of the
+  // shared Anthropic key by unauthenticated callers).
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+
   let body: { messages?: ChatMessage[] };
   try {
     body = await req.json();

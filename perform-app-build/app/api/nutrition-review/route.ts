@@ -56,6 +56,16 @@ export async function POST(req: Request) {
     );
   }
 
+  // Require an authenticated user (defense in depth — also avoids abuse of the
+  // shared Anthropic key by unauthenticated callers).
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+
   let body: { plan?: ReviewPlan };
   try {
     body = await req.json();
@@ -84,25 +94,17 @@ export async function POST(req: Request) {
   // Pull the user's targets for context (best-effort).
   let targetLine = "";
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select(
-          "target_calories, target_protein, target_carbs, target_fat"
-        )
-        .eq("id", user.id)
-        .single();
-      if (profile) {
-        targetLine = `User's daily targets: ${num(profile.target_calories)} kcal, ${num(
-          profile.target_protein
-        )}g protein, ${num(profile.target_carbs)}g carbs, ${num(
-          profile.target_fat
-        )}g fat.`;
-      }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("target_calories, target_protein, target_carbs, target_fat")
+      .eq("id", user.id)
+      .single();
+    if (profile) {
+      targetLine = `User's daily targets: ${num(profile.target_calories)} kcal, ${num(
+        profile.target_protein
+      )}g protein, ${num(profile.target_carbs)}g carbs, ${num(
+        profile.target_fat
+      )}g fat.`;
     }
   } catch {
     targetLine = "";
