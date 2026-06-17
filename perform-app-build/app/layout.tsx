@@ -4,8 +4,8 @@ import { Toaster } from "react-hot-toast";
 import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "PERFORM — Performance Dashboard",
-  description: "Track nutrition, compounds, workouts, and body metrics",
+  title: "BodyTracker — Performance Dashboard",
+  description: "Track nutrition, compounds, workouts, body metrics, and more",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon-32.png",
@@ -14,12 +14,12 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "PERFORM",
+    title: "BodyTracker",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0f",
+  themeColor: "#080b12",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -39,10 +39,11 @@ export default function RootLayout({
             position="top-right"
             toastOptions={{
               style: {
-                background: "#18181f",
-                color: "#e8e8f0",
-                border: "1px solid #3a3a4d",
+                background: "#131922",
+                color: "#e8edf5",
+                border: "1px solid #1e2d45",
                 fontSize: "13px",
+                borderRadius: "10px",
               },
             }}
           />

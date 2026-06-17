@@ -15,7 +15,7 @@ const items = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/nutrition", label: "Food", icon: Salad },
   { href: "/compounds", label: "Compounds", icon: FlaskConical },
-  { href: "/workouts", label: "Lifts", icon: Dumbbell },
+  { href: "/workouts", label: "Workouts", icon: Dumbbell },
   { href: "/weight", label: "Weight", icon: Scale },
 ];
 
@@ -31,11 +31,16 @@ export function MobileNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex flex-col items-center gap-1 text-[10px] flex-1 py-2",
+              "flex flex-col items-center gap-1 text-[10px] flex-1 py-2 transition-colors",
               active ? "text-accent" : "text-text-3"
             )}
           >
-            <Icon size={20} />
+            <div className={cn(
+              "w-8 h-8 flex items-center justify-center rounded-lg transition-all",
+              active ? "bg-accent-dim" : ""
+            )}>
+              <Icon size={18} />
+            </div>
             {item.label}
           </Link>
         );

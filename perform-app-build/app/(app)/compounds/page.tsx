@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { BloodConcentrationChart } from "@/components/charts/BloodConcentrationChart";
 import {
   useProtocols,
   useCompoundCatalog,
@@ -11,6 +12,7 @@ import {
   useToggleProtocol,
   useDeleteProtocol,
   useLogDose,
+  useDoseHistory,
 } from "@/hooks/useCompounds";
 import { CompoundProtocol, Frequency } from "@/types/database";
 import { todayISO, formatDate, getNextDoseInfo, cn } from "@/lib/utils";
@@ -22,6 +24,9 @@ import {
   Syringe,
   X,
   Pill,
+  Activity,
+  Clock,
+  Calendar,
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -39,6 +44,9 @@ export default function CompoundsPage() {
   const [protoModal, setProtoModal] = useState(false);
   const [doseModal, setDoseModal] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"protocols" | "bloodlevels">(
+    "protocols"
+  );
   const { data: protocols = [] } = useProtocols();
   const toggleProto = useToggleProtocol();
   const deleteProto = useDeleteProtocol();
@@ -49,6 +57,9 @@ export default function CompoundsPage() {
     const interval = setInterval(() => setTick((t) => t + 1), 60000);
     return () => clearInterval(interval);
   }, []);
+
+  const activeProtocols = protocols.filter((p) => p.is_active);
+  const allCompounds = protocols.flatMap((p) => p.compounds ?? []);
 
   return (
     <div className="p-6 max-w-[1100px]">
@@ -74,30 +85,122 @@ export default function CompoundsPage() {
         }
       />
 
-      {protocols.length === 0 ? (
-        <div className="card text-center py-10 text-text-3 text-sm">
-          No protocols yet. Click &quot;New Protocol&quot; to create your first
-          cycle.
+      {/* Summary stats */}
+      {protocols.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 animate-fade-in">
+          <div className="stat-card">
+            <div className="text-[11px] text-text-3 mb-1">Active Protocols</div>
+            <div className="text-2xl font-bold text-accent">{activeProtocols.length}</div>
+            <div className="text-[11px] text-text-3 mt-0.5">of {protocols.length} total</div>
+          </div>
+          <div className="stat-card">
+            <div className="text-[11px] text-text-3 mb-1">Compounds Running</div>
+            <div className="text-2xl font-bold text-text-1">
+              {activeProtocols.flatMap((p) => p.compounds ?? []).length}
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="text-[11px] text-text-3 mb-1">Overdue Doses</div>
+            <div className="text-2xl font-bold text-status-red">
+              {allCompounds.filter((c) => {
+                const info = getNextDoseInfo(c.last_dose?.logged_at || null, c.frequency);
+                return info.status === "overdue";
+              }).length}
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="text-[11px] text-text-3 mb-1">Due Soon</div>
+            <div className="text-2xl font-bold text-status-amber">
+              {allCompounds.filter((c) => {
+                const info = getNextDoseInfo(c.last_dose?.logged_at || null, c.frequency);
+                return info.status === "urgent";
+              }).length}
+            </div>
+          </div>
         </div>
-      ) : (
-        <div className="space-y-2">
-          {protocols.map((p) => (
-            <ProtocolRow
-              key={p.id}
-              protocol={p}
-              expanded={expanded === p.id}
-              onToggleExpand={() =>
-                setExpanded(expanded === p.id ? null : p.id)
-              }
-              onToggleActive={() =>
-                toggleProto.mutate({ id: p.id, active: !p.is_active })
-              }
-              onDelete={() => {
-                deleteProto.mutate(p.id);
-                toast.success("Protocol deleted");
-              }}
-            />
-          ))}
+      )}
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-4 bg-bg-2 p-1 rounded-xl w-fit border border-border">
+        <button
+          className={cn(
+            "px-4 py-1.5 text-sm font-medium rounded-lg transition-all",
+            activeTab === "protocols"
+              ? "bg-accent text-white shadow-sm"
+              : "text-text-2 hover:text-text-1"
+          )}
+          onClick={() => setActiveTab("protocols")}
+        >
+          <span className="flex items-center gap-1.5">
+            <FlaskConical size={14} />
+            Protocols
+          </span>
+        </button>
+        <button
+          className={cn(
+            "px-4 py-1.5 text-sm font-medium rounded-lg transition-all",
+            activeTab === "bloodlevels"
+              ? "bg-accent text-white shadow-sm"
+              : "text-text-2 hover:text-text-1"
+          )}
+          onClick={() => setActiveTab("bloodlevels")}
+        >
+          <span className="flex items-center gap-1.5">
+            <Activity size={14} />
+            Blood Levels
+          </span>
+        </button>
+      </div>
+
+      {/* Protocols tab */}
+      {activeTab === "protocols" && (
+        <div className="tab-panel">
+          {protocols.length === 0 ? (
+            <div className="card text-center py-12">
+              <FlaskConical className="mx-auto mb-3 text-text-3" size={32} />
+              <div className="text-text-3 text-sm">
+                No protocols yet. Click &quot;New Protocol&quot; to create your first cycle.
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {protocols.map((p) => (
+                <ProtocolRow
+                  key={p.id}
+                  protocol={p}
+                  expanded={expanded === p.id}
+                  onToggleExpand={() =>
+                    setExpanded(expanded === p.id ? null : p.id)
+                  }
+                  onToggleActive={() =>
+                    toggleProto.mutate({ id: p.id, active: !p.is_active })
+                  }
+                  onDelete={() => {
+                    deleteProto.mutate(p.id);
+                    toast.success("Protocol deleted");
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Blood Levels tab */}
+      {activeTab === "bloodlevels" && (
+        <div className="tab-panel space-y-4">
+          {protocols.length === 0 ? (
+            <div className="card text-center py-12">
+              <Activity className="mx-auto mb-3 text-text-3" size={32} />
+              <div className="text-text-3 text-sm">
+                No protocols yet. Create a protocol and log doses to see blood concentration curves.
+              </div>
+            </div>
+          ) : (
+            protocols.map((p) => (
+              <BloodLevelsCard key={p.id} protocol={p} />
+            ))
+          )}
         </div>
       )}
 
@@ -107,6 +210,65 @@ export default function CompoundsPage() {
         onClose={() => setDoseModal(false)}
         protocols={protocols}
       />
+    </div>
+  );
+}
+
+// ─── BLOOD LEVELS CARD ────────────────────────────────────────────────────────
+function BloodLevelsCard({ protocol }: { protocol: CompoundProtocol }) {
+  const { data: doses = [] } = useDoseHistory(protocol.id);
+  const compounds = protocol.compounds ?? [];
+
+  return (
+    <div className="card animate-fade-in">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <FlaskConical className="text-accent" size={16} />
+          <span className="font-semibold text-sm">{protocol.name}</span>
+          <Badge variant={protocol.is_active ? "accent" : "teal"}>
+            {protocol.is_active ? "Active" : "Paused"}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2 text-[11px] text-text-3">
+          <Calendar size={12} />
+          {formatDate(protocol.start_date)}
+          {protocol.end_date && <> → {formatDate(protocol.end_date)}</>}
+        </div>
+      </div>
+
+      <div className="text-[11px] text-text-3 mb-4">
+        Simulated plasma concentration based on {doses.length} logged dose
+        {doses.length !== 1 ? "s" : ""} · Half-life pharmacokinetics model
+      </div>
+
+      <BloodConcentrationChart compounds={compounds} doses={doses} />
+
+      {/* Compound summary */}
+      <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
+        {compounds.map((c) => {
+          const info = getNextDoseInfo(c.last_dose?.logged_at || null, c.frequency);
+          return (
+            <div key={c.id} className="card-sm">
+              <div className="text-xs font-medium text-text-1">{c.compound_name}</div>
+              <div className="text-[11px] text-text-3 mt-0.5">
+                {c.dose} {c.compound_unit} · {c.frequency}
+              </div>
+              <div
+                className={cn(
+                  "text-[11px] font-medium mt-1 flex items-center gap-1",
+                  info.status === "overdue" && "text-status-red",
+                  info.status === "urgent" && "text-status-amber",
+                  info.status === "ok" && "text-status-green",
+                  info.status === "none" && "text-text-3"
+                )}
+              >
+                <Clock size={10} />
+                {info.label}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -126,16 +288,18 @@ function ProtocolRow({
   onDelete: () => void;
 }) {
   return (
-    <div className="bg-bg-2 border border-border rounded-lg overflow-hidden">
+    <div className="bg-bg-2 border border-border rounded-xl overflow-hidden transition-all hover:border-border-2">
       <div
-        className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-bg-3"
+        className="flex items-center justify-between px-4 py-3.5 cursor-pointer"
         onClick={onToggleExpand}
       >
         <div className="flex items-center gap-3">
-          <FlaskConical className="text-accent" size={18} />
+          <div className="w-8 h-8 rounded-lg bg-accent-dim flex items-center justify-center">
+            <FlaskConical className="text-accent" size={16} />
+          </div>
           <div>
-            <div className="text-sm font-medium">{protocol.name}</div>
-            <div className="text-[11px] text-text-2">
+            <div className="text-sm font-semibold">{protocol.name}</div>
+            <div className="text-[11px] text-text-2 mt-0.5">
               {formatDate(protocol.start_date)} →{" "}
               {protocol.end_date ? formatDate(protocol.end_date) : "No end"} ·{" "}
               {protocol.compounds?.length || 0} compound
@@ -144,13 +308,13 @@ function ProtocolRow({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant={protocol.is_active ? "purple" : "teal"}>
+          <Badge variant={protocol.is_active ? "accent" : "teal"}>
             {protocol.is_active ? "Active" : "Paused"}
           </Badge>
           <ChevronDown
             size={16}
             className={cn(
-              "text-text-3 transition-transform",
+              "text-text-3 transition-transform duration-200",
               expanded && "rotate-180"
             )}
           />
@@ -163,11 +327,11 @@ function ProtocolRow({
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="text-[10px] uppercase tracking-wide text-text-3">
-                  <th className="text-left py-2 pr-3">Compound</th>
-                  <th className="text-left py-2 pr-3">Dose</th>
-                  <th className="text-left py-2 pr-3">Frequency</th>
-                  <th className="text-left py-2 pr-3">Time</th>
-                  <th className="text-left py-2 pr-3">Next Dose</th>
+                  <th className="text-left py-2 pr-4">Compound</th>
+                  <th className="text-left py-2 pr-4">Dose</th>
+                  <th className="text-left py-2 pr-4">Frequency</th>
+                  <th className="text-left py-2 pr-4">Scheduled</th>
+                  <th className="text-left py-2 pr-4">Next Dose</th>
                   <th className="text-left py-2">Last Logged</th>
                 </tr>
               </thead>
@@ -179,23 +343,24 @@ function ProtocolRow({
                   );
                   return (
                     <tr key={c.id} className="border-t border-border/50">
-                      <td className="py-2.5 pr-3 font-medium">
-                        {c.compound_name}
-                      </td>
-                      <td className="py-2.5 pr-3 text-text-2">
+                      <td className="py-2.5 pr-4 font-medium">{c.compound_name}</td>
+                      <td className="py-2.5 pr-4 text-text-2">
                         {c.dose} {c.compound_unit}
                       </td>
-                      <td className="py-2.5 pr-3 text-text-2">{c.frequency}</td>
-                      <td className="py-2.5 pr-3 text-text-2">
+                      <td className="py-2.5 pr-4 text-text-2">{c.frequency}</td>
+                      <td className="py-2.5 pr-4 text-text-2">
                         {c.scheduled_time?.slice(0, 5) || "—"}
                       </td>
-                      <td className="py-2.5 pr-3">
+                      <td className="py-2.5 pr-4">
                         <span
                           className={cn(
-                            "font-semibold tabular-nums",
-                            next.status === "overdue" && "text-status-red",
-                            next.status === "urgent" && "text-status-amber",
-                            next.status === "ok" && "text-status-teal",
+                            "font-semibold tabular-nums text-xs px-2 py-0.5 rounded-full",
+                            next.status === "overdue" &&
+                              "bg-status-red/10 text-status-red",
+                            next.status === "urgent" &&
+                              "bg-status-amber/10 text-status-amber",
+                            next.status === "ok" &&
+                              "bg-status-green/10 text-status-green",
                             next.status === "none" && "text-text-3"
                           )}
                         >
@@ -213,7 +378,7 @@ function ProtocolRow({
               </tbody>
             </table>
           </div>
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-4">
             <button className="btn btn-ghost btn-sm" onClick={onToggleActive}>
               {protocol.is_active ? "Pause Protocol" : "Activate"}
             </button>

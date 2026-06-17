@@ -56,7 +56,7 @@ export default function NutritionPage() {
       value: totals.cal,
       target: profile?.target_calories || 2500,
       unit: "kcal",
-      color: "#7c6af7",
+      color: "#2563eb",
     },
     {
       label: "Protein",

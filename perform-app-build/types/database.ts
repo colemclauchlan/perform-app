@@ -160,3 +160,43 @@ export interface StepLog {
   source: "apple_health" | "manual";
   created_at: string;
 }
+
+export interface BodyMeasurement {
+  id: string;
+  user_id: string;
+  logged_date: string;
+  chest_cm: number | null;
+  waist_cm: number | null;
+  hips_cm: number | null;
+  neck_cm: number | null;
+  left_arm_cm: number | null;
+  right_arm_cm: number | null;
+  left_thigh_cm: number | null;
+  right_thigh_cm: number | null;
+  left_calf_cm: number | null;
+  right_calf_cm: number | null;
+  body_fat_pct: number | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface HydrationLog {
+  id: string;
+  user_id: string;
+  logged_date: string;
+  amount_ml: number;
+  source: string;
+  created_at: string;
+}
+
+export interface SleepLog {
+  id: string;
+  user_id: string;
+  logged_date: string;
+  sleep_start: string | null;
+  sleep_end: string | null;
+  duration_hours: number | null;
+  quality: number | null;
+  notes: string | null;
+  created_at: string;
+}

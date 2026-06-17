@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 const variants: Record<string, string> = {
-  purple: "bg-accent/15 text-accent",
+  accent: "bg-accent/15 text-accent",
   green: "bg-status-green/15 text-status-green",
   red: "bg-status-red/15 text-status-red",
   amber: "bg-status-amber/15 text-status-amber",
@@ -11,7 +11,7 @@ const variants: Record<string, string> = {
 
 export function Badge({
   children,
-  variant = "purple",
+  variant = "accent",
 }: {
   children: React.ReactNode;
   variant?: keyof typeof variants;
@@ -22,7 +22,7 @@ export function Badge({
 // Map compound types to badge colors
 export function compoundBadgeVariant(type: string): keyof typeof variants {
   const map: Record<string, keyof typeof variants> = {
-    Steroid: "purple",
+    Steroid: "accent",
     Peptide: "teal",
     "AI / SERM": "amber",
     Ancillary: "red",
@@ -30,5 +30,5 @@ export function compoundBadgeVariant(type: string): keyof typeof variants {
     Supplement: "teal",
     Other: "coral",
   };
-  return map[type] || "purple";
+  return map[type] || "accent";
 }

@@ -21,7 +21,7 @@ export function MacroBar({
       <div className="flex h-1.5 rounded-full overflow-hidden gap-0.5 my-2">
         <div
           className="h-full rounded-sm transition-all duration-300"
-          style={{ width: `${pPct}%`, background: "#7c6af7" }}
+          style={{ width: `${pPct}%`, background: "#2563eb" }}
         />
         <div
           className="h-full rounded-sm transition-all duration-300"
@@ -34,7 +34,7 @@ export function MacroBar({
       </div>
       <div className="flex gap-3 text-xs text-text-2 mt-1.5 flex-wrap">
         <span>
-          <span style={{ color: "#7c6af7" }}>●</span> Protein{" "}
+          <span style={{ color: "#2563eb" }}>●</span> Protein{" "}
           {Math.round(protein)}g
         </span>
         <span>
