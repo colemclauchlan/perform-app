@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 import toast from "react-hot-toast";
-import { Activity } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,11 +43,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <div className="flex items-center gap-2 justify-center mb-8">
-          <Activity className="text-accent" size={28} />
-          <span className="text-xl font-semibold tracking-wide">
-            PERF<span className="text-accent">ORM</span>
-          </span>
+        <div className="flex items-center justify-center mb-8">
+          <Logo variant="full" size={96} className="rounded-xl" />
         </div>
 
         <div className="card">
