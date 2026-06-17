@@ -7,16 +7,41 @@ import {
   useAddSleepLog,
   useDeleteSleepLog,
 } from "@/hooks/useBodyMetrics";
+import { useProfile, useUpdateProfile } from "@/hooks/useNutrition";
 import { todayISO, formatDate, round } from "@/lib/utils";
-import { Moon, Star, Trash2, Clock } from "lucide-react";
+import { Moon, Star, Trash2, Clock, Target, Apple } from "lucide-react";
 import toast from "react-hot-toast";
 
 const SLEEP_TARGET = 8;
+const DEFAULT_WEEKLY_GOAL = 56;
 
 export default function SleepPage() {
   const { data: logs = [] } = useSleepLogs();
+  const { data: profile } = useProfile();
+  const updateProfile = useUpdateProfile();
   const addSleep = useAddSleepLog();
   const deleteSleep = useDeleteSleepLog();
+
+  const [goalOpen, setGoalOpen] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
+  const weeklyGoal = profile?.preferences?.sleep_weekly_goal_hours || DEFAULT_WEEKLY_GOAL;
+
+  // sum sleep hours over the trailing 7 days
+  const weekCutoff = (() => { const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().slice(0, 10); })();
+  const weekTotal = round(
+    logs.filter((l) => l.logged_date >= weekCutoff).reduce((a, l) => a + (l.duration_hours || 0), 0),
+    1
+  );
+  const weekPct = Math.min(100, Math.round((weekTotal / weeklyGoal) * 100));
+
+  function saveGoal() {
+    const h = parseFloat(goalInput);
+    if (!h || h < 7) { toast.error("Enter a weekly goal of at least 7 hours"); return; }
+    updateProfile.mutate(
+      { preferences: { ...(profile?.preferences || {}), sleep_weekly_goal_hours: h } },
+      { onSuccess: () => { toast.success("Weekly goal updated"); setGoalOpen(false); }, onError: (e) => toast.error(e.message) }
+    );
+  }
 
   const [date, setDate] = useState(todayISO());
   const [start, setStart] = useState("23:00");
@@ -100,6 +125,43 @@ export default function SleepPage() {
             <div className="text-[11px] text-text-3">Nights Logged</div>
             <div className="text-xl font-bold">{logs.length}</div>
           </div>
+        </div>
+      </div>
+
+      {/* Weekly goal progress */}
+      <div className="card mb-5">
+        <div className="flex items-center justify-between mb-2">
+          <div className="card-title !mb-0 flex items-center gap-1.5"><Target size={13} className="text-accent" /> Weekly Sleep Goal</div>
+          <button className="btn btn-ghost btn-sm" onClick={() => { setGoalInput(String(weeklyGoal)); setGoalOpen((v) => !v); }}>
+            Edit goal
+          </button>
+        </div>
+        {goalOpen && (
+          <div className="flex gap-2 mb-3">
+            <input
+              type="number"
+              value={goalInput}
+              onChange={(e) => setGoalInput(e.target.value)}
+              placeholder="Weekly goal (hours)"
+              className="flex-1"
+              onKeyDown={(e) => e.key === "Enter" && saveGoal()}
+            />
+            <button className="btn btn-primary btn-sm" onClick={saveGoal}>Save</button>
+          </div>
+        )}
+        <div className="flex items-baseline justify-between text-sm mb-1.5">
+          <span className="font-semibold">{weekTotal}h <span className="text-text-3 font-normal">of {weeklyGoal}h</span></span>
+          <span className={weekPct >= 100 ? "text-status-green font-semibold" : "text-text-3"}>{weekPct}%</span>
+        </div>
+        <div className="h-3 bg-bg-3 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full progress-bar"
+            style={{ width: `${weekPct}%`, background: weekPct >= 100 ? "#22d3a5" : "#2563eb" }}
+          />
+        </div>
+        <div className="mt-3 flex items-center gap-2 text-[11px] text-text-3 bg-bg-2 rounded-lg px-3 py-2 border border-border">
+          <Apple size={14} className="text-text-2 flex-shrink-0" />
+          <span>Apple Health: log your Health app sleep totals here to keep weekly goal progress in sync. Native auto-sync requires the iOS app.</span>
         </div>
       </div>
 
