@@ -26,8 +26,25 @@ const config: CapacitorConfig = {
     backgroundColor: "#080b12",
     // Prevent the rubber-band overscroll from revealing a white background.
     scrollEnabled: true,
+    // Render at phone width (no desktop user-agent / layout in the WebView).
+    preferredContentMode: "mobile",
   },
   backgroundColor: "#080b12",
+  plugins: {
+    SplashScreen: {
+      // We hide it from CapacitorInit once React paints, so it never flashes
+      // a blank frame between the launch image and the app.
+      launchAutoHide: false,
+      backgroundColor: "#080b12",
+      showSpinner: false,
+    },
+    Keyboard: {
+      // Resize the WebView (not the body) so fixed bottom nav and inputs behave.
+      resize: "native",
+      style: "dark",
+      resizeOnFullScreen: true,
+    },
+  },
 };
 
 export default config;

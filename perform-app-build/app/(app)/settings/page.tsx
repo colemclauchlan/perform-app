@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Modal } from "@/components/ui/Modal";
 import { useProfile, useUpdateProfile } from "@/hooks/useNutrition";
 import { createClient } from "@/lib/supabase-client";
-import { Download, KeyRound, LogOut, Trash2 } from "lucide-react";
+import { Download, KeyRound, LogOut, Mail, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function SettingsPage() {
@@ -22,12 +22,41 @@ export default function SettingsPage() {
   const [wu, setWu] = useState("lbs");
 
   // Account management state
+  const [newEmail, setNewEmail] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
   const [pwLoading, setPwLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
+
+  async function changeEmail() {
+    const email = newEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Enter a valid email address.");
+      return;
+    }
+    if (email === profile?.email?.toLowerCase()) {
+      toast.error("That's already your email.");
+      return;
+    }
+    setEmailLoading(true);
+    const { error } = await supabase.auth.updateUser(
+      { email },
+      { emailRedirectTo: `${window.location.origin}/auth/callback` }
+    );
+    setEmailLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setNewEmail("");
+    toast.success(
+      "Confirmation links sent. Check both your old and new inboxes to finish the change.",
+      { duration: 6000 }
+    );
+  }
 
   async function changePassword() {
     if (newPw.length < 8) {
@@ -215,6 +244,32 @@ export default function SettingsPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
           <div className="space-y-3">
+            <div>
+              <label className="label flex items-center gap-1.5">
+                <Mail size={12} className="text-text-3" /> Email address
+              </label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder={profile?.email || "you@example.com"}
+                autoComplete="email"
+              />
+              <p className="text-[11px] text-text-3 mt-1">
+                Current: <span className="text-text-2">{profile?.email}</span>.
+                Changing it sends a confirmation link to both addresses.
+              </p>
+            </div>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={changeEmail}
+              disabled={emailLoading}
+            >
+              {emailLoading ? "Sending..." : "Change email"}
+            </button>
+
+            <div className="h-px bg-border my-1" />
+
             <div>
               <label className="label">New password</label>
               <input

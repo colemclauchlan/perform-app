@@ -1,0 +1,204 @@
+# Launch checklist — everything YOU do manually
+
+This is the single, ordered list of every manual step to take BodyTracker from
+the current code to live on the web and submitted to the App Store. The code
+side is done; these are the steps that need your accounts, a Mac, and Apple.
+
+Work top to bottom. Check each box as you go. Anything marked **(one-time)** you
+never repeat; **(per release)** repeats on each App Store submission.
+
+---
+
+## Phase 0 — Accounts you need (one-time)
+
+- [ ] **Supabase** account + the existing "BodyTrack" project (already set up).
+- [ ] **Vercel** account with this repo imported (already deploying on push).
+- [ ] **Anthropic** account for the AI Coach — https://console.anthropic.com
+- [ ] **Apple Developer Program** — https://developer.apple.com/programs ($99/yr).
+      Enrollment can take 24–48h, so start it now.
+- [ ] A **Mac with Xcode** (latest) installed from the Mac App Store. iOS apps
+      can ONLY be built/submitted from a Mac. (Windows can't do this step.)
+
+---
+
+## Phase 1 — Web app environment (Vercel)
+
+Set these in **Vercel → your project → Settings → Environment Variables**
+(Production + Preview). Values come from **Supabase → Project Settings → API**.
+
+- [ ] `NEXT_PUBLIC_SUPABASE_URL` = your project URL (e.g. `https://zttpnkxcaddhtbugahuh.supabase.co`)
+- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` = the **anon / public** key
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` = the **service_role** key — *secret*. Required
+      for **account deletion** (Apple requires in-app deletion). Without it the
+      delete endpoint returns 503.
+- [ ] `NEXT_PUBLIC_SITE_URL` = your production URL (e.g. `https://your-app.vercel.app`).
+      Used for SEO + auth redirect links.
+- [ ] (AI Coach — see Phase 4) `ANTHROPIC_API_KEY`
+- [ ] (optional) `COACH_MODEL` = override the default model
+- [ ] Click **Redeploy** after adding/changing any variable (env changes don't
+      apply until the next deploy).
+
+> Never prefix secrets with `NEXT_PUBLIC_`. The service-role and Anthropic keys
+> must stay server-only — they already are in the code; just don't rename them.
+
+---
+
+## Phase 2 — Supabase Auth configuration
+
+In **Supabase → Authentication**:
+
+- [ ] **URL Configuration → Site URL**: set to your production URL.
+- [ ] **URL Configuration → Redirect URLs**: add BOTH:
+  - `https://your-app.vercel.app/auth/callback`
+  - `https://your-app.vercel.app/auth/reset-password`
+- [ ] **Providers → Email**: keep **Confirm email** ON (so signup verification
+      works) and **Secure email change** ON (so changing email confirms on both
+      old and new addresses — the Settings → Account flow relies on this).
+- [ ] (optional) **Email Templates**: rebrand the confirmation / recovery /
+      email-change templates with your app name and logo.
+- [ ] **Sanity test on the live web app:**
+  - [ ] Sign up → receive verification email → confirm → land on dashboard
+  - [ ] Log out → log back in
+  - [ ] Forgot password → reset link → set new password → log in
+  - [ ] Settings → change email → confirm via both inboxes
+  - [ ] Settings → change password
+  - [ ] Settings → delete account (use a throwaway account) → data is gone
+
+---
+
+## Phase 3 — Add a Privacy Policy page (App Store requirement)
+
+Apple **rejects** apps with accounts but no privacy policy URL.
+
+- [ ] Create a `/privacy` page (or host a policy anywhere with a public URL).
+- [ ] It must state: what you collect (email, the health/fitness/compound data
+      users enter), that it's stored in Supabase, that users can delete their
+      account in-app, and how to contact you.
+- [ ] Note the final URL — you'll paste it into App Store Connect (Phase 7).
+
+---
+
+## Phase 4 — Turn on the AI Coach
+
+- [ ] Go to https://console.anthropic.com → **API Keys** → **Create Key**.
+- [ ] Copy the key (starts with `sk-ant-...`). You only see it once.
+- [ ] Vercel → Settings → Environment Variables → add `ANTHROPIC_API_KEY` = that key.
+- [ ] (optional) Add `COACH_MODEL` to pin a model; otherwise the app uses its
+      sensible default.
+- [ ] **Redeploy.**
+- [ ] Verify: open **Coach** in the live app and send a message — you should get
+      a data-aware reply. Also check the **Sparkles** AI buttons on Compounds
+      and Meal Plans. (Without the key these features return a graceful 503,
+      not a crash.)
+
+---
+
+## Phase 5 — Point the iOS shell at your live web app
+
+On the Mac, in the project folder:
+
+- [ ] Either edit `capacitor.config.ts` → `server.url` to your production URL,
+      **or** export it before syncing:
+      ```bash
+      export CAP_SERVER_URL="https://your-app.vercel.app"
+      ```
+  The native app loads your live site, so future web deploys ship instantly to
+  iPhone with no new binary (you only re-submit when native config changes).
+
+---
+
+## Phase 6 — Build the iOS app (Mac + Xcode)
+
+```bash
+# in the project folder on your Mac
+npm install                        # installs Capacitor + plugins
+sudo gem install cocoapods         # one-time, if not installed
+npx cap add ios                    # creates the ios/ Xcode project (one-time)
+
+# App icon + splash from a single source image (recommended):
+#   put a 1024x1024 PNG (no transparency) at assets/icon.png
+#   and a ~2732x2732 PNG at assets/splash.png
+npm install -D @capacitor/assets
+npx capacitor-assets generate --ios
+
+npx cap sync ios                   # copies config + plugins into the native project
+npx cap open ios                   # opens ios/App/App.xcworkspace in Xcode
+```
+
+In **Xcode**:
+
+- [ ] Select the **App** target → **Signing & Capabilities** → choose your Team
+      (enables automatic signing).
+- [ ] Set the **Bundle Identifier** to your own, e.g. `com.yourname.bodytracker`,
+      and mirror it in `capacitor.config.ts` (`appId`) if you change it.
+- [ ] Confirm the **app icon** shows in the asset catalog (from the generate step).
+- [ ] Pick an iPhone simulator or a connected device → **Run (▶)**.
+- [ ] **On-device smoke test:**
+  - [ ] Sign up / log in / log out work
+  - [ ] Forgot + reset password work
+  - [ ] Change email + change password work
+  - [ ] Nothing is hidden behind the notch or home indicator (safe areas)
+  - [ ] Tapping an input does NOT zoom the screen; keyboard doesn't cover the field
+  - [ ] Data entered on web shows up in the app after refresh (same backend)
+  - [ ] Delete account logs out and removes data
+
+---
+
+## Phase 7 — App Store Connect (per release)
+
+In **https://appstoreconnect.apple.com**:
+
+- [ ] **My Apps → +** → create the app record (matching Bundle ID, name
+      "BodyTracker", primary language, Health & Fitness category).
+- [ ] **Privacy Policy URL**: paste the URL from Phase 3.
+- [ ] **App Privacy questionnaire**: declare data collected — at minimum
+      **Email Address** (account) and the **Health & Fitness** data users log.
+      Mark it linked to the user's identity, used for app functionality.
+- [ ] **Age rating**: complete the questionnaire. This app discusses
+      PED/compound dosing → expect a **17+** rating.
+- [ ] **Account deletion**: confirm "offers account deletion" — it's built in at
+      Settings → Account & Security → Delete account.
+- [ ] **Screenshots**: capture required iPhone sizes (6.7" and 6.5" at least)
+      from the simulator/device.
+- [ ] **Description, keywords, support URL, marketing fields**: fill in.
+
+### Upload the build
+
+```bash
+# In Xcode: Product → Archive → Distribute App → App Store Connect → Upload
+```
+
+- [ ] Archive uploads and finishes processing (a few minutes).
+- [ ] **TestFlight**: add yourself/testers, install via the TestFlight app, and
+      do the on-device test list again on the real binary.
+- [ ] Attach the build to the app version → **Submit for Review**.
+
+---
+
+## Phase 8 — After approval / ongoing
+
+- [ ] **Web changes ship instantly**: push to `main` → Vercel deploys → the iOS
+      app (which loads your URL) updates on next launch. No resubmission needed.
+- [ ] **Resubmit to the App Store only** when you change native config: app icon,
+      splash, bundle ID, Capacitor/plugins, or add a capability (e.g. HealthKit).
+
+---
+
+## Optional later
+
+- [ ] **HealthKit step sync** (iOS): add the HealthKit capability in Xcode and an
+      `NSHealthShareUsageDescription` string to `Info.plist`, then complete the
+      Health-data disclosures in App Store Connect.
+- [ ] **Stricter offline mode**: TanStack Query already caches in memory; add a
+      persisted query cache if you want full offline reads.
+
+---
+
+### Quick reference — what's already done in code
+
+Auth (signup/verify/login/logout/forgot/reset, **change email**, **change
+password**), in-app **account deletion**, Supabase + RLS per-user isolation,
+server-validated API routes, security headers + SEO metadata, Capacitor iOS
+shell with status-bar / splash / keyboard handling, safe-area padding,
+no-zoom 16px inputs, native tap feel, and self-hosted fonts. You only need the
+account/config/Apple steps above.

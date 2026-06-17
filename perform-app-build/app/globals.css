@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,9 +10,40 @@ html,
 body {
   background: #080b12;
   color: #e8edf5;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: var(--font-inter), "Inter", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Keep iOS from auto-zooming type in landscape / accessibility modes. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Native-app feel inside the iOS WebView: kill the grey tap flash, prevent the
+   whole page from rubber-band scrolling, and stop long-press text selection on
+   chrome. Scrollable regions opt back in below. */
+body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Content the user genuinely needs to read/copy stays selectable. */
+input,
+textarea,
+[contenteditable],
+p,
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Faster, flicker-free taps on interactive elements. */
+button,
+a,
+[role="button"],
+select {
+  touch-action: manipulation;
 }
 
 /* Ambient depth — subtle accent glow anchored to the top of the viewport */
@@ -85,6 +114,16 @@ select option {
 textarea {
   resize: vertical;
   min-height: 70px;
+}
+
+/* iOS auto-zooms any focused field whose font-size is < 16px. On touch
+   devices bump fields to 16px so focusing an input never zooms the viewport. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 /* Animations */
