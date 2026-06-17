@@ -48,6 +48,7 @@ export default function WorkoutsPage() {
   const [presetTemplate, setPresetTemplate] = useState<WorkoutTemplate | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [liftSearch, setLiftSearch] = useState("");
+  const [sessionSearch, setSessionSearch] = useState("");
   const [detail, setDetail] = useState<{ ex: typeof exercises[number]; prog?: LiftProgression } | null>(null);
 
   const catalogByName = useMemo(() => {
@@ -78,21 +79,41 @@ export default function WorkoutsPage() {
     [workouts]
   );
 
-  // muscle recovery: days since last trained per muscle
+  // muscle recovery: days since last trained + times trained THIS WEEK (resets weekly)
   const recovery = useMemo(() => {
+    // week starts Monday
+    const now = new Date();
+    const weekStart = new Date(now);
+    const dow = (now.getDay() + 6) % 7; // 0 = Monday
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(weekStart.getDate() - dow);
+    const weekStartMs = weekStart.getTime();
+
     const lastByMuscle: Record<string, string> = {};
+    const weekHits: Record<string, Set<string>> = {};
     [...workouts]
       .sort((a, b) => a.session_date.localeCompare(b.session_date))
       .forEach((w) => {
+        const sessionMs = new Date(w.session_date).getTime();
+        const musclesThisSession = new Set<string>();
         (w.sets || []).forEach((s) => {
           const mg = catalogByName.get(s.exercise_name)?.muscle_group;
-          if (mg) lastByMuscle[mg] = w.session_date;
+          if (mg) {
+            lastByMuscle[mg] = w.session_date;
+            musclesThisSession.add(mg);
+          }
         });
+        if (sessionMs >= weekStartMs) {
+          musclesThisSession.forEach((mg) => {
+            if (!weekHits[mg]) weekHits[mg] = new Set();
+            weekHits[mg].add(w.id);
+          });
+        }
       });
     return MUSCLE_LIST.map((m) => {
       const last = lastByMuscle[m];
       const days = last ? Math.floor((Date.now() - new Date(last).getTime()) / 86400000) : null;
-      return { muscle: m, days, last };
+      return { muscle: m, days, last, hits: weekHits[m]?.size || 0 };
     });
   }, [workouts, catalogByName]);
 
@@ -106,6 +127,38 @@ export default function WorkoutsPage() {
       topPRs.filter((l) => !liftSearch || l.name.toLowerCase().includes(liftSearch.toLowerCase())),
     [topPRs, liftSearch]
   );
+
+  // search recent sessions by title or notes
+  const filteredWorkouts = useMemo(() => {
+    const q = sessionSearch.trim().toLowerCase();
+    if (!q) return workouts;
+    return workouts.filter(
+      (w) =>
+        (w.name || "").toLowerCase().includes(q) ||
+        (w.notes || "").toLowerCase().includes(q)
+    );
+  }, [workouts, sessionSearch]);
+
+  // which session set each lift's e1RM PR → click PR to jump to its source workout
+  const prSessionByLift = useMemo(() => {
+    const map: Record<string, { sessionId: string; e1rm: number }> = {};
+    workouts.forEach((w) => {
+      (w.sets || []).forEach((s) => {
+        const e1 = s.e1rm || 0;
+        const cur = map[s.exercise_name];
+        if (!cur || e1 > cur.e1rm) map[s.exercise_name] = { sessionId: w.id, e1rm: e1 };
+      });
+    });
+    return map;
+  }, [workouts]);
+
+  function jumpToSession(sessionId: string) {
+    setSessionSearch("");
+    setExpanded(sessionId);
+    setTimeout(() => {
+      document.getElementById(`session-${sessionId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
+  }
 
   function openNew() {
     setEditSession(null);
@@ -145,7 +198,10 @@ export default function WorkoutsPage() {
 
       {/* recovery heatmap */}
       <div className="card mb-4">
-        <div className="card-title flex items-center gap-2"><Dumbbell size={14} /> Muscle Recovery</div>
+        <div className="card-title flex items-center justify-between">
+          <span className="flex items-center gap-2"><Dumbbell size={14} /> Muscle Recovery</span>
+          <span className="text-[10px] text-text-3 font-normal normal-case">sets this week · resets Monday</span>
+        </div>
         <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
           {recovery.map((r) => {
             const fresh = r.days === null;
@@ -156,7 +212,12 @@ export default function WorkoutsPage() {
                 : r.days <= 3 ? "bg-status-teal/15 text-status-teal border-status-teal/30"
                 : "bg-status-green/15 text-status-green border-status-green/30";
             return (
-              <div key={r.muscle} className={cn("rounded-xl border px-2 py-2.5 text-center", tone)}>
+              <div key={r.muscle} className={cn("relative rounded-xl border px-2 py-2.5 text-center", tone)}>
+                {r.hits > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                    ×{r.hits}
+                  </span>
+                )}
                 <div className="text-[11px] font-semibold">{r.muscle}</div>
                 <div className="text-[10px] mt-0.5 opacity-90">
                   {fresh ? "untrained" : r.days === 0 ? "today" : `${r.days}d rest`}
@@ -170,7 +231,7 @@ export default function WorkoutsPage() {
       {/* templates */}
       {templates.length > 0 && (
         <div className="card mb-4">
-          <div className="card-title flex items-center gap-2"><LayoutTemplate size={14} /> Templates</div>
+          <div className="card-title flex items-center gap-2"><LayoutTemplate size={14} /> Pre-saved Programs</div>
           <div className="flex gap-2 flex-wrap">
             {templates.map((t) => (
               <div key={t.id} className="flex items-center gap-1.5 bg-bg-2 border border-border rounded-xl pl-3 pr-1.5 py-1.5 hover:border-border-2 transition-all">
@@ -200,14 +261,28 @@ export default function WorkoutsPage() {
         {/* sessions */}
         <div className="card">
           <div className="card-title">Recent Sessions</div>
+          {workouts.length > 0 && (
+            <div className="relative mb-3">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-3" />
+              <input
+                value={sessionSearch}
+                onChange={(e) => setSessionSearch(e.target.value)}
+                placeholder="Search by title or notes..."
+                className="!pl-9"
+              />
+            </div>
+          )}
           {workouts.length === 0 ? (
             <div className="text-text-3 text-sm py-8 text-center">No sessions logged yet. Hit New Workout to begin.</div>
+          ) : filteredWorkouts.length === 0 ? (
+            <div className="text-text-3 text-sm py-8 text-center">No sessions match “{sessionSearch}”.</div>
           ) : (
             <div className="space-y-2 max-h-[560px] overflow-y-auto pr-0.5">
-              {workouts.map((s, idx) => {
+              {filteredWorkouts.map((s, idx) => {
                 const vol = (s.sets || []).reduce((a, x) => a + (x.weight || 0) * (parseInt(x.reps || "0") || 0), 0);
+                const volUnit = (s.sets || []).find((x) => x.weight)?.weight_unit || "lbs";
                 return (
-                  <div key={s.id} className="animate-fade-in" style={{ animationDelay: `${idx * 30}ms` }}>
+                  <div key={s.id} id={`session-${s.id}`} className="animate-fade-in" style={{ animationDelay: `${idx * 30}ms` }}>
                     <div
                       className={cn(
                         "flex items-center justify-between bg-bg-2 rounded-xl px-3 py-3 border cursor-pointer transition-all",
@@ -223,7 +298,7 @@ export default function WorkoutsPage() {
                           <div className="text-sm font-semibold truncate">{s.name}</div>
                           <div className="text-[11px] text-text-2 mt-0.5">
                             {formatDate(s.session_date)} · {s.sets?.length || 0} sets
-                            {vol > 0 ? ` · ${Math.round(vol).toLocaleString()} vol` : ""}
+                            {vol > 0 ? ` · ${Math.round(vol).toLocaleString()} ${volUnit} vol` : ""}
                             {s.duration_minutes ? ` · ${s.duration_minutes}m` : ""}
                           </div>
                         </div>
@@ -277,14 +352,14 @@ export default function WorkoutsPage() {
               {filteredLifts.map((lift, idx) => {
                 const ex = catalogByName.get(lift.name);
                 const mg = ex?.muscle_group || "Other";
+                const prSession = prSessionByLift[lift.name];
                 return (
-                  <button
+                  <div
                     key={lift.name}
-                    onClick={() => ex && setDetail({ ex, prog: lift })}
-                    className="w-full text-left flex items-center justify-between bg-bg-2 rounded-xl px-3 py-3 border border-border hover:border-border-2 transition-all animate-fade-in"
+                    className="w-full flex items-center justify-between bg-bg-2 rounded-xl px-3 py-3 border border-border hover:border-border-2 transition-all animate-fade-in"
                     style={{ animationDelay: `${idx * 25}ms` }}
                   >
-                    <div className="min-w-0">
+                    <button onClick={() => ex && setDetail({ ex, prog: lift })} className="text-left min-w-0 flex-1">
                       <div className="text-sm font-semibold truncate flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full" style={{ background: muscleColor(mg) }} />
                         {lift.name}
@@ -296,13 +371,21 @@ export default function WorkoutsPage() {
                         <TrendingUp size={10} />
                         {lift.delta >= 0 ? "+" : ""}{lift.delta} {lift.unit} since start
                       </div>
-                    </div>
-                    <div className="text-right shrink-0 ml-2">
+                    </button>
+                    <button
+                      onClick={() => prSession && jumpToSession(prSession.sessionId)}
+                      disabled={!prSession}
+                      title={prSession ? "Jump to the workout where this PR was set" : undefined}
+                      className={cn(
+                        "text-right shrink-0 ml-2 rounded-lg px-2 py-1 transition-all",
+                        prSession ? "hover:bg-accent/10 cursor-pointer" : "cursor-default"
+                      )}
+                    >
                       <div className="text-[10px] text-text-3 uppercase tracking-wide">e1RM</div>
                       <div className="text-xl font-bold text-accent">{lift.e1rmPR}</div>
-                      <div className="text-[10px] text-text-3">{lift.unit}</div>
-                    </div>
-                  </button>
+                      <div className="text-[10px] text-text-3">{lift.unit}{prSession ? " · view" : ""}</div>
+                    </button>
+                  </div>
                 );
               })}
             </div>

@@ -5,7 +5,8 @@ import { ExerciseCatalogItem } from "@/types/database";
 import { LiftProgression } from "@/hooks/useTraining";
 import { muscleColor } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
-import { Dumbbell, Target, Activity, Trophy, Lightbulb, AlertTriangle, ListChecks } from "lucide-react";
+import { LiftProgressionChart } from "@/components/charts/LiftProgressionChart";
+import { Dumbbell, Target, Activity, Trophy, Lightbulb, AlertTriangle, ListChecks, LineChart } from "lucide-react";
 
 function MuscleDot({ muscle }: { muscle: string }) {
   return (
@@ -65,6 +66,15 @@ export function ExerciseDetailModal({
               <div className="text-[10px] text-text-3 uppercase tracking-wide">Sets logged</div>
               <div className="text-lg font-bold mt-0.5">{progression.sessions}</div>
             </div>
+          </div>
+        )}
+
+        {progression && progression.history.length >= 2 && (
+          <div className="card-sm">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-text-2 mb-2">
+              <LineChart size={13} className="text-accent" /> PR progression
+            </div>
+            <LiftProgressionChart history={progression.history} unit={progression.unit} />
           </div>
         )}
 
