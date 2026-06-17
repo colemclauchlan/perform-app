@@ -40,12 +40,22 @@ function computeTrendline(values: number[]): number[] {
   return values.map((_, i) => Math.round((slope * i + intercept) * 10) / 10);
 }
 
+export interface CompoundOverlay {
+  label: string;
+  color: string;
+  // modeled concentration sampled at each weight-log date (same length as data)
+  data: number[];
+  // true where a dose was logged on that date → render an emphasized point
+  injection: boolean[];
+}
+
 interface Props {
   data: BodyWeightLog[];
   height?: number;
+  overlays?: CompoundOverlay[];
 }
 
-export function WeightChart({ data, height = 220 }: Props) {
+export function WeightChart({ data, height = 220, overlays = [] }: Props) {
   if (data.length < 2) {
     return (
       <div
@@ -66,6 +76,24 @@ export function WeightChart({ data, height = 220 }: Props) {
   const weights = data.map((d) => d.weight);
   const trend = computeTrendline(weights);
   const trendColor = trend[trend.length - 1] <= trend[0] ? "#22d3a5" : "#f56565";
+
+  const overlayDatasets = overlays.map((o) => ({
+    label: o.label,
+    data: o.data,
+    yAxisID: "y1",
+    borderColor: o.color,
+    backgroundColor: "transparent",
+    tension: 0.35,
+    // bigger dot where an injection was logged on that date
+    pointRadius: o.injection.map((hit) => (hit ? 5 : 0)),
+    pointHoverRadius: o.injection.map((hit) => (hit ? 7 : 3)),
+    pointBackgroundColor: o.color,
+    pointBorderColor: "#0d1117",
+    pointBorderWidth: 1.5,
+    borderWidth: 1.5,
+    fill: false,
+    order: 0,
+  }));
 
   const chartData = {
     labels,
@@ -98,8 +126,10 @@ export function WeightChart({ data, height = 220 }: Props) {
         fill: false,
         order: 1,
       },
+      ...overlayDatasets,
     ],
   };
+  const hasOverlay = overlays.length > 0;
 
   const options: ChartOptions<"line"> = {
     responsive: true,
@@ -128,8 +158,12 @@ export function WeightChart({ data, height = 220 }: Props) {
         bodyColor: "#8494a8",
         padding: 10,
         callbacks: {
-          label: (ctx) =>
-            ` ${ctx.dataset.label}: ${ctx.parsed.y} ${data[0]?.unit || ""}`,
+          label: (ctx) => {
+            if (ctx.dataset.yAxisID === "y1") {
+              return ` ${ctx.dataset.label}: ${Math.round(ctx.parsed.y)}% level`;
+            }
+            return ` ${ctx.dataset.label}: ${ctx.parsed.y} ${data[0]?.unit || ""}`;
+          },
         },
       },
     },
@@ -139,6 +173,7 @@ export function WeightChart({ data, height = 220 }: Props) {
         grid: { color: "rgba(30,45,69,0.4)" },
       },
       y: {
+        position: "left" as const,
         ticks: {
           color: "#4a5568",
           font: { size: 10 },
@@ -146,6 +181,27 @@ export function WeightChart({ data, height = 220 }: Props) {
         },
         grid: { color: "rgba(30,45,69,0.4)" },
       },
+      ...(hasOverlay
+        ? {
+            y1: {
+              position: "right" as const,
+              min: 0,
+              max: 105,
+              ticks: {
+                color: "#4a5568",
+                font: { size: 10 },
+                callback: (v: string | number) => `${v}%`,
+              },
+              grid: { drawOnChartArea: false },
+              title: {
+                display: true,
+                text: "Est. blood level",
+                color: "#4a5568",
+                font: { size: 10 },
+              },
+            },
+          }
+        : {}),
     },
   };
 

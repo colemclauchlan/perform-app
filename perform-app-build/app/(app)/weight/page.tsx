@@ -1,22 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PageHeader, StatCard } from "@/components/ui/PageHeader";
-import { WeightChart } from "@/components/charts/WeightChart";
+import { WeightChart, CompoundOverlay } from "@/components/charts/WeightChart";
 import {
   useBodyWeights,
   useAddBodyWeight,
   useUpdateBodyWeight,
   useDeleteBodyWeight,
 } from "@/hooks/useTraining";
+import { useAllDoses, EnrichedDose } from "@/hooks/useCompounds";
 import { useProfile } from "@/hooks/useNutrition";
 import { todayISO, formatDate, round } from "@/lib/utils";
-import { Trash2, Pencil, Check, X } from "lucide-react";
+import { Trash2, Pencil, Check, X, Syringe } from "lucide-react";
 import toast from "react-hot-toast";
+
+// Model relative blood level at a moment using exponential decay from each prior
+// dose: level = Σ amount · 0.5^(Δhours / halfLife). Normalized to its own peak.
+function buildOverlay(
+  doses: EnrichedDose[],
+  dates: string[],
+  label: string,
+  color: string,
+  defaultHalfLife: number
+): CompoundOverlay | null {
+  if (!doses.length || dates.length < 2) return null;
+  const sampleTimes = dates.map((d) => new Date(d + "T12:00").getTime());
+  const raw = sampleTimes.map((t) => {
+    let level = 0;
+    doses.forEach((dose) => {
+      const dt = new Date(dose.logged_at).getTime();
+      if (dt > t) return;
+      const hl = dose.half_life_hours && dose.half_life_hours > 0 ? dose.half_life_hours : defaultHalfLife;
+      const elapsedH = (t - dt) / 3_600_000;
+      level += dose.dose_amount * Math.pow(0.5, elapsedH / hl);
+    });
+    return level;
+  });
+  const max = Math.max(...raw);
+  if (max <= 0) return null;
+  const norm = raw.map((v) => Math.round((v / max) * 100));
+  const doseDates = new Set(doses.map((d) => d.logged_at.slice(0, 10)));
+  const injection = dates.map((d) => doseDates.has(d));
+  return { label, color, data: norm, injection };
+}
 
 export default function WeightPage() {
   const { data: profile } = useProfile();
   const { data: weights = [] } = useBodyWeights();
+  const { data: doses = [] } = useAllDoses();
   const addWeight = useAddBodyWeight();
   const updateWeight = useUpdateBodyWeight();
   const deleteWeight = useDeleteBodyWeight();
@@ -25,6 +57,24 @@ export default function WeightPage() {
   const [unit, setUnit] = useState(profile?.weight_unit || "lbs");
   const [date, setDate] = useState(todayISO());
   const [notes, setNotes] = useState("");
+
+  const [showCompounds, setShowCompounds] = useState(false);
+
+  // Build GLP-1 + AAS blood-level overlays from logged doses, sampled at weight dates.
+  const overlays = useMemo<CompoundOverlay[]>(() => {
+    if (!showCompounds || weights.length < 2) return [];
+    const dates = weights.map((w) => w.logged_date);
+    const glp = doses.filter((d) => d.compound_type === "GLP-1");
+    const aas = doses.filter((d) => d.compound_type === "Steroid");
+    const out: CompoundOverlay[] = [];
+    const g = buildOverlay(glp, dates, "GLP-1 level", "#22d3a5", 165);
+    const a = buildOverlay(aas, dates, "AAS level", "#f59e0b", 100);
+    if (g) out.push(g);
+    if (a) out.push(a);
+    return out;
+  }, [showCompounds, doses, weights]);
+
+  const hasDoseData = doses.some((d) => d.compound_type === "GLP-1" || d.compound_type === "Steroid");
 
   // inline edit state
   const [editId, setEditId] = useState<string | null>(null);
@@ -153,8 +203,26 @@ export default function WeightPage() {
 
       {/* Chart + history */}
       <div className="card">
-        <div className="card-title">Weight History</div>
-        <WeightChart data={weights} />
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="card-title mb-0">Weight History</div>
+          {hasDoseData && (
+            <button
+              onClick={() => setShowCompounds((s) => !s)}
+              className={`btn btn-sm ${showCompounds ? "btn-primary" : "btn-ghost"}`}
+              title="Overlay estimated GLP-1 / AAS blood levels and injection dates"
+            >
+              <Syringe size={13} /> Compound levels
+            </button>
+          )}
+        </div>
+        {showCompounds && overlays.length > 0 && (
+          <div className="text-[11px] text-text-3 mt-1 mb-1">
+            Dots mark injection dates · right axis shows estimated blood level (relative to your peak, by half-life decay).
+          </div>
+        )}
+        <div className="mt-3">
+          <WeightChart data={weights} overlays={overlays} />
+        </div>
         <div className="mt-5 space-y-1.5 max-h-64 overflow-y-auto">
           {[...weights]
             .reverse()

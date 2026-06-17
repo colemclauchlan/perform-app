@@ -7,6 +7,7 @@ import {
   CompoundProtocol,
   ProtocolCompound,
   DoseLog,
+  CompoundType,
 } from "@/types/database";
 
 const supabase = createClient();
@@ -188,6 +189,52 @@ export function useLogDose() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["protocols"] }),
+  });
+}
+
+export type EnrichedDose = DoseLog & {
+  compound_type: CompoundType | null;
+  half_life_hours: number | null;
+};
+
+// All dose logs for the user, enriched with compound type + half-life so we can
+// model blood concentration over time (used by the weight chart overlay).
+export function useAllDoses() {
+  return useQuery({
+    queryKey: ["all-doses"],
+    queryFn: async (): Promise<EnrichedDose[]> => {
+      const { data: doses, error } = await supabase
+        .from("dose_logs")
+        .select("*")
+        .order("logged_at", { ascending: true });
+      if (error) throw error;
+      if (!doses?.length) return [];
+
+      const [{ data: catalog }, { data: pcs }] = await Promise.all([
+        supabase.from("compound_catalog").select("name,type,half_life_hours"),
+        supabase.from("protocol_compounds").select("id,half_life_hours,compound_name"),
+      ]);
+
+      const typeByName = new Map<string, CompoundType>();
+      const halfByName = new Map<string, number | null>();
+      (catalog || []).forEach((c: { name: string; type: CompoundType; half_life_hours: number | null }) => {
+        typeByName.set(c.name.toLowerCase(), c.type);
+        halfByName.set(c.name.toLowerCase(), c.half_life_hours);
+      });
+      const halfByPc = new Map<string, number | null>();
+      (pcs || []).forEach((p: { id: string; half_life_hours: number | null; compound_name: string }) => {
+        halfByPc.set(p.id, p.half_life_hours);
+      });
+
+      return (doses as DoseLog[]).map((d) => ({
+        ...d,
+        compound_type: typeByName.get(d.compound_name.toLowerCase()) ?? null,
+        half_life_hours:
+          (d.protocol_compound_id ? halfByPc.get(d.protocol_compound_id) : null) ??
+          halfByName.get(d.compound_name.toLowerCase()) ??
+          null,
+      }));
+    },
   });
 }
 
