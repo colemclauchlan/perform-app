@@ -186,3 +186,37 @@ export function computeMacros(
     fat: round(per100.fat * mult),
   };
 }
+
+// ─── FOOD CATEGORY COLORS ─────────────────────────────────────────────────────
+// Static palette for the built-in food catalog categories.
+export const FOOD_CATEGORY_COLORS: Record<string, string> = {
+  Protein: "#2dd4bf",
+  "Protein Bar": "#f59e0b",
+  Carb: "#fbbf24",
+  Fat: "#fb7185",
+  Fruit: "#f472b6",
+  Vegetable: "#4ade80",
+  Dairy: "#60a5fa",
+  Supplement: "#a78bfa",
+  Custom: "#94a3b8",
+};
+
+// Deterministic fallback color for unknown categories (stable per name).
+export function hashColor(s: string): string {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+  return `hsl(${h}, 60%, 62%)`;
+}
+
+// Resolve a category to a color, preferring the user's custom categories.
+export function foodCategoryColor(
+  category: string | null | undefined,
+  custom?: { name: string; color: string }[]
+): string {
+  if (!category) return FOOD_CATEGORY_COLORS.Custom;
+  const match = custom?.find(
+    (x) => x.name.toLowerCase() === category.toLowerCase()
+  );
+  if (match) return match.color;
+  return FOOD_CATEGORY_COLORS[category] ?? hashColor(category);
+}

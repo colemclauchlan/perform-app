@@ -2,12 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { MacroRing } from "@/components/nutrition/MacroBar";
 import { WeeklyMacroGoals } from "@/components/nutrition/WeeklyMacroGoals";
 import {
   useProfile,
+  useUpdateProfile,
   useFoodLog,
   useFoodCatalog,
   useAddFood,
@@ -17,9 +17,28 @@ import {
   useWeeklyMacros,
 } from "@/hooks/useNutrition";
 import { FoodCatalogItem, FoodLogEntry, MealType } from "@/types/database";
-import { todayISO, formatDate, computeMacros, round } from "@/lib/utils";
+import {
+  todayISO,
+  formatDate,
+  computeMacros,
+  round,
+  foodCategoryColor,
+  FOOD_CATEGORY_COLORS,
+  cn,
+} from "@/lib/utils";
 import { Plus, Trash2, ChevronLeft, ChevronRight, Search, Minus } from "lucide-react";
 import toast from "react-hot-toast";
+
+// Small colored dot used to tag a food category throughout the page.
+function CategoryDot({ category, custom }: { category?: string | null; custom?: { name: string; color: string }[] }) {
+  return (
+    <span
+      className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+      style={{ background: foodCategoryColor(category, custom) }}
+      title={category || "Uncategorized"}
+    />
+  );
+}
 
 function portionStep(unit: string): number {
   const u = (unit || "").toLowerCase();
@@ -44,12 +63,22 @@ export default function NutritionPage() {
   const { data: profile } = useProfile();
   const { data: log = [] } = useFoodLog(date);
   const { data: weekly = [] } = useWeeklyMacros();
+  const { data: fullCatalog = [] } = useFoodCatalog("");
   const addLog = useAddFoodLog();
   const updateLog = useUpdateFoodLog();
   const deleteLog = useDeleteFoodLog();
+  const updateProfile = useUpdateProfile();
 
   const calGoal = profile?.target_calories || 2500;
   const proteinGoal = profile?.target_protein || 200;
+  const customCategories = profile?.preferences?.custom_food_categories ?? [];
+
+  // Map catalog id → category so logged foods can be color-tagged.
+  const categoryById = useMemo(() => {
+    const m = new Map<string, string>();
+    fullCatalog.forEach((f) => m.set(f.id, f.category));
+    return m;
+  }, [fullCatalog]);
 
   function adjustPortion(e: FoodLogEntry, dir: 1 | -1) {
     const step = portionStep(e.quantity_unit);
@@ -196,11 +225,17 @@ export default function NutritionPage() {
                         key={e.id}
                         className="flex items-center justify-between bg-bg-2 rounded-lg px-3 py-2.5 border border-border"
                       >
-                        <div>
-                          <div className="text-sm">{e.name}</div>
-                          <div className="text-[11px] text-text-2">
-                            {Math.round(e.protein)}g P · {Math.round(e.carbs)}g C
-                            · {Math.round(e.fat)}g F
+                        <div className="flex items-center gap-2">
+                          <CategoryDot
+                            category={e.food_catalog_id ? categoryById.get(e.food_catalog_id) : "Custom"}
+                            custom={customCategories}
+                          />
+                          <div>
+                            <div className="text-sm">{e.name}</div>
+                            <div className="text-[11px] text-text-2">
+                              {Math.round(e.protein)}g P · {Math.round(e.carbs)}g C
+                              · {Math.round(e.fat)}g F
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -254,6 +289,15 @@ export default function NutritionPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         date={date}
+        customCategories={customCategories}
+        onSaveCategory={(name, color) =>
+          updateProfile.mutate({
+            preferences: {
+              ...(profile?.preferences ?? {}),
+              custom_food_categories: [...customCategories, { name, color }],
+            },
+          })
+        }
         onLog={(entry) => {
           addLog.mutate(entry, {
             onSuccess: () => {
@@ -273,11 +317,15 @@ function LogFoodModal({
   open,
   onClose,
   date,
+  customCategories,
+  onSaveCategory,
   onLog,
 }: {
   open: boolean;
   onClose: () => void;
   date: string;
+  customCategories: { name: string; color: string }[];
+  onSaveCategory: (name: string, color: string) => void;
   onLog: (entry: Record<string, unknown>) => void;
 }) {
   const [tab, setTab] = useState<"search" | "manual">("search");
@@ -294,9 +342,20 @@ function LogFoodModal({
   const [mC, setMC] = useState("");
   const [mF, setMF] = useState("");
   const [saveToLibrary, setSaveToLibrary] = useState(false);
+  const [mCategory, setMCategory] = useState("Custom");
+  const [newCatMode, setNewCatMode] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatColor, setNewCatColor] = useState("#a78bfa");
 
   const addFood = useAddFood();
   const { data: catalog = [] } = useFoodCatalog(search.length >= 2 ? search : "");
+
+  // All selectable categories: built-ins + the user's custom ones.
+  const allCategories = useMemo(() => {
+    const names = new Set<string>(Object.keys(FOOD_CATEGORY_COLORS));
+    customCategories.forEach((c) => names.add(c.name));
+    return Array.from(names);
+  }, [customCategories]);
 
   const matches = useMemo(() => {
     if (search.length < 2) return [];
@@ -323,13 +382,30 @@ function LogFoodModal({
       const p = parseFloat(mP) || 0;
       const c = parseFloat(mC) || 0;
       const f = parseFloat(mF) || 0;
+      // Resolve the chosen category (a brand-new custom one if entered).
+      const category =
+        newCatMode && newCatName.trim() ? newCatName.trim() : mCategory;
+
+      // Persist a brand-new custom category (name + color) to the profile so it
+      // is color-coded everywhere going forward.
+      if (
+        newCatMode &&
+        newCatName.trim() &&
+        !FOOD_CATEGORY_COLORS[newCatName.trim()] &&
+        !customCategories.some(
+          (x) => x.name.toLowerCase() === newCatName.trim().toLowerCase()
+        )
+      ) {
+        onSaveCategory(newCatName.trim(), newCatColor);
+      }
+
       // Optionally remember this custom food for future logging. The entered
       // macros are stored as the per-serving (≈per-100g) basis.
       if (saveToLibrary && mName.trim()) {
         addFood.mutate(
           {
             name: mName.trim(),
-            category: "Custom",
+            category,
             calories_per_100g: cal,
             protein_per_100g: p,
             carbs_per_100g: c,
@@ -377,6 +453,10 @@ function LogFoodModal({
     setMC("");
     setMF("");
     setSaveToLibrary(false);
+    setMCategory("Custom");
+    setNewCatMode(false);
+    setNewCatName("");
+    setNewCatColor("#a78bfa");
   }
 
   return (
@@ -425,14 +505,15 @@ function LogFoodModal({
                 {matches.map((f) => (
                   <div
                     key={f.id}
-                    className="px-3 py-2 text-sm cursor-pointer hover:bg-bg-3 text-text-2 hover:text-text-1"
+                    className="px-3 py-2 text-sm cursor-pointer hover:bg-bg-3 text-text-2 hover:text-text-1 flex items-center gap-2"
                     onClick={() => {
                       setSelected(f);
                       setSearch(f.name);
                     }}
                   >
-                    {f.name}{" "}
-                    <span className="text-text-3">
+                    <CategoryDot category={f.category} custom={customCategories} />
+                    <span className="flex-1 truncate">{f.name}</span>
+                    <span className="text-text-3 text-[11px] shrink-0">
                       {f.calories_per_100g} kcal/100g
                     </span>
                   </div>
@@ -445,7 +526,16 @@ function LogFoodModal({
             <>
               <div className="card-sm">
                 <span className="text-sm font-medium">{selected.name}</span>{" "}
-                <Badge variant="teal">{selected.category}</Badge>
+                <span
+                  className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full align-middle"
+                  style={{
+                    color: foodCategoryColor(selected.category, customCategories),
+                    background: `${foodCategoryColor(selected.category, customCategories)}1f`,
+                  }}
+                >
+                  <CategoryDot category={selected.category} custom={customCategories} />
+                  {selected.category}
+                </span>
                 <div className="text-[11px] text-text-2 mt-1">
                   Per 100g: {selected.calories_per_100g} kcal ·{" "}
                   {selected.protein_per_100g}g P · {selected.carbs_per_100g}g C ·{" "}
@@ -534,6 +624,75 @@ function LogFoodModal({
                 placeholder="0"
               />
             </div>
+          </div>
+
+          {/* Category picker — color-coded, with the option to create a new one */}
+          <div>
+            <label className="label">Category</label>
+            {!newCatMode ? (
+              <div className="flex flex-wrap gap-1.5">
+                {allCategories.map((cat) => {
+                  const active = mCategory === cat;
+                  const color = foodCategoryColor(cat, customCategories);
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setMCategory(cat)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border transition-all",
+                        active ? "border-transparent" : "border-border text-text-3 hover:text-text-1"
+                      )}
+                      style={
+                        active
+                          ? { background: `${color}26`, color, borderColor: `${color}66` }
+                          : undefined
+                      }
+                    >
+                      <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+                      {cat}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setNewCatMode(true)}
+                  className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-full border border-dashed border-border-2 text-text-3 hover:text-accent hover:border-accent transition-all"
+                >
+                  <Plus size={12} /> New
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <input
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    placeholder="New category name"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="label">Color</label>
+                  <input
+                    type="color"
+                    value={newCatColor}
+                    onChange={(e) => setNewCatColor(e.target.value)}
+                    className="!w-12 !h-9 !p-1 cursor-pointer"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    setNewCatMode(false);
+                    setNewCatName("");
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
           </div>
           <label className="flex items-center gap-2 text-sm text-text-2 cursor-pointer">
             <input

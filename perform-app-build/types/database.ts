@@ -47,6 +47,7 @@ export interface UserPreferences {
     category?: string;
   }[];
   favorite_compounds?: string[];
+  custom_food_categories?: { name: string; color: string }[];
 }
 
 export interface FoodCatalogItem {
