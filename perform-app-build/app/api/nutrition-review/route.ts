@@ -31,7 +31,14 @@ function num(n: unknown): number {
 
 const OUTPUT_RULES = `You are reviewing a single saved meal plan inside a fitness tracking app.
 
-Critique the plan against the user's macro targets and sound nutrition principles (protein adequacy, fiber/micronutrient quality, meal balance, sugar/processed load, food variety, practicality).
+FIRST, identify the meal type from the provided "type" field (e.g. breakfast, lunch, dinner, snack, pre-workout snack, post-workout / PWO snack, full day, or other) and calibrate the entire review to that context. Judge each type by its own appropriate standard:
+- A snack or pre/post-workout snack should NOT be penalized for lacking full-day protein totals, vegetables, fiber, or micronutrient variety — evaluate it on its purpose (e.g. fast carbs + protein around training, portability, satiety) and only its share of the day.
+- A pre-workout meal/snack favors easily digested carbs with moderate protein and low fat/fiber; a post-workout (PWO) meal favors protein + carbs for recovery.
+- Breakfast / lunch / dinner are individual meals — assess balance and protein for that meal, not the whole day.
+- ONLY a "full day" plan should be compared directly against the user's full daily calorie and macro targets and held to whole-diet standards (fiber, micronutrients, variety).
+State the meal type you assumed in the summary, and never criticize a plan for missing things that belong to a different meal type than the one being reviewed.
+
+Critique the plan against the appropriate standard for its meal type and sound nutrition principles (protein adequacy, fiber/micronutrient quality where relevant, meal balance, sugar/processed load, food variety, practicality, and nutrient timing for pre/post-workout).
 
 Respond with ONLY a JSON object (no markdown fences, no prose around it) of exactly this shape:
 {
@@ -41,7 +48,7 @@ Respond with ONLY a JSON object (no markdown fences, no prose around it) of exac
   "summary": "<2-3 sentence overview>",
   "strengths": ["<short bullet>", ...],
   "improvements": ["<short, specific, actionable bullet>", ...],
-  "macro_balance": "<one sentence on how the macros line up vs the user's targets>"
+  "macro_balance": "<one sentence on the macro split appropriate to this meal type — for a full day, compare against the user's daily targets; for a single meal or snack, judge the split itself and its role in the day, not the full daily totals>"
 }
 Keep bullets concise. Be honest and specific; do not invent foods that are not in the plan.`;
 
