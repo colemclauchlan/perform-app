@@ -86,8 +86,9 @@ export default function SleepPage() {
   const avgDuration = recent.length
     ? round(recent.reduce((a, l) => a + (l.duration_hours || 0), 0) / recent.length, 1)
     : 0;
-  const avgQuality = recent.length
-    ? round(recent.reduce((a, l) => a + (l.quality || 0), 0) / recent.filter((l) => l.quality).length, 1)
+  const rated = recent.filter((l) => l.quality);
+  const avgQuality = rated.length
+    ? round(rated.reduce((a, l) => a + (l.quality || 0), 0) / rated.length, 1)
     : 0;
 
   const maxBar = Math.max(10, ...recent.map((l) => l.duration_hours || 0));
