@@ -11,8 +11,17 @@ export function OfflineBanner() {
 
   useEffect(() => {
     let cleanup: (() => void) | undefined;
-    onNetworkChange(setOnline).then((fn) => (cleanup = fn));
-    return () => cleanup?.();
+    let cancelled = false;
+    // onNetworkChange is async; if we unmount before it resolves, run the
+    // unsubscribe as soon as it arrives so the listener never leaks.
+    onNetworkChange(setOnline).then((fn) => {
+      if (cancelled) fn();
+      else cleanup = fn;
+    });
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
   }, []);
 
   if (online) return null;

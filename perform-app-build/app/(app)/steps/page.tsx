@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { PageHeader, StatCard } from "@/components/ui/PageHeader";
 import { useSteps, useUpsertSteps, useDeleteSteps } from "@/hooks/useTraining";
-import { todayISO, formatDate, cn } from "@/lib/utils";
+import { todayISO, localISO, formatDate, cn } from "@/lib/utils";
 import { Footprints, Smartphone, Trash2, ChevronDown, Plus, Check } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -76,13 +76,13 @@ export default function StepsPage() {
   }
 
   const today = steps.find((s) => s.logged_date === todayISO());
+  const weekAgo = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return localISO(d);
+  })();
   const weekTotal = steps
-    .filter((s) => {
-      const d = new Date(s.logged_date);
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return d >= weekAgo;
-    })
+    .filter((s) => s.logged_date >= weekAgo)
     .reduce((a, s) => a + s.step_count, 0);
   const avg = steps.length
     ? Math.round(steps.reduce((a, s) => a + s.step_count, 0) / steps.length)
@@ -99,7 +99,7 @@ export default function StepsPage() {
   const trend = useMemo(() => {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 29);
-    const cut = cutoff.toISOString().slice(0, 10);
+    const cut = localISO(cutoff);
     return [...steps]
       .filter((s) => s.logged_date >= cut)
       .sort((a, b) => a.logged_date.localeCompare(b.logged_date));

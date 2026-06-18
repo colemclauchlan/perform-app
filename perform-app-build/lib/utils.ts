@@ -4,11 +4,17 @@ export function cn(...classes: (string | boolean | undefined | null)[]): string 
   return classes.filter(Boolean).join(" ");
 }
 
-export function todayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
+// Local YYYY-MM-DD for a given date (defaults to now). Avoids the UTC shift
+// that toISOString() introduces for users west of UTC, keeping date strings
+// consistent with the locally-stored logged_date values across the app.
+export function localISO(date: Date = new Date()): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate()
   ).padStart(2, "0")}`;
+}
+
+export function todayISO(): string {
+  return localISO();
 }
 
 export function formatDate(iso: string): string {
@@ -44,7 +50,10 @@ export function parseReps(reps: string | null): number {
 
 export function formatRelativeDays(iso: string): string {
   if (!iso) return "";
-  const then = new Date(iso).getTime();
+  // Parse the date-only string as LOCAL midnight (new Date(iso) would treat it
+  // as UTC, shifting the day for users behind UTC and mislabelling "Today").
+  const [y, m, d] = iso.split("-").map(Number);
+  const then = new Date(y, (m || 1) - 1, d || 1).getTime();
   const days = Math.floor((Date.now() - then) / 86400000);
   if (days <= 0) return "Today";
   if (days === 1) return "Yesterday";

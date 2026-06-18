@@ -1171,9 +1171,13 @@ function LogDoseModal({
   const [protoId, setProtoId] = useState("");
   const [compoundName, setCompoundName] = useState("");
   const [amount, setAmount] = useState("");
-  const [datetime, setDatetime] = useState(
-    new Date().toISOString().slice(0, 16)
-  );
+  const [datetime, setDatetime] = useState(() => {
+    // Local time for the datetime-local input (toISOString would be UTC).
+    const n = new Date();
+    return new Date(n.getTime() - n.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+  });
   const [site, setSite] = useState("");
   const [notes, setNotes] = useState("");
 

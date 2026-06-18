@@ -43,7 +43,7 @@ export function WeeklyMacroGoals({
           // 100% of goal renders at 60% column height, so over-goal still fits.
           const h = Math.max(3, Math.min(100, pct * 0.6));
           const proteinHit = d.p >= proteinGoal;
-          const day = new Date(d.date + "T00:00").toLocaleDateString("en-US", { weekday: "short" });
+          const day = new Date(d.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short" });
           return (
             <div key={d.date} className="flex-1 flex flex-col items-center group relative h-full justify-end">
               <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-bg-3 text-text-1 text-[10px] rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-border">

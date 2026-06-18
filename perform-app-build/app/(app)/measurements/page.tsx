@@ -62,7 +62,8 @@ export default function MeasurementsPage() {
     const payload: Record<string, unknown> = { logged_date: date };
     FIELDS.forEach((f) => {
       if (form[f.col] !== "") {
-        payload[f.key] = parseFloat(form[f.col] as string);
+        const v = parseFloat(form[f.col] as string);
+        if (!Number.isNaN(v)) payload[f.key] = v;
       }
     });
     if (form.notes) payload.notes = form.notes;

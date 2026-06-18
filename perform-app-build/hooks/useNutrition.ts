@@ -7,6 +7,7 @@ import {
   FoodLogEntry,
   Profile,
 } from "@/types/database";
+import { localISO } from "@/lib/utils";
 
 const supabase = createClient();
 
@@ -113,7 +114,7 @@ export function useWeeklyCalories() {
     queryFn: async () => {
       const start = new Date();
       start.setDate(start.getDate() - 6);
-      const startISO = start.toISOString().slice(0, 10);
+      const startISO = localISO(start);
       const { data, error } = await supabase
         .from("food_log")
         .select("logged_date, calories")
@@ -128,7 +129,7 @@ export function useWeeklyCalories() {
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        const ds = d.toISOString().slice(0, 10);
+        const ds = localISO(d);
         result.push({ date: ds, calories: Math.round(byDate[ds] || 0) });
       }
       return result;
@@ -143,7 +144,7 @@ export function useWeeklyMacros() {
     queryFn: async () => {
       const start = new Date();
       start.setDate(start.getDate() - 6);
-      const startISO = start.toISOString().slice(0, 10);
+      const startISO = localISO(start);
       const { data, error } = await supabase
         .from("food_log")
         .select("logged_date, calories, protein, carbs, fat")
@@ -161,7 +162,7 @@ export function useWeeklyMacros() {
       for (let i = 6; i >= 0; i--) {
         const dt = new Date();
         dt.setDate(dt.getDate() - i);
-        const ds = dt.toISOString().slice(0, 10);
+        const ds = localISO(dt);
         const v = byDate[ds] || { cal: 0, p: 0, c: 0, f: 0 };
         result.push({ date: ds, cal: Math.round(v.cal), p: Math.round(v.p), c: Math.round(v.c), f: Math.round(v.f) });
       }

@@ -14,7 +14,7 @@ import {
 } from "@/hooks/useBloodwork";
 import { useProfile, useUpdateProfile } from "@/hooks/useNutrition";
 import { BloodworkEntry } from "@/types/database";
-import { todayISO, formatDate } from "@/lib/utils";
+import { todayISO, formatDate, localISO } from "@/lib/utils";
 import {
   Plus,
   Trash2,
@@ -238,7 +238,7 @@ export default function BloodworkPage() {
     const d = new Date();
     const map = { "1mo": 1, "3mo": 3, "6mo": 6, "1yr": 12 } as const;
     d.setMonth(d.getMonth() - map[range]);
-    return d.toISOString().slice(0, 10);
+    return localISO(d);
   }, [range]);
 
   const series: MarkerSeries[] = useMemo(() => {

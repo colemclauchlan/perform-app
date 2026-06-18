@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase-client";
 import { BodyMeasurement, HydrationLog, SleepLog } from "@/types/database";
+import { localISO } from "@/lib/utils";
 
 // ─── BODY MEASUREMENTS ────────────────────────────────────────────────────────
 export function useBodyMeasurements() {
@@ -87,7 +88,10 @@ export function useAddHydration() {
       const { error } = await supabase.from("hydration_logs").insert({ ...log, user_id: user.id });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["hydration_logs"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["hydration_logs"] });
+      qc.invalidateQueries({ queryKey: ["weekly_hydration"] });
+    },
   });
 }
 
@@ -114,7 +118,10 @@ export function useDeleteHydration() {
       const { error } = await supabase.from("hydration_logs").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["hydration_logs"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["hydration_logs"] });
+      qc.invalidateQueries({ queryKey: ["weekly_hydration"] });
+    },
   });
 }
 
@@ -128,7 +135,7 @@ export function useWeeklyHydration() {
       const { data, error } = await supabase
         .from("hydration_logs")
         .select("logged_date, amount_ml")
-        .gte("logged_date", since.toISOString().slice(0, 10))
+        .gte("logged_date", localISO(since))
         .order("logged_date");
       if (error) throw error;
       const grouped: Record<string, number> = {};

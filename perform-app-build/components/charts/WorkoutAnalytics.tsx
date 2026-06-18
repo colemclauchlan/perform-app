@@ -13,7 +13,7 @@ import {
 } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
 import { WorkoutSession } from "@/types/database";
-import { muscleColor, parseReps } from "@/lib/utils";
+import { muscleColor, parseReps, localISO } from "@/lib/utils";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
@@ -143,7 +143,7 @@ export function MuscleSplitChart({
   const { labels, counts, colors, total } = useMemo(() => {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
-    const cutoffISO = cutoff.toISOString().slice(0, 10);
+    const cutoffISO = localISO(cutoff);
     const tally: Record<string, number> = {};
     workouts.forEach((w) => {
       if (w.session_date < cutoffISO) return;

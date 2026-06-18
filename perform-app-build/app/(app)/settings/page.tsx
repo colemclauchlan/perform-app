@@ -158,9 +158,11 @@ export default function SettingsPage() {
       type: "application/json",
     });
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
+    a.href = url;
     a.download = "perform_export.json";
     a.click();
+    URL.revokeObjectURL(url);
     toast.success("Data exported", { id: "export" });
   }
 

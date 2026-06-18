@@ -55,13 +55,13 @@ export function RestTimer({
       <span className={cn("font-mono text-lg font-bold tabular-nums w-[58px] text-center", done && "text-status-green")}>
         {mm}:{ss}
       </span>
-      <button className="btn btn-ghost btn-sm !px-1.5" onClick={() => setRemaining((r) => Math.max(0, r - 15))} title="-15s">
+      <button type="button" className="btn btn-ghost btn-sm !px-1.5" onClick={() => setRemaining((r) => Math.max(0, r - 15))} title="-15s">
         <Minus size={14} />
       </button>
-      <button className="btn btn-ghost btn-sm !px-1.5" onClick={() => setRemaining((r) => r + 15)} title="+15s">
+      <button type="button" className="btn btn-ghost btn-sm !px-1.5" onClick={() => setRemaining((r) => r + 15)} title="+15s">
         <Plus size={14} />
       </button>
-      <button className="btn btn-ghost btn-sm !px-1.5" onClick={() => setRunning((v) => !v)}>
+      <button type="button" className="btn btn-ghost btn-sm !px-1.5" onClick={() => setRunning((v) => !v)}>
         {running ? <Pause size={14} /> : <Play size={14} />}
       </button>
       <button
@@ -77,6 +77,7 @@ export function RestTimer({
         {PRESETS.map((p) => (
           <button
             key={p}
+            type="button"
             className="text-[11px] px-1.5 py-0.5 rounded bg-bg-3 hover:bg-bg-2 text-text-2"
             onClick={() => {
               setRemaining(p);
@@ -87,7 +88,7 @@ export function RestTimer({
           </button>
         ))}
       </div>
-      <button className="btn btn-ghost btn-sm !px-1.5" onClick={onClose}>
+      <button type="button" className="btn btn-ghost btn-sm !px-1.5" onClick={onClose}>
         <X size={14} />
       </button>
     </div>

@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { DashboardSwitcher } from "@/components/DashboardSwitcher";
 import { useWorkouts, useLiftProgression, useExercises } from "@/hooks/useTraining";
 import { useProtocols } from "@/hooks/useCompounds";
-import { formatDate, getNextDoseInfo } from "@/lib/utils";
+import { formatDate, getNextDoseInfo, localISO } from "@/lib/utils";
 import { Frequency } from "@/types/database";
 import { WorkoutVolumeChart, MuscleSplitChart } from "@/components/charts/WorkoutAnalytics";
 import {
@@ -51,7 +51,7 @@ export default function GymDashboardPage() {
   const weekStats = useMemo(() => {
     const start = new Date();
     start.setDate(start.getDate() - 6);
-    const startISO = start.toISOString().slice(0, 10);
+    const startISO = localISO(start);
     let sets = 0;
     let tonnage = 0;
     let sessions = 0;

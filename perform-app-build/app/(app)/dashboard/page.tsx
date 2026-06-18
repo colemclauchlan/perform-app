@@ -126,7 +126,9 @@ export default function DashboardPage() {
   const maxBar = Math.max(targetCal, ...weekly.map((w) => w.calories), 1);
   const calPct = Math.round((totals.cal / targetCal) * 100) || 0;
   const protPct = Math.round((totals.p / targetP) * 100) || 0;
-  const recentWorkout = workouts[workouts.length - 1];
+  // useWorkouts returns sessions newest-first (session_date desc), so the most
+  // recent workout is index 0.
+  const recentWorkout = workouts[0];
 
   const overdueDoses = activeProtocols.flatMap((p) =>
     (p.compounds ?? []).filter(

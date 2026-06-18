@@ -8,7 +8,7 @@ import {
   useDeleteSleepLog,
 } from "@/hooks/useBodyMetrics";
 import { useProfile, useUpdateProfile } from "@/hooks/useNutrition";
-import { todayISO, formatDate, round } from "@/lib/utils";
+import { todayISO, formatDate, round, localISO } from "@/lib/utils";
 import { Moon, Star, Trash2, Clock, Target, Apple } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -27,7 +27,7 @@ export default function SleepPage() {
   const weeklyGoal = profile?.preferences?.sleep_weekly_goal_hours || DEFAULT_WEEKLY_GOAL;
 
   // sum sleep hours over the trailing 7 days
-  const weekCutoff = (() => { const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().slice(0, 10); })();
+  const weekCutoff = (() => { const d = new Date(); d.setDate(d.getDate() - 6); return localISO(d); })();
   const weekTotal = round(
     logs.filter((l) => l.logged_date >= weekCutoff).reduce((a, l) => a + (l.duration_hours || 0), 0),
     1

@@ -19,6 +19,7 @@ import {
 import { FoodCatalogItem, FoodLogEntry, MealType } from "@/types/database";
 import {
   todayISO,
+  localISO,
   formatDate,
   computeMacros,
   round,
@@ -110,7 +111,7 @@ export default function NutritionPage() {
   function changeDate(delta: number) {
     const d = new Date(date + "T00:00");
     d.setDate(d.getDate() + delta);
-    setDate(d.toISOString().slice(0, 10));
+    setDate(localISO(d));
   }
 
   const rings = [

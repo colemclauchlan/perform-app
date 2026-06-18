@@ -281,6 +281,22 @@ function SlideshowView({ checkins, wu }: { checkins: CheckinView[]; wu: string }
   );
 }
 
+// Object-URL for a File that is revoked when the file changes or unmounts,
+// so repeated re-renders of the upload modal don't leak blob URLs.
+function useObjectUrl(file: File | null): string | null {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!file) {
+      setUrl(null);
+      return;
+    }
+    const next = URL.createObjectURL(file);
+    setUrl(next);
+    return () => URL.revokeObjectURL(next);
+  }, [file]);
+  return url;
+}
+
 // tiny interval hook
 function useTimer(active: boolean, cb: () => void, ms: number) {
   const saved = useRef(cb);
@@ -303,7 +319,7 @@ function FileSlot({
   onPick: (f: File) => void;
   onClear: () => void;
 }) {
-  const preview = file ? URL.createObjectURL(file) : null;
+  const preview = useObjectUrl(file);
   return (
     <div className="relative">
       <label className="block aspect-[3/4] rounded-xl overflow-hidden bg-bg-2 border border-dashed border-border hover:border-accent/50 cursor-pointer flex items-center justify-center transition-all">
@@ -347,7 +363,8 @@ function EditFileSlot({
   onPick: (f: File) => void;
   onClear: () => void;
 }) {
-  const preview = file ? URL.createObjectURL(file) : existing;
+  const objectUrl = useObjectUrl(file);
+  const preview = objectUrl ?? existing;
   return (
     <div className="relative">
       <label className="block aspect-[3/4] rounded-xl overflow-hidden bg-bg-2 border border-dashed border-border hover:border-accent/50 cursor-pointer flex items-center justify-center transition-all">

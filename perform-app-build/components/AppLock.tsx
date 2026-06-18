@@ -23,6 +23,7 @@ export function AppLock() {
 
   useEffect(() => {
     let removeListener: (() => void) | undefined;
+    let cancelled = false;
     (async () => {
       if (!(await isNative()) || !isLockEnabled()) return;
       setActive(true);
@@ -34,12 +35,17 @@ export function AppLock() {
           // Re-lock every time the app is backgrounded.
           if (!isActive && isLockEnabled()) setLocked(true);
         });
-        removeListener = () => handle.remove();
+        // If we already unmounted while awaiting, tear down immediately.
+        if (cancelled) handle.remove();
+        else removeListener = () => handle.remove();
       } catch {
         /* @capacitor/app absent — launch-time lock still works */
       }
     })();
-    return () => removeListener?.();
+    return () => {
+      cancelled = true;
+      removeListener?.();
+    };
   }, [unlock]);
 
   // Trigger the prompt automatically when we transition into the locked state.
