@@ -8,6 +8,7 @@ import { useProfile, useUpdateProfile } from "@/hooks/useNutrition";
 import { createClient } from "@/lib/supabase-client";
 import { Download, KeyRound, LogOut, Mail, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { DeviceFeatures } from "@/components/settings/DeviceFeatures";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -236,6 +237,9 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+
+      {/* iPhone device features — Apple Health sync + Face ID lock */}
+      <DeviceFeatures />
 
       {/* Account & security */}
       <div className="card mt-3">

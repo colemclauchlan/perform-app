@@ -132,7 +132,25 @@ In **Xcode**:
 - [ ] Set the **Bundle Identifier** to your own, e.g. `com.yourname.bodytracker`,
       and mirror it in `capacitor.config.ts` (`appId`) if you change it.
 - [ ] Confirm the **app icon** shows in the asset catalog (from the generate step).
+
+#### Enable native capabilities (required for Apple Health + Face ID)
+
+These features are already coded; they just need the iOS capability and the
+usage strings Apple requires, which live in the native project.
+
+- [ ] **Signing & Capabilities → + Capability → HealthKit.** (Leave "Clinical
+      Health Records" off.)
+- [ ] Open `ios/App/App/Info.plist` and add these keys (Xcode: right-click →
+      Open As → Source Code, or use the property list editor):
+  - `NSHealthShareUsageDescription` → "BodyTracker reads your steps, body weight, and sleep from Apple Health so your dashboard stays in sync."
+  - `NSHealthUpdateUsageDescription` → "BodyTracker can write workouts and metrics you log back to Apple Health." *(safe to include even though the app currently only reads)*
+  - `NSFaceIDUsageDescription` → "BodyTracker uses Face ID to lock the app so only you can open it."
+- [ ] Re-run `npx cap sync ios` after `npm install` so the Health, biometric,
+      haptics, app, and network plugins are linked.
+
 - [ ] Pick an iPhone simulator or a connected device → **Run (▶)**.
+      *(Apple Health + Face ID need a real device or a simulator with biometrics
+      enrolled — Simulator → Features → Face ID → Enrolled.)*
 - [ ] **On-device smoke test:**
   - [ ] Sign up / log in / log out work
   - [ ] Forgot + reset password work
@@ -140,6 +158,10 @@ In **Xcode**:
   - [ ] Nothing is hidden behind the notch or home indicator (safe areas)
   - [ ] Tapping an input does NOT zoom the screen; keyboard doesn't cover the field
   - [ ] Data entered on web shows up in the app after refresh (same backend)
+  - [ ] **Settings → Apple Health → Sync** imports steps/weight/sleep (grant the
+        Health permission prompt first)
+  - [ ] **Settings → App Lock → Enable Face ID** — background the app and reopen;
+        it should require Face ID
   - [ ] Delete account logs out and removes data
 
 ---
@@ -186,9 +208,13 @@ In **https://appstoreconnect.apple.com**:
 
 ## Optional later
 
-- [ ] **HealthKit step sync** (iOS): add the HealthKit capability in Xcode and an
-      `NSHealthShareUsageDescription` string to `Info.plist`, then complete the
-      Health-data disclosures in App Store Connect.
+- [ ] **Write back to Apple Health**: the app currently reads from Health. To
+      also push logged workouts/weight into Health, extend `lib/health.ts` with
+      the plugin's write API (the `NSHealthUpdateUsageDescription` string is
+      already in place from Phase 6).
+- [ ] **Local notifications / reminders** (dose reminders, "log your day"): add
+      `@capacitor/local-notifications`, request permission, and schedule from a
+      reminders settings screen.
 - [ ] **Stricter offline mode**: TanStack Query already caches in memory; add a
       persisted query cache if you want full offline reads.
 
@@ -200,5 +226,7 @@ Auth (signup/verify/login/logout/forgot/reset, **change email**, **change
 password**), in-app **account deletion**, Supabase + RLS per-user isolation,
 server-validated API routes, security headers + SEO metadata, Capacitor iOS
 shell with status-bar / splash / keyboard handling, safe-area padding,
-no-zoom 16px inputs, native tap feel, and self-hosted fonts. You only need the
-account/config/Apple steps above.
+no-zoom 16px inputs, native tap feel, self-hosted fonts, **Apple Health sync
+(steps / weight / sleep)**, **Face ID / Touch ID app lock**, **haptics**, and an
+**offline banner**. You only need the account/config/Apple steps above (incl.
+the HealthKit capability + Info.plist usage strings in Phase 6).

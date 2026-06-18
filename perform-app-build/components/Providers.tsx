@@ -3,6 +3,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { CapacitorInit } from "@/components/CapacitorInit";
+import { AppLock } from "@/components/AppLock";
+import { OfflineBanner } from "@/components/OfflineBanner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(
@@ -22,7 +24,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <CapacitorInit />
+      <OfflineBanner />
       {children}
+      <AppLock />
     </QueryClientProvider>
   );
 }
