@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { getCoachContext } from "@/lib/ai-context";
+import { buildUserContext } from "@/lib/ai-user-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -101,23 +102,14 @@ export async function POST(req: Request) {
     { cal: 0, p: 0, c: 0, f: 0 }
   );
 
-  // Pull the user's targets for context (best-effort).
-  let targetLine = "";
+  // Pull the user's full tracked health history for context (best-effort), so
+  // the review is tailored to their goals, body composition, training, and diet
+  // trends — not just this single plan in isolation.
+  let userContext = "";
   try {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("target_calories, target_protein, target_carbs, target_fat")
-      .eq("id", user.id)
-      .single();
-    if (profile) {
-      targetLine = `User's daily targets: ${num(profile.target_calories)} kcal, ${num(
-        profile.target_protein
-      )}g protein, ${num(profile.target_carbs)}g carbs, ${num(
-        profile.target_fat
-      )}g fat.`;
-    }
+    userContext = await buildUserContext(user.id);
   } catch {
-    targetLine = "";
+    userContext = "";
   }
 
   const itemLines = plan.items
@@ -132,9 +124,9 @@ export async function POST(req: Request) {
     .join("\n");
 
   const userMsg = [
+    userContext,
     `Meal plan: "${plan.name}" (type: ${plan.meal_type}).`,
     plan.notes ? `Notes: ${plan.notes}` : "",
-    targetLine,
     `Plan totals: ${Math.round(totals.cal)} kcal, ${Math.round(
       totals.p
     )}g protein, ${Math.round(totals.c)}g carbs, ${Math.round(totals.f)}g fat.`,

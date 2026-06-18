@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { getCoachContext } from "@/lib/ai-context";
+import { buildUserContext } from "@/lib/ai-user-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,91 +9,6 @@ export const dynamic = "force-dynamic";
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 const MODEL = process.env.COACH_MODEL || "claude-sonnet-4-6";
-
-function num(n: unknown): number {
-  return Number(n) || 0;
-}
-
-async function buildContext(): Promise<string> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return "";
-
-  const today = new Date().toISOString().slice(0, 10);
-  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
-
-  const [{ data: profile }, { data: sessions }, { data: protocols }, { data: foodToday }, { data: weights }] =
-    await Promise.all([
-      supabase.from("profiles").select("*").eq("id", user.id).single(),
-      supabase
-        .from("workout_sessions")
-        .select("name, session_date")
-        .order("session_date", { ascending: false })
-        .limit(6),
-      supabase.from("compound_protocols").select("name, is_active, start_date, end_date").eq("is_active", true),
-      supabase.from("food_log").select("calories, protein, carbs, fat").eq("logged_date", today),
-      supabase.from("body_weight_logs").select("weight, unit, logged_date").order("logged_date", { ascending: false }).limit(1),
-    ]);
-
-  const { data: weekSets } = await supabase
-    .from("workout_sets")
-    .select("exercise_name, weight, reps, e1rm, weight_unit, created_at")
-    .gte("created_at", `${weekAgo}T00:00:00`)
-    .order("e1rm", { ascending: false })
-    .limit(40);
-
-  const macroTotals = (foodToday || []).reduce(
-    (a, f) => ({
-      cal: a.cal + num(f.calories),
-      p: a.p + num(f.protein),
-      c: a.c + num(f.carbs),
-      ff: a.ff + num(f.fat),
-    }),
-    { cal: 0, p: 0, c: 0, ff: 0 }
-  );
-
-  // best e1rm per lift this week
-  const bestByLift: Record<string, { e1rm: number; unit: string }> = {};
-  (weekSets || []).forEach((s) => {
-    const e = num(s.e1rm);
-    if (!bestByLift[s.exercise_name] || e > bestByLift[s.exercise_name].e1rm) {
-      bestByLift[s.exercise_name] = { e1rm: e, unit: s.weight_unit };
-    }
-  });
-  const topLifts = Object.entries(bestByLift)
-    .sort((a, b) => b[1].e1rm - a[1].e1rm)
-    .slice(0, 6)
-    .map(([n, v]) => `${n}: ~${v.e1rm}${v.unit} e1RM`)
-    .join("; ");
-
-  const wu = profile?.weight_unit || "lbs";
-  const latestW = weights?.[0];
-
-  const lines: string[] = ["The user's current tracked data:"];
-  if (profile) {
-    lines.push(
-      `- Targets: ${profile.target_calories} kcal, ${profile.target_protein}g protein, ${profile.target_carbs}g carbs, ${profile.target_fat}g fat. Preferred weight unit: ${wu}.`
-    );
-  }
-  if (latestW) lines.push(`- Latest body weight: ${latestW.weight} ${latestW.unit} (${latestW.logged_date}).`);
-  lines.push(
-    `- Today's intake so far: ${Math.round(macroTotals.cal)} kcal, ${Math.round(macroTotals.p)}g protein, ${Math.round(
-      macroTotals.c
-    )}g carbs, ${Math.round(macroTotals.ff)}g fat.`
-  );
-  if (sessions?.length) {
-    lines.push(`- Recent workouts: ${sessions.map((s) => `${s.name} (${s.session_date})`).join(", ")}.`);
-  } else {
-    lines.push("- No workouts logged yet.");
-  }
-  if (topLifts) lines.push(`- Top lifts in the last 7 days: ${topLifts}.`);
-  if (protocols?.length) {
-    lines.push(`- Active protocols: ${protocols.map((p) => p.name).join(", ")}.`);
-  }
-  return lines.join("\n");
-}
 
 export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -129,7 +45,7 @@ export async function POST(req: Request) {
 
   let context = "";
   try {
-    context = await buildContext();
+    context = await buildUserContext(user.id);
   } catch {
     context = "";
   }
