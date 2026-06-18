@@ -9,22 +9,17 @@ import { isNative } from "@/lib/native";
 // Uses @perfood/capacitor-healthkit. HealthKit requires native capability +
 // Info.plist usage strings, configured on the Mac (see docs/LAUNCH_CHECKLIST.md).
 
-const READ_TYPES = [
-  "steps",
-  "calories",
-  "distance",
-  "duration",
-  "weight",
-  "height",
-  "sleep",
-];
+// Only request the HealthKit types we actually read, to keep the permission
+// prompt minimal and avoid App Review questions about unused entitlements.
+const READ_TYPES = ["steps", "weight", "sleep"];
 
 function localDay(iso: string): string {
   const d = new Date(iso);
-  // Local-time YYYY-MM-DD
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 10);
+  // Local calendar date (YYYY-MM-DD) using the device's own timezone.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function rangeISO(days: number): { startDate: string; endDate: string } {
@@ -48,7 +43,9 @@ export async function requestHealthAuth(): Promise<boolean> {
   if (!(await isNative())) return false;
   try {
     const hk = await plugin();
-    await hk.requestAuthorization({ all: [""], read: READ_TYPES, write: [""] });
+    // read-only: empty all/write arrays (NOT [""], which requests an invalid
+    // entitlement and can trigger an App Review rejection).
+    await hk.requestAuthorization({ all: [], read: READ_TYPES, write: [] });
     return true;
   } catch {
     return false;

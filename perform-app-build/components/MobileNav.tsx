@@ -24,7 +24,8 @@ export function MobileNav() {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-bg-1/85 backdrop-blur-xl border-t border-border flex justify-around items-center h-16 z-50 pb-[env(safe-area-inset-bottom)]">
       {items.map((item) => {
-        const active = pathname === item.href;
+        const active =
+          pathname === item.href || pathname.startsWith(item.href + "/");
         const Icon = item.icon;
         return (
           <Link

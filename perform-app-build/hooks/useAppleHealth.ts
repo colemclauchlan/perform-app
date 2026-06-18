@@ -9,6 +9,7 @@ import {
   readDailyWeightKg,
   readDailySleep,
 } from "@/lib/health";
+import { hapticSuccess } from "@/lib/native";
 
 // Reads from Apple Health and writes into the same per-user tables the rest of
 // the app uses. Steps upsert by day (source apple_health); weight and sleep are
@@ -48,16 +49,27 @@ export function useAppleHealth() {
     const data = await readDailyWeightKg(days);
     if (!data.length) return 0;
     const user_id = await uid();
+    // Store in the user's preferred unit so it matches their manual entries
+    // and charts don't mix kg and lbs.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("weight_unit")
+      .eq("id", user_id)
+      .maybeSingle();
+    const unit = profile?.weight_unit === "lbs" ? "lbs" : "kg";
+    const toUnit = (kg: number) =>
+      unit === "lbs" ? Math.round(kg * 2.20462 * 10) / 10 : kg;
     const { data: existing } = await supabase
       .from("body_weight_logs")
-      .select("logged_date");
+      .select("logged_date")
+      .eq("user_id", user_id);
     const have = new Set((existing ?? []).map((r) => r.logged_date));
     const rows = data
       .filter((d) => !have.has(d.date))
       .map((d) => ({
         user_id,
-        weight: d.kg,
-        unit: "kg" as const,
+        weight: toUnit(d.kg),
+        unit: unit as "lbs" | "kg",
         logged_date: d.date,
         notes: "Apple Health",
       }));
@@ -74,7 +86,8 @@ export function useAppleHealth() {
     const user_id = await uid();
     const { data: existing } = await supabase
       .from("sleep_logs")
-      .select("logged_date");
+      .select("logged_date")
+      .eq("user_id", user_id);
     const have = new Set((existing ?? []).map((r) => r.logged_date));
     const rows = data
       .filter((d) => !have.has(d.date))
@@ -103,6 +116,7 @@ export function useAppleHealth() {
       const steps = await syncSteps();
       const weight = await syncWeight();
       const sleep = await syncSleep();
+      if (steps + weight + sleep > 0) hapticSuccess();
       return { steps, weight, sleep };
     } finally {
       setSyncing(false);

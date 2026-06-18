@@ -29,8 +29,12 @@ export function CapacitorInit() {
         await Keyboard.setResizeMode({ mode: KeyboardResize.Native }).catch(
           () => {}
         );
-        // Give the WebView a beat to paint before removing the splash.
-        setTimeout(() => SplashScreen.hide().catch(() => {}), 250);
+        // Hide the splash only after the WebView has actually painted a frame
+        // (two rAFs guarantee a real paint). This avoids a white flash on a
+        // slow remote load without an arbitrary fixed delay.
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => SplashScreen.hide().catch(() => {}))
+        );
       } catch {
         /* native plugins absent on web — ignore */
       }

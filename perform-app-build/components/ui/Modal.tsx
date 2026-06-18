@@ -31,6 +31,16 @@ export function Modal({
     };
   }, [open]);
 
+  // Close on Escape (desktop/keyboard parity with the tap-outside behavior).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!open || !mounted) return null;
 
   // Portal to <body> so the fixed overlay is positioned relative to the
@@ -42,6 +52,9 @@ export function Modal({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className={`bg-bg-1/95 border border-border-2/60 rounded-2xl shadow-lift w-full ${
           wide ? "max-w-2xl" : "max-w-md"
         } my-auto animate-modal-in`}

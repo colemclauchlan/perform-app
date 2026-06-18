@@ -1,0 +1,41 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+
+# native (Capacitor) — generated on the Mac, never committed
+/ios
+/android
+
+# env / secrets
+.env
+.env*.local
+.env.local
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# os / editor
+.DS_Store
+Thumbs.db
+*.pem
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# local agent tooling (never deploy)
+/.claude
+/skill-observations
+/CLAUDE.md
+/.remember
