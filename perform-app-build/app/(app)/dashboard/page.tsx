@@ -61,7 +61,7 @@ function StatCard({
     red: { bg: "bg-status-red/10", text: "text-status-red" },
     amber: { bg: "bg-status-amber/10", text: "text-status-amber" },
   };
-  const c = colorMap[color];
+  const c = colorMap[color] ?? colorMap.blue;
   return (
     <div className="stat-card animate-fade-in">
       <div className="flex items-start justify-between">

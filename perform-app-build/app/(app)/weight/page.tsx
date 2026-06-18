@@ -90,7 +90,7 @@ export default function WeightPage() {
   }
   function saveEdit() {
     const weight = parseFloat(editVal);
-    if (!weight) { toast.error("Enter a valid weight"); return; }
+    if (!weight || weight <= 0 || weight > 2000) { toast.error("Enter a valid weight"); return; }
     updateWeight.mutate(
       { id: editId!, updates: { weight, logged_date: editDate, notes: editNotes || null } },
       {
@@ -102,8 +102,8 @@ export default function WeightPage() {
 
   function handleLog() {
     const weight = parseFloat(val);
-    if (!weight) {
-      toast.error("Enter a weight value");
+    if (!weight || weight <= 0 || weight > 2000) {
+      toast.error("Enter a valid weight");
       return;
     }
     addWeight.mutate(

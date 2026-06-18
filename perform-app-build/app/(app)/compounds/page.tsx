@@ -584,10 +584,15 @@ function EditDoseModal({
       toast.error("Pick a date & time");
       return;
     }
+    const doseAmount = parseFloat(amount);
+    if (!doseAmount || doseAmount <= 0) {
+      toast.error("Enter a dose amount");
+      return;
+    }
     updateDose.mutate(
       {
         id: dose.id,
-        dose_amount: parseFloat(amount) || 0,
+        dose_amount: doseAmount,
         logged_at: new Date(datetime).toISOString(),
         injection_site: site || null,
         notes: notes || null,
@@ -1200,6 +1205,11 @@ function LogDoseModal({
       toast.error("Fill in all required fields");
       return;
     }
+    const doseAmount = parseFloat(amount);
+    if (!doseAmount || doseAmount <= 0) {
+      toast.error("Enter a dose amount");
+      return;
+    }
     const comp = selectedProto?.compounds?.find(
       (c) => c.compound_name === compoundName
     );
@@ -1208,7 +1218,7 @@ function LogDoseModal({
         protocol_id: protoId,
         compound_name: compoundName,
         compound_unit: comp?.compound_unit || "mg",
-        dose_amount: parseFloat(amount) || 0,
+        dose_amount: doseAmount,
         logged_at: new Date(datetime).toISOString(),
         injection_site: site || null,
         notes: notes || null,

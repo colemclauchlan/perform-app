@@ -383,6 +383,11 @@ function LogFoodModal({
       const p = parseFloat(mP) || 0;
       const c = parseFloat(mC) || 0;
       const f = parseFloat(mF) || 0;
+      // Don't log an empty placeholder entry — require a name or some macros.
+      if (!mName.trim() && cal <= 0 && p <= 0 && c <= 0 && f <= 0) {
+        toast.error("Enter a food name or its calories");
+        return;
+      }
       // Resolve the chosen category (a brand-new custom one if entered).
       const category =
         newCatMode && newCatName.trim() ? newCatName.trim() : mCategory;
