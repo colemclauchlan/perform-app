@@ -261,12 +261,18 @@ export function LandingPage() {
       <footer className="border-t border-border">
         <div className="max-w-6xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <Logo variant="full" size={24} className="rounded-md opacity-90" />
-          <div className="flex items-center gap-5 text-sm text-text-2">
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-text-2">
             <Link href="/auth/login" className="hover:text-text-1 transition-colors">
               Log in
             </Link>
-            <Link href="/auth/login" className="hover:text-text-1 transition-colors">
-              Sign up
+            <Link href="/privacy" className="hover:text-text-1 transition-colors">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-text-1 transition-colors">
+              Terms
+            </Link>
+            <Link href="/support" className="hover:text-text-1 transition-colors">
+              Support
             </Link>
           </div>
           <div className="text-xs text-text-3">

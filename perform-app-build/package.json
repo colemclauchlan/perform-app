@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "ios:add": "cap add ios",
     "ios:sync": "cap sync ios",
-    "ios:open": "cap open ios"
+    "ios:open": "cap open ios",
+    "assets:generate": "capacitor-assets generate --ios"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^8.0.0",
@@ -37,6 +38,7 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^6.1.2",
     "@types/node": "^20",
     "@types/react": "^18",

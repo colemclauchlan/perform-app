@@ -66,15 +66,24 @@ In **Supabase → Authentication**:
 
 ---
 
-## Phase 3 — Add a Privacy Policy page (App Store requirement)
+## Phase 3 — Legal pages (App Store requirement) — DONE in code
 
-Apple **rejects** apps with accounts but no privacy policy URL.
+Apple **rejects** apps with accounts but no privacy policy URL. These pages are
+already built and public (no login required):
 
-- [ ] Create a `/privacy` page (or host a policy anywhere with a public URL).
-- [ ] It must state: what you collect (email, the health/fitness/compound data
-      users enter), that it's stored in Supabase, that users can delete their
-      account in-app, and how to contact you.
-- [ ] Note the final URL — you'll paste it into App Store Connect (Phase 7).
+- `YOUR_DOMAIN/privacy` — Privacy Policy (data collected, Supabase storage,
+  in-app account deletion, AI data use, medical disclaimer, contact)
+- `YOUR_DOMAIN/terms` — Terms of Service (medical/PED disclaimer, 17+)
+- `YOUR_DOMAIN/support` — Support page + FAQ (use as your App Store Support URL)
+
+The only thing left for you:
+
+- [ ] **Set your real support email.** It's currently `support@bodytracker.app`
+      in three files — replace it in `app/privacy/page.tsx`,
+      `app/terms/page.tsx`, and `app/support/page.tsx`, then push.
+- [ ] Note the URLs above — you paste `/privacy` and `/support` into App Store
+      Connect (Phase 7). The exact copy-paste fields are in
+      `docs/APP_STORE_LISTING.md`.
 
 ---
 
@@ -111,15 +120,14 @@ On the Mac, in the project folder:
 
 ```bash
 # in the project folder on your Mac
-npm install                        # installs Capacitor + plugins
+npm install                        # installs Capacitor + plugins (incl. @capacitor/assets)
 sudo gem install cocoapods         # one-time, if not installed
 npx cap add ios                    # creates the ios/ Xcode project (one-time)
 
-# App icon + splash from a single source image (recommended):
-#   put a 1024x1024 PNG (no transparency) at assets/icon.png
-#   and a ~2732x2732 PNG at assets/splash.png
-npm install -D @capacitor/assets
-npx capacitor-assets generate --ios
+# App icon is already provided at assets/icon.png (1024x1024 BodyTracker emblem).
+# Splash is optional — see assets/README.md to add assets/splash.png if you want
+# a branded launch image (otherwise a solid #080b12 screen is used).
+npm run assets:generate            # = capacitor-assets generate --ios
 
 npx cap sync ios                   # copies config + plugins into the native project
 npx cap open ios                   # opens ios/App/App.xcworkspace in Xcode
@@ -168,7 +176,9 @@ usage strings Apple requires, which live in the native project.
 
 ## Phase 7 — App Store Connect (per release)
 
-In **https://appstoreconnect.apple.com**:
+In **https://appstoreconnect.apple.com**: all the text fields below (name,
+subtitle, description, keywords, privacy answers, age-rating guidance, reviewer
+notes) are pre-written for copy-paste in **`docs/APP_STORE_LISTING.md`**.
 
 - [ ] **My Apps → +** → create the app record (matching Bundle ID, name
       "BodyTracker", primary language, Health & Fitness category).

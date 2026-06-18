@@ -39,7 +39,13 @@ export async function middleware(request: NextRequest) {
 
     const pathname = request.nextUrl.pathname;
     const isAuthRoute = pathname.startsWith("/auth");
-    const isPublicRoute = pathname === "/";
+    // Public marketing + legal pages reachable without an account (the App Store
+    // requires a public privacy policy and support URL).
+    const isPublicRoute =
+      pathname === "/" ||
+      pathname.startsWith("/privacy") ||
+      pathname.startsWith("/terms") ||
+      pathname.startsWith("/support");
     // Recovery: a logged-in (recovery-session) user must be allowed to reach the
     // password-reset screen instead of being bounced to the dashboard.
     const isResetRoute = pathname.startsWith("/auth/reset-password");
