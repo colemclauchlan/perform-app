@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase-server";
+import { LandingPage } from "@/components/landing/LandingPage";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -9,7 +10,8 @@ export default async function HomePage() {
 
   if (user) {
     redirect("/dashboard");
-  } else {
-    redirect("/auth/login");
   }
+
+  // Logged-out visitors get the public marketing landing page.
+  return <LandingPage />;
 }
