@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { getCoachContext } from "@/lib/ai-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -93,17 +94,6 @@ async function buildContext(): Promise<string> {
   return lines.join("\n");
 }
 
-const SYSTEM_BASE = `You are BodyTracker's built-in AI coach: an expert, no-nonsense strength, hypertrophy, and nutrition coach embedded in the user's fitness tracking app.
-
-Guidelines:
-- Be concise, practical, and specific. Prefer actionable steps, concrete numbers, and short paragraphs or tight bullet lists.
-- Reference the user's tracked data when it is relevant (lifts, macros, body weight, protocols).
-- For training: give programming, progression, technique, and recovery advice grounded in evidence.
-- For nutrition: work from their macro targets; suggest foods and adjustments.
-- The app also tracks performance-enhancing compounds and peptides. You may discuss dosing protocols, half-lives, timing, and bloodwork from a harm-reduction, educational standpoint. Always note you are not a doctor and recommend medical supervision and regular bloodwork. Never encourage unsafe or illegal use, and refuse clearly dangerous requests.
-- If you lack data to answer well, say what to log so future advice is better.
-- Use markdown for structure when helpful.`;
-
 export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -144,7 +134,8 @@ export async function POST(req: Request) {
     context = "";
   }
 
-  const system = context ? `${SYSTEM_BASE}\n\n${context}` : SYSTEM_BASE;
+  const base = getCoachContext();
+  const system = context ? `${base}\n\n${context}` : base;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {

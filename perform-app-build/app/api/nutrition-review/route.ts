@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { getCoachContext } from "@/lib/ai-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +29,7 @@ function num(n: unknown): number {
   return Number(n) || 0;
 }
 
-const SYSTEM = `You are an expert sports-nutrition coach reviewing a single saved meal plan inside a fitness tracking app.
+const OUTPUT_RULES = `You are reviewing a single saved meal plan inside a fitness tracking app.
 
 Critique the plan against the user's macro targets and sound nutrition principles (protein adequacy, fiber/micronutrient quality, meal balance, sugar/processed load, food variety, practicality).
 
@@ -43,6 +44,8 @@ Respond with ONLY a JSON object (no markdown fences, no prose around it) of exac
   "macro_balance": "<one sentence on how the macros line up vs the user's targets>"
 }
 Keep bullets concise. Be honest and specific; do not invent foods that are not in the plan.`;
+
+const SYSTEM = `${getCoachContext()}\n\n${OUTPUT_RULES}`;
 
 export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;

@@ -4,6 +4,14 @@ const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
   poweredByHeader: false,
+  // Ensure the markdown AI context file is traced into the serverless bundles
+  // for the AI routes (it is read at runtime via fs in lib/ai-context.ts).
+  experimental: {
+    outputFileTracingIncludes: {
+      "/api/coach": ["./lib/ai/**"],
+      "/api/nutrition-review": ["./lib/ai/**"],
+    },
+  },
   async headers() {
     // Conservative, production-safe security headers. The Capacitor iOS shell
     // loads the app in its own WebView (not an iframe), so SAMEORIGIN framing
