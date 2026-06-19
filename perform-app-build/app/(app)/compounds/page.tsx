@@ -415,20 +415,25 @@ function ChecklistItem({
           {c.dose} {c.compound_unit} · {c.frequency}
         </div>
       </div>
-      {!doneToday && (
-        <span
-          className={cn(
-            "text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1",
-            info.status === "overdue" && "bg-status-red/10 text-status-red",
-            info.status === "urgent" && "bg-status-amber/10 text-status-amber",
-            info.status === "ok" && "bg-status-green/10 text-status-green",
-            info.status === "none" && "bg-bg-3 text-text-3"
-          )}
-        >
-          <Clock size={9} />
-          {hoursUntil <= 0 ? "due now" : formatCountdown(hoursUntil)}
-        </span>
-      )}
+      {!doneToday &&
+        (info.dueToday ? (
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1 bg-status-red/15 text-status-red ring-1 ring-inset ring-status-red/30 animate-pulse-glow">
+            <Clock size={9} />
+            Due Now
+          </span>
+        ) : (
+          <span
+            className={cn(
+              "text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1",
+              info.status === "urgent" && "bg-status-amber/10 text-status-amber",
+              info.status === "ok" && "bg-status-green/10 text-status-green",
+              info.status === "none" && "bg-bg-3 text-text-3"
+            )}
+          >
+            <Clock size={9} />
+            {formatCountdown(hoursUntil)}
+          </span>
+        ))}
       {doneToday && <span className="text-[10px] text-status-green font-semibold shrink-0">Done</span>}
     </div>
   );

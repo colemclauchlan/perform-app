@@ -246,19 +246,23 @@ export default function PedDashboardPage() {
                           {e.c.dose} {e.c.compound_unit} · {e.c.frequency}
                         </div>
                       </div>
-                      {!isDone && (
-                        <span
-                          className={cn(
-                            "text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full shrink-0",
-                            e.info.status === "overdue" && "bg-status-red/10 text-status-red",
-                            e.info.status === "urgent" && "bg-status-amber/10 text-status-amber",
-                            e.info.status === "ok" && "bg-status-green/10 text-status-green",
-                            e.info.status === "none" && "bg-bg-3 text-text-3"
-                          )}
-                        >
-                          {e.info.status === "none" ? "Due" : e.info.label.replace("Overdue ", "−")}
-                        </span>
-                      )}
+                      {!isDone &&
+                        (e.info.dueToday ? (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 bg-status-red/15 text-status-red ring-1 ring-inset ring-status-red/30 animate-pulse-glow">
+                            Due Now
+                          </span>
+                        ) : (
+                          <span
+                            className={cn(
+                              "text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full shrink-0",
+                              e.info.status === "urgent" && "bg-status-amber/10 text-status-amber",
+                              e.info.status === "ok" && "bg-status-green/10 text-status-green",
+                              e.info.status === "none" && "bg-bg-3 text-text-3"
+                            )}
+                          >
+                            {e.info.status === "none" ? "Due" : e.info.label}
+                          </span>
+                        ))}
                       {isDone && <span className="text-[10px] text-status-green font-semibold shrink-0">Done</span>}
                     </div>
                   );
