@@ -46,7 +46,25 @@ select {
   touch-action: manipulation;
 }
 
-/* Ambient depth — subtle accent glow anchored to the top of the viewport */
+/* Headings use the display face with tightened tracking for an engineered,
+   non-generic feel. Propagates to every page's section titles app-wide. */
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display), var(--font-inter), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Tabular figures everywhere numbers matter (stats, charts, tables). */
+.tabular,
+.stat-card .stat-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ambient depth — a quiet aurora of brand hues anchored to the viewport.
+   Static (no animation) app-wide to protect battery; the animated variant is
+   reserved for the landing/login surfaces via .aurora-bg. */
 body::before {
   content: "";
   position: fixed;
@@ -54,8 +72,21 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(80% 50% at 50% -10%, rgba(37, 99, 235, 0.10), transparent 70%),
-    radial-gradient(60% 40% at 100% 0%, rgba(99, 102, 241, 0.06), transparent 60%);
+    radial-gradient(70% 50% at 50% -8%, rgba(37, 99, 235, 0.12), transparent 68%),
+    radial-gradient(48% 40% at 98% 2%, rgba(124, 92, 255, 0.09), transparent 60%),
+    radial-gradient(58% 50% at 0% 10%, rgba(34, 211, 165, 0.05), transparent 60%);
+}
+
+/* Hairline grain overlay — breaks up flat dark fills so they read as a crafted
+   surface rather than a flat #000 canvas. Extremely subtle. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 * {
@@ -274,7 +305,8 @@ main,
 
 @layer components {
   .card {
-    @apply bg-bg-1 border border-border rounded-xl p-4 shadow-card transition-colors;
+    @apply relative bg-bg-1 border border-border rounded-xl p-4 shadow-card transition-all duration-200;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0) 38%);
   }
   .card-sm {
     @apply bg-bg-2 border border-border rounded-lg p-3 transition-colors;
@@ -282,20 +314,27 @@ main,
   .card-hover {
     @apply transition-all duration-200 hover:-translate-y-0.5 hover:border-border-2 hover:shadow-lift;
   }
+  /* Premium framed surface for hero panels and feature spotlights */
+  .panel {
+    @apply relative overflow-hidden bg-bg-1 border border-border-2/60 rounded-2xl shadow-lift;
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 30%),
+      radial-gradient(120% 80% at 50% -20%, rgba(37, 99, 235, 0.12), transparent 60%);
+  }
   .glass {
-    @apply bg-bg-1/70 border border-white/5 backdrop-blur-xl shadow-card;
+    @apply bg-bg-1/60 border border-white/10 backdrop-blur-2xl shadow-lift;
   }
   .card-title {
-    @apply text-[11px] uppercase tracking-wider text-text-3 font-semibold mb-3;
+    @apply text-[11px] uppercase tracking-[0.14em] text-text-3 font-semibold mb-3;
   }
   .btn {
     @apply inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 border-none active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none select-none;
   }
   .btn-primary {
-    @apply bg-accent-gradient text-white shadow-soft hover:shadow-glow hover:brightness-110;
+    @apply relative overflow-hidden bg-accent-gradient text-white shadow-soft hover:shadow-glow hover:brightness-[1.08];
   }
   .btn-ghost {
-    @apply bg-bg-3/80 text-text-2 border border-border hover:text-text-1 hover:border-border-2 hover:bg-bg-3;
+    @apply bg-bg-3/70 text-text-2 border border-border hover:text-text-1 hover:border-border-2 hover:bg-bg-3;
   }
   .btn-danger {
     @apply bg-status-red/10 text-status-red border border-status-red/30 hover:bg-status-red/20;
@@ -310,6 +349,86 @@ main,
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium;
   }
   .stat-card {
-    @apply bg-bg-2/90 border border-border rounded-xl p-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-border-2 hover:shadow-lift;
+    @apply relative bg-bg-2/90 border border-border rounded-xl p-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-border-2 hover:shadow-lift;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0) 42%);
+  }
+}
+
+/* ── Premium utilities (3D text, brand gradient, aurora, shine) ───────────── */
+
+/* Animated brand-gradient text — blue→indigo→violet→green. Use on hero words. */
+.text-brand {
+  background: linear-gradient(120deg, #60a5fa, #6b8bff, #9d7bff, #2dd4bf, #60a5fa);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 7s ease infinite;
+}
+
+/* Extruded 3D heading — layered shadows give real depth on dark backgrounds. */
+.text-3d {
+  color: #eaf0fb;
+  text-shadow:
+    0 1px 0 #b9c6e6,
+    0 2px 0 #8ea3cf,
+    0 3px 0 #5f7bb5,
+    0 4px 0 #41598f,
+    0 6px 12px rgba(0, 0, 0, 0.55),
+    0 0 28px rgba(59, 130, 246, 0.35);
+}
+
+/* Animated aurora backdrop for landing/login hero surfaces only. */
+.aurora-bg {
+  position: relative;
+  isolation: isolate;
+}
+.aurora-bg::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 50% at 18% 12%, rgba(59, 130, 246, 0.28), transparent 60%),
+    radial-gradient(42% 52% at 84% 14%, rgba(124, 92, 255, 0.24), transparent 60%),
+    radial-gradient(52% 60% at 50% 108%, rgba(34, 211, 165, 0.16), transparent 60%);
+  filter: blur(20px);
+  animation: auroraDrift 16s ease-in-out infinite;
+}
+
+/* Sweeping highlight — drop into a `relative overflow-hidden` element. */
+.shine-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.18) 48%, transparent 66%);
+  transform: translateX(-120%);
+}
+.group:hover .shine-overlay,
+.shine-auto {
+  animation: shineSweep 1.1s ease-out;
+}
+
+/* Top hairline highlight for framed surfaces. */
+.hairline-top {
+  position: relative;
+}
+.hairline-top::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-brand,
+  .aurora-bg::before,
+  .shine-overlay {
+    animation: none !important;
   }
 }
