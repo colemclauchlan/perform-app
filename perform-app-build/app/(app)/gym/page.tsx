@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { DashboardSwitcher } from "@/components/DashboardSwitcher";
+import { Reveal, Stagger, StaggerItem } from "@/components/visual/Motion";
 import { useWorkouts, useLiftProgression, useExercises } from "@/hooks/useTraining";
 import { useProtocols } from "@/hooks/useCompounds";
 import { formatDate, getNextDoseInfo, localISO } from "@/lib/utils";
@@ -111,45 +111,95 @@ export default function GymDashboardPage() {
   return (
     <div className="p-6 max-w-[1200px]">
       <DashboardSwitcher />
-      <PageHeader
-        title="Gym Dashboard"
-        subtitle={new Date().toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
-        action={
-          <Link href="/workouts" className="btn btn-primary btn-sm active:scale-95">
+
+      {/* Hero spotlight — weekly tonnage headline */}
+      <div className="panel hairline-top px-5 py-5 sm:px-6 sm:py-6 mb-5 animate-fade-in">
+        <div className="absolute -top-24 -right-12 w-72 h-72 bg-brand-gradient opacity-20 blur-3xl pointer-events-none" />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="text-[11px] uppercase tracking-[0.14em] text-text-3 font-semibold">
+              Gym Dashboard · Last 7 days
+            </div>
+            <h1 className="mt-1.5 text-3xl sm:text-4xl font-display font-bold leading-none tabular-nums">
+              <span className="text-brand">{weekStats.tonnage.toLocaleString()}</span>
+              {sessionUnit && <span className="text-base text-text-2 font-normal ml-2">{sessionUnit} moved</span>}
+            </h1>
+            <p className="text-sm text-text-2 mt-2">
+              {weekStats.sessions} session{weekStats.sessions !== 1 ? "s" : ""} · {weekStats.sets} sets
+              <span className="text-text-3"> · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</span>
+            </p>
+          </div>
+          <Link href="/workouts" className="btn btn-primary btn-sm group active:scale-95">
+            <span className="shine-overlay" />
             <Dumbbell size={14} /> Log Workout
           </Link>
-        }
-      />
-
-      {/* Week summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <div className="stat-card animate-fade-in">
-          <div className="text-[11px] text-text-3 uppercase tracking-wider">Sessions (7d)</div>
-          <div className="text-2xl font-bold mt-1.5 leading-none">{weekStats.sessions}</div>
-        </div>
-        <div className="stat-card animate-fade-in">
-          <div className="text-[11px] text-text-3 uppercase tracking-wider">Sets (7d)</div>
-          <div className="text-2xl font-bold mt-1.5 leading-none">{weekStats.sets}</div>
-        </div>
-        <div className="stat-card animate-fade-in">
-          <div className="text-[11px] text-text-3 uppercase tracking-wider">Tonnage (7d)</div>
-          <div className="text-2xl font-bold mt-1.5 leading-none">
-            {weekStats.tonnage.toLocaleString()}
-          </div>
-        </div>
-        <div className="stat-card animate-fade-in">
-          <div className="text-[11px] text-text-3 uppercase tracking-wider">Tracked lifts</div>
-          <div className="text-2xl font-bold mt-1.5 leading-none">{lifts.length}</div>
         </div>
       </div>
 
+      {/* Week summary */}
+      <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <StaggerItem>
+          <div className="stat-card group h-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="text-[11px] text-text-3 uppercase tracking-[0.12em] font-semibold">Sessions (7d)</div>
+                <div className="text-2xl font-display font-bold mt-1.5 leading-none tabular-nums">{weekStats.sessions}</div>
+              </div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+                style={{ background: "#3b82f61a", color: "#3b82f6", boxShadow: "inset 0 0 0 1px #3b82f633" }}>
+                <Activity size={18} />
+              </div>
+            </div>
+          </div>
+        </StaggerItem>
+        <StaggerItem>
+          <div className="stat-card group h-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="text-[11px] text-text-3 uppercase tracking-[0.12em] font-semibold">Sets (7d)</div>
+                <div className="text-2xl font-display font-bold mt-1.5 leading-none tabular-nums">{weekStats.sets}</div>
+              </div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+                style={{ background: "#2dd4bf1a", color: "#2dd4bf", boxShadow: "inset 0 0 0 1px #2dd4bf33" }}>
+                <BarChart3 size={18} />
+              </div>
+            </div>
+          </div>
+        </StaggerItem>
+        <StaggerItem>
+          <div className="stat-card group h-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="text-[11px] text-text-3 uppercase tracking-[0.12em] font-semibold">Tonnage (7d)</div>
+                <div className="text-2xl font-display font-bold mt-1.5 leading-none tabular-nums">
+                  {weekStats.tonnage.toLocaleString()}
+                </div>
+              </div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+                style={{ background: "#7c5cff1a", color: "#9d7bff", boxShadow: "inset 0 0 0 1px #7c5cff33" }}>
+                <Dumbbell size={18} />
+              </div>
+            </div>
+          </div>
+        </StaggerItem>
+        <StaggerItem>
+          <div className="stat-card group h-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="text-[11px] text-text-3 uppercase tracking-[0.12em] font-semibold">Tracked lifts</div>
+                <div className="text-2xl font-display font-bold mt-1.5 leading-none tabular-nums">{lifts.length}</div>
+              </div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+                style={{ background: "#f6ad551a", color: "#f6ad55", boxShadow: "inset 0 0 0 1px #f6ad5533" }}>
+                <Trophy size={18} />
+              </div>
+            </div>
+          </div>
+        </StaggerItem>
+      </Stagger>
+
       {/* Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+      <Reveal className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
         <div className="card">
           <div className="card-title flex items-center gap-2 mb-3">
             <BarChart3 size={13} className="text-accent" /> Training Volume — Last 8 Weeks
@@ -162,9 +212,9 @@ export default function GymDashboardPage() {
           </div>
           <MuscleSplitChart workouts={workouts} muscleMap={muscleMap} />
         </div>
-      </div>
+      </Reveal>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <Reveal className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Recent sessions */}
         <div className="card">
           <div className="card-title flex items-center gap-2 mb-3">
@@ -282,7 +332,7 @@ export default function GymDashboardPage() {
             </div>
           )}
         </div>
-      </div>
+      </Reveal>
     </div>
   );
 }

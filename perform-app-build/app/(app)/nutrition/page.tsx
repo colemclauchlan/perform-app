@@ -27,7 +27,8 @@ import {
   FOOD_CATEGORY_COLORS,
   cn,
 } from "@/lib/utils";
-import { Plus, Trash2, ChevronLeft, ChevronRight, Search, Minus } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, ChevronRight, Search, Minus, Flame } from "lucide-react";
+import { Reveal, Stagger, StaggerItem } from "@/components/visual/Motion";
 import toast from "react-hot-toast";
 
 // Small colored dot used to tag a food category throughout the page.
@@ -145,27 +146,104 @@ export default function NutritionPage() {
     },
   ];
 
+  const calRemaining = Math.max(0, Math.round(calGoal - totals.cal));
+  const calPctOfGoal = calGoal > 0 ? Math.min(100, Math.round((totals.cal / calGoal) * 100)) : 0;
+
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
         title="Nutrition"
         subtitle="Log and track your daily intake"
         action={
-          <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+          <button className="btn btn-primary group" onClick={() => setModalOpen(true)}>
+            <span className="shine-overlay" />
             <Plus size={16} /> Log Food
           </button>
         }
       />
 
+      {/* Calories hero — the day's headline figure on a premium framed surface */}
+      <Reveal>
+        <div className="panel hairline-top p-5 sm:p-6 mb-4">
+          <div className="absolute -top-10 -right-8 w-56 h-56 bg-brand-gradient opacity-20 blur-3xl pointer-events-none" />
+          <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
+            <div>
+              <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-text-3 font-semibold mb-2">
+                <span
+                  className="w-6 h-6 rounded-lg flex items-center justify-center"
+                  style={{
+                    background: "#2563eb1a",
+                    color: "#3b82f6",
+                    boxShadow: "inset 0 0 0 1px #2563eb33",
+                  }}
+                >
+                  <Flame size={13} />
+                </span>
+                Calories today
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-display text-5xl sm:text-6xl font-bold tabular-nums text-brand leading-none">
+                  {Math.round(totals.cal).toLocaleString()}
+                </span>
+                <span className="text-text-3 text-lg font-medium tabular-nums">
+                  / {calGoal.toLocaleString()}
+                </span>
+              </div>
+              <div className="text-sm text-text-2 mt-2 tabular-nums">
+                {calRemaining > 0 ? (
+                  <>
+                    <span className="text-text-1 font-semibold">{calRemaining.toLocaleString()}</span> kcal remaining
+                  </>
+                ) : (
+                  <span className="text-status-amber font-semibold">Daily target reached</span>
+                )}
+              </div>
+            </div>
+
+            {/* Macro micro-summary */}
+            <div className="flex gap-2 sm:gap-3">
+              {[
+                { k: "Protein", v: totals.p, color: "#2dd4bf" },
+                { k: "Carbs", v: totals.c, color: "#fbbf24" },
+                { k: "Fat", v: totals.f, color: "#fb7185" },
+              ].map((m) => (
+                <div
+                  key={m.k}
+                  className="flex-1 sm:flex-none sm:min-w-[84px] rounded-xl bg-bg-2/70 border border-border px-3 py-2.5 text-center"
+                >
+                  <div className="text-[10px] uppercase tracking-wide text-text-3 mb-0.5">{m.k}</div>
+                  <div className="font-display text-xl font-bold tabular-nums" style={{ color: m.color }}>
+                    {Math.round(m.v)}
+                    <span className="text-xs font-medium text-text-3 ml-0.5">g</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Calorie progress track */}
+          <div className="relative mt-5 h-2 rounded-full bg-bg-3 overflow-hidden">
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-accent-gradient progress-bar"
+              style={{ width: `${calPctOfGoal}%` }}
+            />
+          </div>
+        </div>
+      </Reveal>
+
       {/* Macro rings */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+      <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         {rings.map((r) => (
-          <MacroRing key={r.label} {...r} />
+          <StaggerItem key={r.label}>
+            <MacroRing {...r} />
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
 
       {/* Weekly macro goal graph */}
-      <WeeklyMacroGoals data={weekly} calGoal={calGoal} proteinGoal={proteinGoal} />
+      <Reveal>
+        <WeeklyMacroGoals data={weekly} calGoal={calGoal} proteinGoal={proteinGoal} />
+      </Reveal>
 
       {/* Daily log */}
       <div className="card">
@@ -224,22 +302,22 @@ export default function NutritionPage() {
                     {mealLog.map((e) => (
                       <div
                         key={e.id}
-                        className="flex items-center justify-between bg-bg-2 rounded-lg px-3 py-2.5 border border-border"
+                        className="flex items-center justify-between bg-bg-2/80 rounded-xl px-3 py-2.5 border border-border transition-colors hover:border-border-2 hover:bg-bg-2"
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
                           <CategoryDot
                             category={e.food_catalog_id ? categoryById.get(e.food_catalog_id) : "Custom"}
                             custom={customCategories}
                           />
-                          <div>
-                            <div className="text-sm">{e.name}</div>
-                            <div className="text-[11px] text-text-2">
+                          <div className="min-w-0">
+                            <div className="text-sm truncate">{e.name}</div>
+                            <div className="text-[11px] text-text-2 tabular-nums">
                               {Math.round(e.protein)}g P · {Math.round(e.carbs)}g C
                               · {Math.round(e.fat)}g F
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                           <div className="flex items-center gap-1 bg-bg-3 rounded-lg border border-border px-1">
                             <button
                               className="p-1 text-text-3 hover:text-text-1 disabled:opacity-30"
@@ -262,7 +340,7 @@ export default function NutritionPage() {
                               <Plus size={12} />
                             </button>
                           </div>
-                          <span className="text-sm font-semibold text-accent">
+                          <span className="text-sm font-bold font-display text-accent-bright tabular-nums">
                             {Math.round(e.calories)}
                           </span>
                           <span className="text-[11px] text-text-3">kcal</span>
@@ -468,18 +546,22 @@ function LogFoodModal({
   return (
     <Modal open={open} onClose={onClose} title="Add Food Entry">
       {/* Tabs */}
-      <div className="flex gap-1 bg-bg-2 p-1 rounded-lg w-fit mb-4">
+      <div className="flex gap-1 bg-bg-2 p-1 rounded-lg w-fit mb-4 border border-border">
         <button
-          className={`px-3.5 py-1.5 rounded-md text-xs font-medium ${
-            tab === "search" ? "bg-accent text-white" : "text-text-2"
+          className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+            tab === "search"
+              ? "bg-accent-gradient text-white shadow-soft"
+              : "text-text-2 hover:text-text-1"
           }`}
           onClick={() => setTab("search")}
         >
           Search Food
         </button>
         <button
-          className={`px-3.5 py-1.5 rounded-md text-xs font-medium ${
-            tab === "manual" ? "bg-accent text-white" : "text-text-2"
+          className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+            tab === "manual"
+              ? "bg-accent-gradient text-white shadow-soft"
+              : "text-text-2 hover:text-text-1"
           }`}
           onClick={() => setTab("manual")}
         >

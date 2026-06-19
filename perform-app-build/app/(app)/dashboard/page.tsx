@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { MacroBar } from "@/components/nutrition/MacroBar";
 import { DashboardSwitcher } from "@/components/DashboardSwitcher";
+import { Reveal, Stagger, StaggerItem } from "@/components/visual/Motion";
 import { WeightChart } from "@/components/charts/WeightChart";
 import { useProfile, useFoodLog, useWeeklyCalories, useUpdateProfile } from "@/hooks/useNutrition";
 import { useProtocols, useLogDose } from "@/hooks/useCompounds";
@@ -48,6 +48,14 @@ function mergeWidgets(saved?: WidgetCfg[]): WidgetCfg[] {
   return merged.sort((a, b) => a.order - b.order);
 }
 
+// Static tinted-chip styles (kept literal so Tailwind/inline hex never get purged).
+const STAT_CHIP: Record<"blue" | "green" | "red" | "amber", { bg: string; color: string; ring: string }> = {
+  blue: { bg: "#3b82f61a", color: "#3b82f6", ring: "#3b82f633" },
+  green: { bg: "#22d3a51a", color: "#22d3a5", ring: "#22d3a533" },
+  red: { bg: "#f565651a", color: "#f56565", ring: "#f5656533" },
+  amber: { bg: "#f6ad551a", color: "#f6ad55", ring: "#f6ad5533" },
+};
+
 function StatCard({
   label, value, unit, sub, trend, icon, color = "blue",
 }: {
@@ -55,19 +63,13 @@ function StatCard({
   trend?: "up" | "down" | "neutral"; icon?: React.ReactNode;
   color?: "blue" | "green" | "red" | "amber";
 }) {
-  const colorMap = {
-    blue: { bg: "bg-accent-dim", text: "text-accent" },
-    green: { bg: "bg-status-green/10", text: "text-status-green" },
-    red: { bg: "bg-status-red/10", text: "text-status-red" },
-    amber: { bg: "bg-status-amber/10", text: "text-status-amber" },
-  };
-  const c = colorMap[color] ?? colorMap.blue;
+  const c = STAT_CHIP[color] ?? STAT_CHIP.blue;
   return (
-    <div className="stat-card animate-fade-in">
+    <div className="stat-card group">
       <div className="flex items-start justify-between">
         <div>
-          <div className="text-[11px] text-text-3 uppercase tracking-wider">{label}</div>
-          <div className="text-2xl font-bold mt-1.5 leading-none">
+          <div className="text-[11px] text-text-3 uppercase tracking-[0.12em] font-semibold">{label}</div>
+          <div className="text-2xl font-display font-bold mt-1.5 leading-none tabular-nums">
             {value}
             {unit && <span className="text-sm text-text-2 ml-1 font-normal">{unit}</span>}
           </div>
@@ -83,8 +85,11 @@ function StatCard({
           )}
         </div>
         {icon && (
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${c.bg}`}>
-            <div className={c.text}>{icon}</div>
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+            style={{ background: c.bg, color: c.color, boxShadow: `inset 0 0 0 1px ${c.ring}` }}
+          >
+            {icon}
           </div>
         )}
       </div>
@@ -313,17 +318,32 @@ export default function DashboardPage() {
   return (
     <div className="p-6 max-w-[1200px]">
       <DashboardSwitcher />
-      <PageHeader
-        title="Health Dashboard"
-        subtitle={new Date().toLocaleDateString("en-US", {
-          weekday: "long", year: "numeric", month: "long", day: "numeric",
-        })}
-        action={
+
+      {/* Hero spotlight — today's headline metric */}
+      <div className="panel hairline-top px-5 py-5 sm:px-6 sm:py-6 mb-5 animate-fade-in">
+        <div className="absolute -top-24 -right-16 w-72 h-72 bg-brand-gradient opacity-20 blur-3xl pointer-events-none" />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="text-[11px] uppercase tracking-[0.14em] text-text-3 font-semibold">
+              Health Dashboard
+            </div>
+            <h1 className="mt-1.5 text-3xl sm:text-4xl font-display font-bold leading-none tabular-nums">
+              <span className="text-brand">{Math.round(totals.cal).toLocaleString()}</span>
+              <span className="text-text-3 text-2xl font-normal"> / {targetCal.toLocaleString()}</span>
+              <span className="text-base text-text-2 font-normal ml-2">kcal today</span>
+            </h1>
+            <p className="text-sm text-text-2 mt-2">
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long", year: "numeric", month: "long", day: "numeric",
+              })}
+              <span className="text-text-3"> · {calPct}% of goal · {Math.round(totals.p)}g protein</span>
+            </p>
+          </div>
           <button className="btn btn-ghost btn-sm flex items-center gap-1.5" onClick={() => setCustomizeOpen(true)}>
             <Settings2 size={14} /> Customize
           </button>
-        }
-      />
+        </div>
+      </div>
 
       {/* Quick-log shortcuts */}
       <QuickLog
@@ -334,30 +354,38 @@ export default function DashboardPage() {
       />
 
       {/* Top stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <StatCard
-          label="Calories Today" value={Math.round(totals.cal)} unit={`/ ${targetCal}`}
-          sub={`${calPct}% of goal`} trend={calPct > 110 ? "down" : calPct >= 80 ? "up" : "neutral"}
-          icon={<Apple size={18} />} color={calPct > 110 ? "red" : "blue"}
-        />
-        <StatCard
-          label="Protein Today" value={`${Math.round(totals.p)}g`} unit={`/ ${targetP}g`}
-          sub={`${protPct}% of goal`} trend={totals.p >= targetP ? "up" : "neutral"}
-          icon={<Activity size={18} />} color={totals.p >= targetP ? "green" : "blue"}
-        />
-        <StatCard
-          label="Active Protocols" value={activeProtocols.length}
-          sub={activeProtocols.length ? activeProtocols[0].name : "No active cycles"}
-          icon={<FlaskConical size={18} />} color={overdueDoses.length > 0 ? "red" : "blue"}
-        />
-        <StatCard
-          label="Body Weight" value={latestWeight ? latestWeight.weight : "—"}
-          unit={latestWeight ? latestWeight.unit : ""}
-          sub={bwDelta != null ? `${bwDelta >= 0 ? "+" : ""}${bwDelta} vs prev` : "No entries yet"}
-          trend={bwDelta != null && bwDelta > 0 ? "up" : bwDelta != null && bwDelta < 0 ? "down" : "neutral"}
-          icon={<TrendingUp size={18} />} color="blue"
-        />
-      </div>
+      <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <StaggerItem>
+          <StatCard
+            label="Calories Today" value={Math.round(totals.cal)} unit={`/ ${targetCal}`}
+            sub={`${calPct}% of goal`} trend={calPct > 110 ? "down" : calPct >= 80 ? "up" : "neutral"}
+            icon={<Apple size={18} />} color={calPct > 110 ? "red" : "blue"}
+          />
+        </StaggerItem>
+        <StaggerItem>
+          <StatCard
+            label="Protein Today" value={`${Math.round(totals.p)}g`} unit={`/ ${targetP}g`}
+            sub={`${protPct}% of goal`} trend={totals.p >= targetP ? "up" : "neutral"}
+            icon={<Activity size={18} />} color={totals.p >= targetP ? "green" : "blue"}
+          />
+        </StaggerItem>
+        <StaggerItem>
+          <StatCard
+            label="Active Protocols" value={activeProtocols.length}
+            sub={activeProtocols.length ? activeProtocols[0].name : "No active cycles"}
+            icon={<FlaskConical size={18} />} color={overdueDoses.length > 0 ? "red" : "blue"}
+          />
+        </StaggerItem>
+        <StaggerItem>
+          <StatCard
+            label="Body Weight" value={latestWeight ? latestWeight.weight : "—"}
+            unit={latestWeight ? latestWeight.unit : ""}
+            sub={bwDelta != null ? `${bwDelta >= 0 ? "+" : ""}${bwDelta} vs prev` : "No entries yet"}
+            trend={bwDelta != null && bwDelta > 0 ? "up" : bwDelta != null && bwDelta < 0 ? "down" : "neutral"}
+            icon={<TrendingUp size={18} />} color="blue"
+          />
+        </StaggerItem>
+      </Stagger>
 
       {/* Overdue dose alert */}
       {overdueDoses.length > 0 && (
@@ -382,13 +410,13 @@ export default function DashboardPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Stagger className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {visible.map((cfg) => (
-            <div key={cfg.id} className={cfg.w === 2 ? "lg:col-span-2" : ""}>
+            <StaggerItem key={cfg.id} className={cfg.w === 2 ? "lg:col-span-2" : ""}>
               {renderWidget(cfg)}
-            </div>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       )}
 
       <CustomizeModal open={customizeOpen} onClose={() => setCustomizeOpen(false)} widgets={widgets} />
@@ -451,7 +479,7 @@ function QuickLog({
   }
 
   const Btn = ({ icon, label, onClick, href }: { icon: React.ReactNode; label: string; onClick?: () => void; href?: string }) => {
-    const cls = "flex items-center gap-2 rounded-xl border border-border bg-bg-2 hover:border-accent/40 hover:bg-bg-3 px-3.5 py-2.5 text-sm text-text-2 hover:text-text-1 transition-colors";
+    const cls = "flex items-center gap-2 rounded-xl border border-border bg-bg-2/80 hover:border-accent/40 hover:bg-bg-3 hover:shadow-card px-3.5 py-2.5 text-sm text-text-2 hover:text-text-1 transition-all duration-200 active:scale-[0.97]";
     const inner = <>{icon}<span className="font-medium">{label}</span></>;
     return href ? <Link href={href} className={cls}>{inner}</Link> : <button onClick={onClick} className={cls}>{inner}</button>;
   };
