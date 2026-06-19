@@ -238,7 +238,8 @@ export default function StepsPage() {
               />
             </div>
           </div>
-          <button className="btn btn-primary mt-3" onClick={handleLog}>
+          <button className="btn btn-primary group mt-3" onClick={handleLog}>
+            <span className="shine-overlay" />
             <Plus size={15} /> Add to Total
           </button>
           <div className="text-[11px] text-text-3 mt-2">

@@ -14,6 +14,7 @@ import { useProfile } from "@/hooks/useNutrition";
 import { todayISO, formatDate, round } from "@/lib/utils";
 import { Trash2, Pencil, Check, X, Syringe } from "lucide-react";
 import toast from "react-hot-toast";
+import { Reveal } from "@/components/visual/Motion";
 
 // Model relative blood level at a moment using exponential decay from each prior
 // dose: level = Σ amount · 0.5^(Δhours / halfLife). Normalized to its own peak.
@@ -131,7 +132,7 @@ export default function WeightPage() {
     <div className="p-6 max-w-[1100px]">
       <PageHeader title="Body Weight" subtitle="Track your weight over time" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+      <Reveal className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
         {/* Log form */}
         <div className="card">
           <div className="card-title">Log Weight</div>
@@ -170,7 +171,8 @@ export default function WeightPage() {
               placeholder="Optional"
             />
           </div>
-          <button className="btn btn-primary mt-3" onClick={handleLog}>
+          <button className="btn btn-primary group mt-3" onClick={handleLog}>
+            <span className="shine-overlay" />
             Log Weight
           </button>
         </div>
@@ -199,7 +201,7 @@ export default function WeightPage() {
             </div>
           )}
         </div>
-      </div>
+      </Reveal>
 
       {/* Chart + history */}
       <div className="card">
