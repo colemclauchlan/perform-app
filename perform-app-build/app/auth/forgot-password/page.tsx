@@ -5,6 +5,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase-client";
 import toast from "react-hot-toast";
 import { Logo } from "@/components/ui/Logo";
+import { HeroBackdrop } from "@/components/visual/HeroBackdrop";
+import { motion } from "framer-motion";
 import { ArrowLeft, MailCheck } from "lucide-react";
 
 export default function ForgotPasswordPage() {
@@ -33,13 +35,19 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center mb-8">
-          <Logo variant="full" size={96} className="rounded-xl" />
+    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+      <HeroBackdrop />
+      <motion.div
+        className="relative z-10 w-full max-w-sm"
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div className="flex items-center justify-center mb-7">
+          <Logo variant="full" size={88} className="rounded-xl drop-shadow-[0_8px_30px_rgba(37,99,235,0.35)]" />
         </div>
 
-        <div className="card">
+        <div className="glass hairline-top rounded-2xl p-6">
           {sent ? (
             <div className="text-center py-4">
               <div className="w-12 h-12 rounded-full bg-status-green/15 flex items-center justify-center mx-auto mb-4">
@@ -56,7 +64,9 @@ export default function ForgotPasswordPage() {
             </div>
           ) : (
             <>
-              <h1 className="text-lg font-semibold mb-1">Reset your password</h1>
+              <h1 className="text-xl font-bold tracking-tight mb-1">
+                Reset your <span className="text-brand">password</span>
+              </h1>
               <p className="text-sm text-text-2 mb-6">
                 Enter your email and we&apos;ll send you a reset link.
               </p>
@@ -75,8 +85,9 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="btn btn-primary w-full justify-center"
+                  className="btn btn-primary group w-full justify-center"
                 >
+                  <span className="shine-overlay" />
                   {loading ? "Sending..." : "Send reset link"}
                 </button>
               </form>
@@ -88,7 +99,7 @@ export default function ForgotPasswordPage() {
             </>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

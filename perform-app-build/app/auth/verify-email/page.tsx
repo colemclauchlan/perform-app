@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 import toast from "react-hot-toast";
 import { Logo } from "@/components/ui/Logo";
+import { HeroBackdrop } from "@/components/visual/HeroBackdrop";
+import { motion } from "framer-motion";
 import { MailCheck, ArrowLeft } from "lucide-react";
 
 function VerifyEmailInner() {
@@ -30,11 +32,13 @@ function VerifyEmailInner() {
   }
 
   return (
-    <div className="card text-center py-4">
-      <div className="w-12 h-12 rounded-full bg-accent-dim flex items-center justify-center mx-auto mb-4">
-        <MailCheck className="text-accent" size={22} />
+    <div className="glass hairline-top rounded-2xl text-center p-6">
+      <div className="w-14 h-14 rounded-2xl bg-accent-dim flex items-center justify-center mx-auto mb-4 ring-1 ring-inset ring-accent/20 animate-float">
+        <MailCheck className="text-accent" size={24} />
       </div>
-      <h1 className="text-lg font-semibold mb-1">Verify your email</h1>
+      <h1 className="text-xl font-bold tracking-tight mb-1">
+        Verify your <span className="text-brand">email</span>
+      </h1>
       <p className="text-sm text-text-2 mb-6">
         We sent a confirmation link{email ? <> to <span className="text-text-1">{email}</span></> : null}.
         Click it to activate your account, then log in.
@@ -47,7 +51,8 @@ function VerifyEmailInner() {
         >
           {resending ? "Resending..." : "Resend email"}
         </button>
-        <Link href="/auth/login" className="btn btn-primary w-full justify-center">
+        <Link href="/auth/login" className="btn btn-primary group w-full justify-center">
+          <span className="shine-overlay" />
           <ArrowLeft size={15} /> Back to log in
         </Link>
       </div>
@@ -57,15 +62,21 @@ function VerifyEmailInner() {
 
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center mb-8">
-          <Logo variant="full" size={96} className="rounded-xl" />
+    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+      <HeroBackdrop />
+      <motion.div
+        className="relative z-10 w-full max-w-sm"
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div className="flex items-center justify-center mb-7">
+          <Logo variant="full" size={88} className="rounded-xl drop-shadow-[0_8px_30px_rgba(37,99,235,0.35)]" />
         </div>
-        <Suspense fallback={<div className="card text-center py-8 text-text-3 text-sm">Loading…</div>}>
+        <Suspense fallback={<div className="glass rounded-2xl text-center py-8 text-text-3 text-sm">Loading…</div>}>
           <VerifyEmailInner />
         </Suspense>
-      </div>
+      </motion.div>
     </div>
   );
 }

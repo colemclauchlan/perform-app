@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 import toast from "react-hot-toast";
 import { Logo } from "@/components/ui/Logo";
+import { HeroBackdrop } from "@/components/visual/HeroBackdrop";
+import { motion } from "framer-motion";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -50,14 +52,22 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center mb-8">
-          <Logo variant="full" size={96} className="rounded-xl" />
+    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+      <HeroBackdrop />
+      <motion.div
+        className="relative z-10 w-full max-w-sm"
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div className="flex items-center justify-center mb-7">
+          <Logo variant="full" size={88} className="rounded-xl drop-shadow-[0_8px_30px_rgba(37,99,235,0.35)]" />
         </div>
 
-        <div className="card">
-          <h1 className="text-lg font-semibold mb-1">Set a new password</h1>
+        <div className="glass hairline-top rounded-2xl p-6">
+          <h1 className="text-xl font-bold tracking-tight mb-1">
+            Set a new <span className="text-brand">password</span>
+          </h1>
           <p className="text-sm text-text-2 mb-6">
             Choose a strong password you don&apos;t use elsewhere.
           </p>
@@ -91,13 +101,14 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={loading || !ready}
-              className="btn btn-primary w-full justify-center"
+              className="btn btn-primary group w-full justify-center"
             >
+              <span className="shine-overlay" />
               {loading ? "Updating..." : "Update password"}
             </button>
           </form>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
