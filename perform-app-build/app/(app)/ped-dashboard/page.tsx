@@ -248,7 +248,7 @@ export default function PedDashboardPage() {
                       </div>
                       {!isDone &&
                         (e.info.dueToday ? (
-                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 bg-status-red/15 text-status-red ring-1 ring-inset ring-status-red/30 animate-pulse-glow">
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 bg-status-red text-white">
                             Due Now
                           </span>
                         ) : (

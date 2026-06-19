@@ -232,7 +232,7 @@ export default function GymDashboardPage() {
                     </div>
                   </div>
                   {d.dueToday ? (
-                    <span className="badge bg-status-red/15 text-status-red ring-1 ring-inset ring-status-red/30 font-semibold animate-pulse-glow">
+                    <span className="badge bg-status-red text-white font-semibold shadow-soft">
                       Due Now
                     </span>
                   ) : (

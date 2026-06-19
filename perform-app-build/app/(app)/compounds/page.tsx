@@ -417,7 +417,7 @@ function ChecklistItem({
       </div>
       {!doneToday &&
         (info.dueToday ? (
-          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1 bg-status-red/15 text-status-red ring-1 ring-inset ring-status-red/30 animate-pulse-glow">
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1 bg-status-red text-white">
             <Clock size={9} />
             Due Now
           </span>

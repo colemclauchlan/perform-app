@@ -107,8 +107,10 @@ export function getNextDoseInfo(
   // overdue — i.e. the injection needs to be taken today.
   dueToday: boolean;
 } {
+  // Never logged on an active protocol → treat as due now (the first dose is
+  // outstanding), so it gets the same red "Due Now" flag as an overdue one.
   if (!lastDoseISO)
-    return { label: "No doses logged", status: "none", dueToday: false };
+    return { label: "No doses logged", status: "none", dueToday: true };
   const hours = FREQUENCY_HOURS[frequency] || 24;
   const next = new Date(lastDoseISO);
   next.setHours(next.getHours() + hours);
