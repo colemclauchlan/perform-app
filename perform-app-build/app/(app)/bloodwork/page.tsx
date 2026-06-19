@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { Modal } from "@/components/ui/Modal";
+import { Reveal, Stagger, StaggerItem } from "@/components/visual/Motion";
 import { BloodworkChart, MarkerSeries } from "@/components/charts/BloodworkChart";
 import {
   useBloodwork,
@@ -26,6 +26,7 @@ import {
   Minus,
   Search,
   TestTubes,
+  Activity,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -334,30 +335,53 @@ export default function BloodworkPage() {
 
   return (
     <div className="p-6 max-w-[1300px]">
-      <PageHeader
-        title="Bloodwork Tracker"
-        subtitle="Log lab panels, visualise trends, and flag out-of-range markers"
-        action={
-          <div className="flex gap-2">
-            {entries.length > 0 && (
-              <button onClick={exportCSV} className="btn btn-ghost btn-sm active:scale-95">
-                <Download size={14} /> Export CSV
+      {/* Hero — lab console header with ambient depth */}
+      <Reveal>
+        <div className="panel hairline-top mb-5 p-6 overflow-hidden">
+          <div className="pointer-events-none absolute -top-24 -left-12 w-72 h-72 bg-brand-gradient opacity-20 blur-3xl" />
+          <div className="relative flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-start gap-4">
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-soft"
+                style={{ background: "rgba(252,129,129,0.14)", color: "#fc8181" }}
+              >
+                <TestTubes size={22} />
+              </div>
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-white/10 bg-bg-2/60 text-[11px] text-text-2 mb-2">
+                  <Activity size={11} className="text-accent" />
+                  Lab console
+                </div>
+                <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight leading-tight">
+                  Bloodwork <span className="text-gradient">Tracker</span>
+                </h1>
+                <p className="text-sm text-text-2 mt-1.5 max-w-xl">
+                  Log lab panels, visualise trends, and flag out-of-range markers.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {entries.length > 0 && (
+                <button onClick={exportCSV} className="btn btn-ghost btn-sm active:scale-95">
+                  <Download size={14} /> Export CSV
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setEditing(null);
+                  setModalOpen(true);
+                }}
+                className="btn btn-primary group btn-sm active:scale-95"
+              >
+                <span className="shine-overlay" />
+                <Plus size={14} /> Add Panel
               </button>
-            )}
-            <button
-              onClick={() => {
-                setEditing(null);
-                setModalOpen(true);
-              }}
-              className="btn btn-primary btn-sm active:scale-95"
-            >
-              <Plus size={14} /> Add Panel
-            </button>
+            </div>
           </div>
-        }
-      />
+        </div>
+      </Reveal>
 
-      <div className="flex items-start gap-2 text-[11px] text-text-3 bg-bg-2 border border-border rounded-lg px-3 py-2 mb-5">
+      <div className="flex items-start gap-2 text-[11px] text-text-3 bg-status-amber/[0.06] border border-status-amber/20 rounded-lg px-3 py-2 mb-5">
         <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-status-amber" />
         <span>
           For personal tracking only. Reference ranges vary by lab and individual. This is not medical
@@ -368,10 +392,15 @@ export default function BloodworkPage() {
       {isLoading ? (
         <div className="text-text-3 text-sm">Loading…</div>
       ) : entries.length === 0 ? (
-        <div className="card text-center py-12">
-          <TestTubes size={32} className="mx-auto text-text-3 mb-3" />
-          <div className="text-text-2 mb-1">No bloodwork logged yet</div>
-          <div className="text-text-3 text-sm mb-4">
+        <div className="panel hairline-top text-center py-14 px-6">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-soft"
+            style={{ background: "rgba(252,129,129,0.12)", color: "#fc8181" }}
+          >
+            <TestTubes size={26} />
+          </div>
+          <div className="text-text-1 font-medium mb-1">No bloodwork logged yet</div>
+          <div className="text-text-3 text-sm mb-5">
             Add your first lab panel to start tracking trends over time.
           </div>
           <button
@@ -379,8 +408,9 @@ export default function BloodworkPage() {
               setEditing(null);
               setModalOpen(true);
             }}
-            className="btn btn-primary btn-sm mx-auto active:scale-95"
+            className="btn btn-primary group btn-sm mx-auto active:scale-95"
           >
+            <span className="shine-overlay" />
             <Plus size={14} /> Add Panel
           </button>
         </div>
