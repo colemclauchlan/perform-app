@@ -26,6 +26,7 @@ import {
   ListChecks,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { Stagger, StaggerItem } from "@/components/visual/Motion";
 
 function StatCard({
   label,
@@ -40,23 +41,27 @@ function StatCard({
   tone?: "accent" | "green" | "red" | "amber";
   icon?: React.ReactNode;
 }) {
-  const toneMap = {
-    accent: "text-accent",
-    green: "text-status-green",
-    red: "text-status-red",
-    amber: "text-status-amber",
+  const CHIP: Record<string, { text: string; bg: string; color: string; ring: string }> = {
+    accent: { text: "text-accent", bg: "#3b82f61a", color: "#3b82f6", ring: "#3b82f633" },
+    green: { text: "text-status-green", bg: "#22d3a51a", color: "#22d3a5", ring: "#22d3a533" },
+    red: { text: "text-status-red", bg: "#f565651a", color: "#f56565", ring: "#f5656533" },
+    amber: { text: "text-status-amber", bg: "#f6ad551a", color: "#f6ad55", ring: "#f6ad5533" },
   };
+  const c = CHIP[tone] ?? CHIP.accent;
   return (
-    <div className="stat-card animate-fade-in">
+    <div className="stat-card group">
       <div className="flex items-start justify-between">
         <div>
-          <div className="text-[11px] text-text-3 uppercase tracking-wider">{label}</div>
-          <div className={cn("text-2xl font-bold mt-1.5 leading-none", toneMap[tone])}>{value}</div>
+          <div className="text-[11px] text-text-3 uppercase tracking-[0.12em] font-semibold">{label}</div>
+          <div className={cn("text-2xl font-display font-bold mt-1.5 leading-none tabular-nums", c.text)}>{value}</div>
           {sub && <div className="text-[11px] text-text-3 mt-1.5">{sub}</div>}
         </div>
         {icon && (
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-accent-dim">
-            <div className="text-accent">{icon}</div>
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+            style={{ background: c.bg, color: c.color, boxShadow: `inset 0 0 0 1px ${c.ring}` }}
+          >
+            {icon}
           </div>
         )}
       </div>
@@ -144,12 +149,12 @@ export default function PedDashboardPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <StatCard label="Active Protocols" value={activeProtocols.length} sub={`${protocols.length} total`} icon={<FlaskConical size={18} />} />
-        <StatCard label="Compounds Running" value={allCompounds.length} icon={<Syringe size={18} />} />
-        <StatCard label="Doses Due Today" value={dueToday.length} tone={dueToday.length ? "amber" : "green"} icon={<Clock size={18} />} />
-        <StatCard label="Overdue" value={overdueCount} tone={overdueCount ? "red" : "green"} icon={<Activity size={18} />} />
-      </div>
+      <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <StaggerItem><StatCard label="Active Protocols" value={activeProtocols.length} sub={`${protocols.length} total`} icon={<FlaskConical size={18} />} /></StaggerItem>
+        <StaggerItem><StatCard label="Compounds Running" value={allCompounds.length} icon={<Syringe size={18} />} /></StaggerItem>
+        <StaggerItem><StatCard label="Doses Due Today" value={dueToday.length} tone={dueToday.length ? "amber" : "green"} icon={<Clock size={18} />} /></StaggerItem>
+        <StaggerItem><StatCard label="Overdue" value={overdueCount} tone={overdueCount ? "red" : "green"} icon={<Activity size={18} />} /></StaggerItem>
+      </Stagger>
 
       {activeProtocols.length === 0 ? (
         <div className="card text-center py-12">
