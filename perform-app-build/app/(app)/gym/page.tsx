@@ -87,7 +87,7 @@ export default function GymDashboardPage() {
 
   // Compounds due today across active protocols
   const dueToday = useMemo(() => {
-    const rows: { name: string; dose: string; freq: string; status: string; label: string }[] = [];
+    const rows: { name: string; dose: string; freq: string; status: string; label: string; dueToday: boolean }[] = [];
     protocols
       .filter((p) => p.is_active)
       .forEach((p) => {
@@ -99,9 +99,12 @@ export default function GymDashboardPage() {
             freq: c.frequency,
             status: info.status,
             label: info.label,
+            dueToday: info.dueToday,
           });
         });
       });
+    // Surface the injections that need taking today at the top of the list.
+    rows.sort((a, b) => Number(b.dueToday) - Number(a.dueToday));
     return rows;
   }, [protocols]);
 
@@ -228,19 +231,23 @@ export default function GymDashboardPage() {
                       {d.dose} · {d.freq}
                     </div>
                   </div>
-                  <span
-                    className={`badge ${
-                      d.status === "overdue"
-                        ? "text-status-red"
-                        : d.status === "urgent"
-                        ? "text-status-amber"
-                        : d.status === "none"
-                        ? "text-text-3"
-                        : "text-status-green"
-                    }`}
-                  >
-                    {d.status === "overdue" ? "Due" : d.status === "none" ? "—" : d.label}
-                  </span>
+                  {d.dueToday ? (
+                    <span className="badge bg-status-red/15 text-status-red ring-1 ring-inset ring-status-red/30 font-semibold animate-pulse-glow">
+                      Due Now
+                    </span>
+                  ) : (
+                    <span
+                      className={`badge ${
+                        d.status === "urgent"
+                          ? "text-status-amber"
+                          : d.status === "none"
+                          ? "text-text-3"
+                          : "text-status-green"
+                      }`}
+                    >
+                      {d.status === "none" ? "—" : d.label}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

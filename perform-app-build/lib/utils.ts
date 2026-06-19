@@ -100,25 +100,38 @@ export const FREQUENCY_HOURS: Record<Frequency, number> = {
 export function getNextDoseInfo(
   lastDoseISO: string | null,
   frequency: Frequency
-): { label: string; status: "ok" | "urgent" | "overdue" | "none" } {
-  if (!lastDoseISO) return { label: "No doses logged", status: "none" };
+): {
+  label: string;
+  status: "ok" | "urgent" | "overdue" | "none";
+  // True when the next dose falls on today's local calendar date or is already
+  // overdue — i.e. the injection needs to be taken today.
+  dueToday: boolean;
+} {
+  if (!lastDoseISO)
+    return { label: "No doses logged", status: "none", dueToday: false };
   const hours = FREQUENCY_HOURS[frequency] || 24;
   const next = new Date(lastDoseISO);
   next.setHours(next.getHours() + hours);
-  const diff = next.getTime() - Date.now();
+  const now = new Date();
+  const diff = next.getTime() - now.getTime();
   const hrs = Math.floor(Math.abs(diff) / 3600000);
   const mins = Math.floor((Math.abs(diff) % 3600000) / 60000);
+  const dueToday =
+    diff < 0 ||
+    (next.getFullYear() === now.getFullYear() &&
+      next.getMonth() === now.getMonth() &&
+      next.getDate() === now.getDate());
   if (diff < 0) {
-    return { label: `Overdue ${hrs}h ${mins}m`, status: "overdue" };
+    return { label: `Overdue ${hrs}h ${mins}m`, status: "overdue", dueToday };
   }
   if (hrs < 4) {
-    return { label: `${hrs}h ${mins}m`, status: "urgent" };
+    return { label: `${hrs}h ${mins}m`, status: "urgent", dueToday };
   }
   if (hrs < 24) {
-    return { label: `${hrs}h ${mins}m`, status: "ok" };
+    return { label: `${hrs}h ${mins}m`, status: "ok", dueToday };
   }
   const days = Math.floor(hrs / 24);
-  return { label: `${days}d ${hrs % 24}h`, status: "ok" };
+  return { label: `${days}d ${hrs % 24}h`, status: "ok", dueToday };
 }
 
 // Rank alternative exercises that hit the same muscle, for in-builder swaps.
