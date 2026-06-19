@@ -10,6 +10,7 @@ import {
 import { todayISO, formatDate } from "@/lib/utils";
 import { Trash2, Ruler, TrendingUp, TrendingDown } from "lucide-react";
 import { BodyAnatomy } from "@/components/measurements/BodyAnatomy";
+import { Reveal } from "@/components/visual/Motion";
 import toast from "react-hot-toast";
 
 const FIELDS: { key: string; label: string; col: keyof typeof defaultMeasurement }[] = [
@@ -87,7 +88,7 @@ export default function MeasurementsPage() {
         subtitle="Track your measurements over time"
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+      <Reveal className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
         {/* Log form */}
         <div className="card">
           <div className="card-title">Log Measurements</div>
@@ -113,7 +114,8 @@ export default function MeasurementsPage() {
             <label className="label">Notes</label>
             <input value={form.notes} onChange={(e) => updateField("notes", e.target.value)} placeholder="Optional" />
           </div>
-          <button className="btn btn-primary mt-3 w-full" onClick={handleSave}>
+          <button className="btn btn-primary group mt-3 w-full" onClick={handleSave}>
+            <span className="shine-overlay" />
             Save Measurements
           </button>
         </div>
@@ -161,7 +163,7 @@ export default function MeasurementsPage() {
             </div>
           )}
         </div>
-      </div>
+      </Reveal>
 
       {/* Anatomy map */}
       {latest && (
