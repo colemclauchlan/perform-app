@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase-client";
 import { Download, KeyRound, LogOut, Mail, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { DeviceFeatures } from "@/components/settings/DeviceFeatures";
+import { Reveal } from "@/components/visual/Motion";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -173,7 +174,7 @@ export default function SettingsPage() {
         subtitle="Configure your targets and preferences"
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <Reveal className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <div className="card">
           <div className="card-title">Daily Macro Targets</div>
           <div className="space-y-3">
@@ -210,7 +211,8 @@ export default function SettingsPage() {
               />
             </div>
           </div>
-          <button className="btn btn-primary mt-3" onClick={handleSave}>
+          <button className="btn btn-primary group mt-3" onClick={handleSave}>
+            <span className="shine-overlay" />
             Save Targets
           </button>
         </div>
@@ -238,7 +240,7 @@ export default function SettingsPage() {
             <Download size={14} /> Export all data (JSON)
           </button>
         </div>
-      </div>
+      </Reveal>
 
       {/* iPhone device features — Apple Health sync + Face ID lock */}
       <DeviceFeatures />
