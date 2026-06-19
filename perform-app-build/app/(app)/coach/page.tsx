@@ -100,12 +100,12 @@ export default function CoachPage() {
     <div className="flex flex-col h-[calc(100vh-7rem)] max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center">
-            <Sparkles size={20} className="text-accent" />
+          <div className="w-11 h-11 rounded-xl bg-accent-gradient flex items-center justify-center shadow-glow">
+            <Sparkles size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-text-1">AI Coach</h1>
-            <p className="text-xs text-text-3">Powered by Claude · sees your tracked data</p>
+            <h1 className="text-2xl font-display font-bold text-text-1 leading-none">AI Coach</h1>
+            <p className="text-xs text-text-3 mt-1">Powered by Claude · sees your tracked data</p>
           </div>
         </div>
         {!empty && (
@@ -123,12 +123,12 @@ export default function CoachPage() {
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto rounded-2xl border border-border bg-bg-2 p-4 space-y-4"
+        className="flex-1 overflow-y-auto rounded-2xl border border-border-2/50 bg-bg-2/80 p-4 space-y-4 shadow-card"
       >
         {empty && (
           <div className="h-full flex flex-col items-center justify-center text-center px-4">
-            <div className="w-14 h-14 rounded-2xl bg-accent/15 flex items-center justify-center mb-4">
-              <Bot size={28} className="text-accent" />
+            <div className="w-16 h-16 rounded-2xl bg-accent-gradient flex items-center justify-center mb-4 shadow-glow animate-float">
+              <Bot size={30} className="text-white" />
             </div>
             <p className="text-text-2 max-w-md mb-6 leading-relaxed">{GREETING}</p>
             <div className="grid sm:grid-cols-2 gap-2 w-full max-w-lg">
@@ -157,7 +157,7 @@ export default function CoachPage() {
             <div
               className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed max-w-[80%] ${
                 m.role === "user"
-                  ? "bg-accent text-white"
+                  ? "bg-accent-gradient text-white shadow-soft"
                   : "bg-bg-3 text-text-2 border border-border"
               }`}
             >
@@ -184,8 +184,8 @@ export default function CoachPage() {
         )}
 
         {error && (
-          <div className="flex gap-2 items-start rounded-xl border border-danger/30 bg-danger/10 px-3 py-2.5 text-sm text-text-2">
-            <AlertCircle size={16} className="text-danger shrink-0 mt-0.5" />
+          <div className="flex gap-2 items-start rounded-xl border border-status-red/30 bg-status-red/10 px-3 py-2.5 text-sm text-text-2">
+            <AlertCircle size={16} className="text-status-red shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
