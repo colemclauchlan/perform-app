@@ -21,11 +21,15 @@ export function MuscleModel3DView({
   secondary = [],
   height = 300,
   className = "",
+  showLegend = true,
+  caption,
 }: {
   primary: string;
   secondary?: string[];
   height?: number;
   className?: string;
+  showLegend?: boolean;
+  caption?: string;
 }) {
   return (
     <div className={className}>
@@ -38,6 +42,10 @@ export function MuscleModel3DView({
           drag to rotate · front ↔ back
         </div>
       </div>
+      {caption && (
+        <div className="text-center text-[11px] text-text-3 mt-2">{caption}</div>
+      )}
+      {showLegend && (
       <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-text-2">
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#ff2e2e", boxShadow: "0 0 8px #ff2e2e88" }} /> Primary
@@ -49,6 +57,7 @@ export function MuscleModel3DView({
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#444e5e" }} /> Not targeted
         </span>
       </div>
+      )}
     </div>
   );
 }

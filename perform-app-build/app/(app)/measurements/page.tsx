@@ -9,7 +9,7 @@ import {
 } from "@/hooks/useBodyMetrics";
 import { todayISO, formatDate } from "@/lib/utils";
 import { Trash2, Ruler, TrendingUp, TrendingDown } from "lucide-react";
-import { BodyAnatomy } from "@/components/measurements/BodyAnatomy";
+import { MuscleModel3DView } from "@/components/visual/MuscleModel3DView";
 import { Reveal } from "@/components/visual/Motion";
 import toast from "react-hot-toast";
 
@@ -165,15 +165,28 @@ export default function MeasurementsPage() {
         </div>
       </Reveal>
 
-      {/* Anatomy map */}
+      {/* 3D body model — highlights the areas you're tracking */}
       {latest && (
-        <div className="card mb-5">
-          <div className="card-title">Anatomy Map · Latest vs Previous</div>
-          <BodyAnatomy latest={latest} prev={prev} />
-          <div className="text-[11px] text-text-3 text-center mt-2">
-            Green deltas mark favorable change · last logged {formatDate(latest.logged_date)}
-          </div>
-        </div>
+        <Reveal className="card mb-5">
+          <div className="card-title">Body Model · Tracked Areas</div>
+          <MuscleModel3DView
+            primary=""
+            secondary={
+              [
+                latest.chest_cm != null && "Chest",
+                latest.waist_cm != null && "Abs",
+                latest.hips_cm != null && "Glutes",
+                latest.neck_cm != null && "Traps",
+                (latest.left_arm_cm != null || latest.right_arm_cm != null) && "Biceps",
+                (latest.left_thigh_cm != null || latest.right_thigh_cm != null) && "Quads",
+                (latest.left_calf_cm != null || latest.right_calf_cm != null) && "Calves",
+              ].filter(Boolean) as string[]
+            }
+            height={340}
+            showLegend={false}
+            caption={`Highlighted areas are tracked · last logged ${formatDate(latest.logged_date)}`}
+          />
+        </Reveal>
       )}
 
       {/* History */}
