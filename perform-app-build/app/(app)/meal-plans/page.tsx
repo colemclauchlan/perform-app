@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
 import { useFoodCatalog } from "@/hooks/useNutrition";
+import { AIMealPlanModal } from "@/components/nutrition/AIMealPlanModal";
 import {
   useMealPlans,
   useSaveMealPlan,
@@ -63,6 +64,7 @@ export default function MealPlansPage() {
   const [editing, setEditing] = useState<MealPlan | null>(null);
   const [addTarget, setAddTarget] = useState<MealPlan | null>(null);
   const [reviewTarget, setReviewTarget] = useState<MealPlan | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
 
   function openNew() {
     setEditing(null);
@@ -79,20 +81,34 @@ export default function MealPlansPage() {
         title="Meal Plans"
         subtitle="Reusable meal templates with full macro breakdowns — add a whole plan to your log in one tap"
         action={
-          <button className="btn btn-primary" onClick={openNew}>
-            <Plus size={16} /> New Plan
-          </button>
+          <div className="flex gap-2">
+            <button className="btn btn-ghost" onClick={() => setAiOpen(true)}>
+              <Sparkles size={16} className="text-accent" /> AI Meal Plan
+            </button>
+            <button className="btn btn-primary group" onClick={openNew}>
+              <span className="shine-overlay" />
+              <Plus size={16} /> New Plan
+            </button>
+          </div>
         }
       />
+
+      <AIMealPlanModal open={aiOpen} onClose={() => setAiOpen(false)} />
 
       {plans.length === 0 ? (
         <div className="card text-center py-12">
           <UtensilsCrossed size={28} className="mx-auto text-text-3 mb-3" />
           <div className="text-text-2 mb-1">No meal plans yet</div>
-          <div className="text-sm text-text-3 mb-4">Build a reusable plan from your food catalog.</div>
-          <button className="btn btn-primary mx-auto" onClick={openNew}>
-            <Plus size={16} /> Create your first plan
-          </button>
+          <div className="text-sm text-text-3 mb-4">Build a reusable plan from your food catalog — or let the AI chef build one around your goals.</div>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <button className="btn btn-primary group" onClick={openNew}>
+              <span className="shine-overlay" />
+              <Plus size={16} /> Create your first plan
+            </button>
+            <button className="btn btn-ghost" onClick={() => setAiOpen(true)}>
+              <Sparkles size={16} className="text-accent" /> Generate with AI
+            </button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
