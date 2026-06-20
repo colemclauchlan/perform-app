@@ -17,6 +17,9 @@ import { formatDate, cn, muscleColor } from "@/lib/utils";
 import { WorkoutBuilder } from "@/components/training/WorkoutBuilder";
 import { ExerciseDetailModal } from "@/components/training/ExerciseDetailModal";
 import { AIWorkoutModal } from "@/components/training/AIWorkoutModal";
+import { MuscleModel3DView } from "@/components/visual/MuscleModel3DView";
+import { Reveal, Stagger, StaggerItem } from "@/components/visual/Motion";
+import { motion } from "framer-motion";
 import {
   Plus,
   Trash2,
@@ -122,6 +125,12 @@ export default function WorkoutsPage() {
     });
   }, [workouts, catalogByName]);
 
+  // Muscles trained this week → highlighted on the 3D model in the hero.
+  const musclesThisWeek = useMemo(
+    () => recovery.filter((r) => r.hits > 0).map((r) => r.muscle),
+    [recovery]
+  );
+
   const topPRs = useMemo(
     () => [...progression].sort((a, b) => b.e1rmPR - a.e1rmPR),
     [progression]
@@ -201,13 +210,81 @@ export default function WorkoutsPage() {
 
       <AIWorkoutModal open={aiOpen} onClose={() => setAiOpen(false)} />
 
-      {/* stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 animate-fade-in">
-        <StatCard icon={Calendar} tone="accent" label="Total Sessions" value={workouts.length} />
-        <StatCard icon={Zap} tone="amber" label="This Week" value={`${weekStats.sessions} sessions`} sub={`${weekStats.sets} sets`} />
-        <StatCard icon={BarChart2} tone="green" label="7-Day Volume" value={`${weekStats.volume.toLocaleString()}${weekStats.unit ? ` ${weekStats.unit}` : ""}`} />
-        <StatCard icon={Trophy} tone="teal" label="Exercises Tracked" value={progression.length} sub={`${totalSets} sets all-time`} />
-      </div>
+      {/* ── Logging-first hero: start a workout + 3D muscles worked this week ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+        className="panel hairline-top overflow-hidden mb-5"
+      >
+        <div className="absolute -top-24 -right-16 w-80 h-80 bg-brand-gradient opacity-20 blur-3xl pointer-events-none" />
+        <div className="relative grid lg:grid-cols-[1fr_280px] gap-5 p-5 sm:p-6">
+          <div className="flex flex-col">
+            <div className="text-[11px] uppercase tracking-[0.14em] text-text-3 font-semibold mb-1">This week</div>
+            <h2 className="font-display text-3xl sm:text-4xl font-bold leading-none tabular-nums">
+              <span className="text-brand">{weekStats.volume.toLocaleString()}</span>
+              {weekStats.unit && <span className="text-base text-text-2 font-normal ml-2">{weekStats.unit} moved</span>}
+            </h2>
+            <p className="text-sm text-text-2 mt-2 tabular-nums">
+              {weekStats.sessions} session{weekStats.sessions !== 1 ? "s" : ""} · {weekStats.sets} sets
+              <span className="text-text-3"> · {workouts.length} all-time · {progression.length} lifts tracked</span>
+            </p>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={openNew}
+              className="btn btn-primary group mt-4 self-start px-6 py-3 text-base"
+            >
+              <span className="shine-overlay" />
+              <Play size={18} /> Start a Workout
+            </motion.button>
+
+            <div className="mt-4">
+              <div className="text-[11px] uppercase tracking-wide text-text-3 mb-1.5">Quick start</div>
+              <div className="flex flex-wrap gap-1.5">
+                <button onClick={() => setAiOpen(true)} className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-full border border-border bg-bg-2 text-text-2 hover:border-accent/50 hover:text-text-1 transition-colors">
+                  <Sparkles size={13} className="text-accent" /> AI Program
+                </button>
+                {templates.slice(0, 4).map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => startFromTemplate(t)}
+                    className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-full border border-border bg-bg-2 text-text-2 hover:border-accent/50 hover:text-text-1 transition-colors max-w-[170px]"
+                  >
+                    <LayoutTemplate size={12} /> <span className="truncate">{t.name}</span>
+                  </button>
+                ))}
+                {templates.length === 0 && (
+                  <span className="text-[12px] text-text-3">Save a workout as a template for one-tap starts.</span>
+                )}
+              </div>
+            </div>
+
+            {musclesThisWeek.length > 0 && (
+              <div className="mt-4">
+                <div className="text-[11px] uppercase tracking-wide text-text-3 mb-1.5">Trained this week</div>
+                <Stagger className="flex flex-wrap gap-1.5">
+                  {recovery
+                    .filter((r) => r.hits > 0)
+                    .map((r) => (
+                      <StaggerItem key={r.muscle}>
+                        <span className="badge bg-status-green/15 text-status-green ring-1 ring-inset ring-status-green/20 text-[11px]">
+                          {r.muscle} ×{r.hits}
+                        </span>
+                      </StaggerItem>
+                    ))}
+                </Stagger>
+              </div>
+            )}
+          </div>
+
+          {/* 3D muscle model — muscles trained this week glow red */}
+          <div className="hidden sm:block">
+            <MuscleModel3DView primary="" secondary={musclesThisWeek} height={300} showLegend={false} caption="Worked this week" />
+          </div>
+        </div>
+      </motion.div>
 
       {/* recovery heatmap */}
       <div className="card mb-4">

@@ -66,18 +66,27 @@ function Part({
   level,
   position,
   rotation,
+  scale,
   children,
 }: {
   level?: Level;
   position: Vec;
   rotation?: Vec;
+  scale?: Vec;
   children: React.ReactNode;
 }) {
   const m = level ? mat(level) : STRUCT;
   return (
-    <mesh position={position} rotation={rotation} castShadow>
+    <mesh position={position} rotation={rotation} scale={scale} castShadow>
       {children}
-      <meshStandardMaterial color={m.color} emissive={m.emissive} emissiveIntensity={m.ei} roughness={m.rough} metalness={m.metal} />
+      <meshStandardMaterial
+        color={m.color}
+        emissive={m.emissive}
+        emissiveIntensity={m.ei}
+        roughness={m.rough}
+        metalness={m.metal}
+        flatShading={false}
+      />
     </mesh>
   );
 }
@@ -89,6 +98,7 @@ function Pair({
   y,
   z,
   rot,
+  scale,
   geom,
 }: {
   level?: Level;
@@ -96,78 +106,89 @@ function Pair({
   y: number;
   z: number;
   rot?: Vec;
+  scale?: Vec;
   geom: () => React.ReactNode;
 }) {
   return (
     <>
-      <Part level={level} position={[x, y, z]} rotation={rot}>{geom()}</Part>
-      <Part level={level} position={[-x, y, z]} rotation={rot ? [rot[0], -rot[1], -rot[2]] : undefined}>{geom()}</Part>
+      <Part level={level} position={[x, y, z]} rotation={rot} scale={scale}>{geom()}</Part>
+      <Part
+        level={level}
+        position={[-x, y, z]}
+        rotation={rot ? [rot[0], -rot[1], -rot[2]] : undefined}
+        scale={scale}
+      >
+        {geom()}
+      </Part>
     </>
   );
 }
 
 function Figure({ levels }: { levels: Record<Region, Level> }) {
-  const cap = (r: number, l: number): React.ReactNode => <capsuleGeometry args={[r, l, 6, 14]} />;
-  const sph = (r: number): React.ReactNode => <sphereGeometry args={[r, 18, 18]} />;
-  const box = (w: number, h: number, d: number): React.ReactNode => <boxGeometry args={[w, h, d]} />;
+  // Higher-poly primitives for smooth, non-jagged muscle bellies.
+  const cap = (r: number, l: number): React.ReactNode => <capsuleGeometry args={[r, l, 14, 28]} />;
+  const sph = (r: number): React.ReactNode => <sphereGeometry args={[r, 32, 24]} />;
+  // Unit sphere shaped into an ellipsoid via the mesh `scale` — replaces every
+  // hard-edged box so muscles read as rounded anatomical forms.
+  const ell = (): React.ReactNode => <sphereGeometry args={[1, 28, 20]} />;
 
   return (
     <group position={[0, -0.1, 0]}>
-      {/* ── Head / neck (structural) ── */}
+      {/* ── Head / neck ── */}
       <Part position={[0, 1.52, 0]}>{sph(0.26)}</Part>
-      <Part position={[0, 1.28, 0]}>{cap(0.1, 0.12)}</Part>
+      <Part position={[0, 1.3, 0]} scale={[0.11, 0.15, 0.11]}>{ell()}</Part>
 
       {/* ── Traps ── */}
-      <Pair level={levels.traps} x={0.16} y={1.12} z={-0.05} rot={[0, 0, 0.5]} geom={() => box(0.22, 0.14, 0.18)} />
+      <Pair level={levels.traps} x={0.16} y={1.12} z={-0.04} rot={[0, 0, 0.5]} scale={[0.12, 0.08, 0.1]} geom={ell} />
 
       {/* ── Shoulders / delts ── */}
-      <Pair level={levels.shoulders} x={0.5} y={1.04} z={0} geom={() => sph(0.21)} />
+      <Pair level={levels.shoulders} x={0.5} y={1.04} z={0} scale={[0.22, 0.2, 0.22]} geom={ell} />
 
-      {/* ── Torso base (structural) ── */}
-      <Part position={[0, 0.82, 0]}>{box(0.66, 0.56, 0.34)}</Part>
-      <Part position={[0, 0.4, 0]}>{box(0.58, 0.5, 0.3)}</Part>
-      <Part position={[0, 0.06, 0]}>{box(0.52, 0.3, 0.3)}</Part>
+      {/* ── Torso (smooth tapered trunk) ── */}
+      <Part position={[0, 0.84, 0]} scale={[0.33, 0.3, 0.19]}>{ell()}</Part>
+      <Part position={[0, 0.46, 0]} scale={[0.3, 0.28, 0.17]}>{ell()}</Part>
+      <Part position={[0, 0.1, 0]} scale={[0.27, 0.2, 0.16]}>{ell()}</Part>
 
       {/* ── Chest / pecs ── */}
-      <Pair level={levels.chest} x={0.17} y={0.92} z={0.19} geom={() => box(0.28, 0.26, 0.12)} />
+      <Pair level={levels.chest} x={0.16} y={0.92} z={0.16} scale={[0.16, 0.14, 0.11]} geom={ell} />
 
       {/* ── Abs (six-pack) ── */}
-      {[0.62, 0.44, 0.26].map((y) => (
-        <Pair key={y} level={levels.abs} x={0.08} y={y} z={0.165} geom={() => box(0.13, 0.13, 0.08)} />
+      {[0.62, 0.45, 0.28].map((y) => (
+        <Pair key={y} level={levels.abs} x={0.08} y={y} z={0.17} scale={[0.072, 0.07, 0.05]} geom={ell} />
       ))}
       {/* ── Obliques ── */}
-      <Pair level={levels.obliques} x={0.25} y={0.42} z={0.12} geom={() => box(0.1, 0.34, 0.12)} />
+      <Pair level={levels.obliques} x={0.24} y={0.42} z={0.13} scale={[0.06, 0.17, 0.07]} geom={ell} />
 
       {/* ── Lats (back) ── */}
-      <Pair level={levels.lats} x={0.28} y={0.7} z={-0.18} rot={[0, 0, 0.35]} geom={() => box(0.16, 0.42, 0.12)} />
+      <Pair level={levels.lats} x={0.27} y={0.7} z={-0.16} rot={[0, 0, 0.35]} scale={[0.09, 0.22, 0.07]} geom={ell} />
       {/* ── Lower back ── */}
-      <Part level={levels.lowerback} position={[0, 0.45, -0.18]}>{box(0.32, 0.26, 0.1)}</Part>
+      <Part level={levels.lowerback} position={[0, 0.46, -0.16]} scale={[0.17, 0.14, 0.07]}>{ell()}</Part>
 
-      {/* ── Upper arms (structural base) + biceps (front) + triceps (back) ── */}
+      {/* ── Upper arms + biceps (front) + triceps (back) ── */}
       <Pair x={0.64} y={0.74} z={0} geom={() => cap(0.12, 0.42)} />
       <Pair level={levels.biceps} x={0.64} y={0.78} z={0.08} geom={() => cap(0.085, 0.3)} />
       <Pair level={levels.triceps} x={0.64} y={0.78} z={-0.08} geom={() => cap(0.085, 0.3)} />
 
       {/* ── Forearms ── */}
       <Pair level={levels.forearms} x={0.68} y={0.26} z={0.03} geom={() => cap(0.09, 0.4)} />
-      {/* hands (structural) */}
-      <Pair x={0.7} y={-0.02} z={0.04} geom={() => sph(0.1)} />
+      {/* hands */}
+      <Pair x={0.7} y={-0.02} z={0.04} scale={[0.1, 0.12, 0.06]} geom={ell} />
 
       {/* ── Glutes (back) ── */}
-      <Pair level={levels.glutes} x={0.16} y={-0.14} z={-0.16} geom={() => sph(0.18)} />
+      <Pair level={levels.glutes} x={0.16} y={-0.14} z={-0.15} scale={[0.18, 0.18, 0.17]} geom={ell} />
 
-      {/* ── Thighs (structural base) + quads (front) + hamstrings (back) ── */}
+      {/* ── Thighs + quads (front) + hamstrings (back) ── */}
       <Pair x={0.2} y={-0.5} z={0} geom={() => cap(0.16, 0.5)} />
       <Pair level={levels.quads} x={0.2} y={-0.5} z={0.09} geom={() => cap(0.12, 0.42)} />
       <Pair level={levels.hamstrings} x={0.2} y={-0.5} z={-0.09} geom={() => cap(0.12, 0.42)} />
-      {/* knees (structural) */}
+      {/* knees */}
       <Pair x={0.2} y={-0.88} z={0.02} geom={() => sph(0.13)} />
 
-      {/* ── Lower legs (structural) + calves (back) ── */}
+      {/* ── Lower legs + calves (back) ── */}
       <Pair x={0.2} y={-1.2} z={0.02} geom={() => cap(0.11, 0.46)} />
       <Pair level={levels.calves} x={0.2} y={-1.16} z={-0.09} geom={() => cap(0.1, 0.36)} />
-      {/* feet (structural) */}
-      <Pair x={0.2} y={-1.58} z={0.1} geom={() => box(0.18, 0.12, 0.34)} />
+      {/* feet */}
+      <Pair x={0.2} y={-1.55} z={0.08} scale={[0.1, 0.07, 0.2]} geom={ell} />
     </group>
   );
 }
