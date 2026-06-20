@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Reveal, Stagger, StaggerItem } from "@/components/visual/Motion";
 import { BloodworkChart, MarkerSeries } from "@/components/charts/BloodworkChart";
 import { BloodworkAnalysisModal } from "@/components/bloodwork/BloodworkAnalysisModal";
+import { BloodworkImportModal } from "@/components/bloodwork/BloodworkImportModal";
 import {
   useBloodwork,
   useAddBloodwork,
@@ -29,6 +30,7 @@ import {
   TestTubes,
   Activity,
   Sparkles,
+  Upload,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -215,6 +217,7 @@ export default function BloodworkPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<BloodworkEntry | null>(null);
   const [analyzeEntry, setAnalyzeEntry] = useState<BloodworkEntry | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [range, setRange] = useState<"1mo" | "3mo" | "6mo" | "1yr" | "all">("all");
   const [markerSearch, setMarkerSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -369,6 +372,9 @@ export default function BloodworkPage() {
                   <Download size={14} /> Export CSV
                 </button>
               )}
+              <button onClick={() => setImportOpen(true)} className="btn btn-ghost btn-sm active:scale-95" title="Import from photo or PDF">
+                <Upload size={14} /> Import
+              </button>
               <button
                 onClick={() => {
                   setEditing(null);
@@ -648,6 +654,8 @@ export default function BloodworkPage() {
         onClose={() => setAnalyzeEntry(null)}
         entry={analyzeEntry}
       />
+
+      <BloodworkImportModal open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }
