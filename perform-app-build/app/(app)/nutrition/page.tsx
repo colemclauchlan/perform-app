@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { MacroRing } from "@/components/nutrition/MacroBar";
 import { WeeklyMacroGoals } from "@/components/nutrition/WeeklyMacroGoals";
 import {
@@ -14,6 +15,7 @@ import {
   useDeleteFoodLog,
   useWeeklyMacros,
 } from "@/hooks/useNutrition";
+import { useMealPlans, useAddPlanToLog } from "@/hooks/useMealPlans";
 import { FoodCatalogItem, FoodLogEntry, MealType } from "@/types/database";
 import {
   todayISO,
@@ -35,6 +37,8 @@ import {
   Flame,
   Utensils,
   CornerDownLeft,
+  UtensilsCrossed,
+  ArrowRight,
 } from "lucide-react";
 import { Reveal } from "@/components/visual/Motion";
 import toast from "react-hot-toast";
@@ -326,6 +330,21 @@ function FoodLogger({
 
   const addFood = useAddFood();
   const { data: catalog = [] } = useFoodCatalog(search.length >= 2 ? search : "");
+  const { data: plans = [] } = useMealPlans();
+  const addPlanToLog = useAddPlanToLog();
+  const [planId, setPlanId] = useState("");
+
+  function logPlan() {
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+    addPlanToLog.mutate(
+      { plan, date },
+      {
+        onSuccess: () => { toast.success(`Logged "${plan.name}"`); setPlanId(""); },
+        onError: (e) => toast.error(e.message),
+      }
+    );
+  }
 
   const allCategories = useMemo(() => {
     const names = new Set<string>(Object.keys(FOOD_CATEGORY_COLORS));
@@ -602,6 +621,40 @@ function FoodLogger({
             </div>
           </div>
         )}
+
+        {/* Quick-log a saved meal plan */}
+        <div className="mt-4 pt-4 border-t border-border/60 flex items-center gap-2 flex-wrap">
+          <span className="text-[12px] text-text-3 flex items-center gap-1.5 whitespace-nowrap">
+            <UtensilsCrossed size={13} className="text-accent" /> Saved plan:
+          </span>
+          <select
+            value={planId}
+            onChange={(e) => setPlanId(e.target.value)}
+            className="flex-1 min-w-[150px]"
+            disabled={plans.length === 0}
+          >
+            <option value="">{plans.length === 0 ? "No saved plans yet" : "Select a meal plan…"}</option>
+            {plans.map((p) => {
+              const cal = (p.items || []).reduce((a, it) => a + Number(it.calories), 0);
+              return (
+                <option key={p.id} value={p.id}>
+                  {p.name} · {Math.round(cal)} kcal
+                </option>
+              );
+            })}
+          </select>
+          <button
+            className="btn btn-primary btn-sm group"
+            onClick={logPlan}
+            disabled={!planId || addPlanToLog.isPending}
+          >
+            <span className="shine-overlay" />
+            <Plus size={14} /> Log plan
+          </button>
+          <Link href="/meal-plans" className="btn btn-ghost btn-sm">
+            Meal Plans <ArrowRight size={13} />
+          </Link>
+        </div>
       </div>
     </div>
   );
