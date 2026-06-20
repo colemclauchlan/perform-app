@@ -16,6 +16,7 @@ import { WorkoutSession, WorkoutSet, WorkoutTemplate } from "@/types/database";
 import { formatDate, cn, muscleColor } from "@/lib/utils";
 import { WorkoutBuilder } from "@/components/training/WorkoutBuilder";
 import { ExerciseDetailModal } from "@/components/training/ExerciseDetailModal";
+import { AIWorkoutModal } from "@/components/training/AIWorkoutModal";
 import {
   Plus,
   Trash2,
@@ -30,6 +31,7 @@ import {
   Pencil,
   Play,
   LayoutTemplate,
+  Sparkles,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -44,6 +46,7 @@ export default function WorkoutsPage() {
   const deleteTemplate = useDeleteTemplate();
 
   const [builderOpen, setBuilderOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
   const [presetTemplate, setPresetTemplate] = useState<WorkoutTemplate | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -184,11 +187,19 @@ export default function WorkoutsPage() {
         title="Workouts"
         subtitle="Build sessions, track every set, and watch your lifts climb"
         action={
-          <button className="btn btn-primary" onClick={openNew}>
-            <Plus size={16} /> New Workout
-          </button>
+          <div className="flex gap-2">
+            <button className="btn btn-ghost" onClick={() => setAiOpen(true)}>
+              <Sparkles size={16} className="text-accent" /> AI Program
+            </button>
+            <button className="btn btn-primary group" onClick={openNew}>
+              <span className="shine-overlay" />
+              <Plus size={16} /> New Workout
+            </button>
+          </div>
         }
       />
+
+      <AIWorkoutModal open={aiOpen} onClose={() => setAiOpen(false)} />
 
       {/* stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 animate-fade-in">
