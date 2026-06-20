@@ -131,10 +131,9 @@ export default function MeasurementsPage() {
                 const cur = latest[f.col] as number | null;
                 const old = prev ? (prev[f.col] as number | null) : null;
                 const delta = cur != null && old != null ? Math.round((cur - old) * 10) / 10 : null;
-                // For waist/fat: decrease = good. For arms/chest: increase = good.
-                const decreaseGood = ["waist_cm", "hips_cm", "body_fat_pct"].includes(f.key);
-                const isPositive = delta != null && (decreaseGood ? delta < 0 : delta > 0);
-                const isNegative = delta != null && (decreaseGood ? delta > 0 : delta < 0);
+                // Size up = green (growth); size down = neutral white.
+                const up = delta != null && delta > 0;
+                const down = delta != null && delta < 0;
 
                 return (
                   <div key={f.key} className="flex items-center justify-between bg-bg-2 rounded-lg px-3 py-2 border border-border">
@@ -144,9 +143,9 @@ export default function MeasurementsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {delta != null && (
-                        <span className={`text-[11px] flex items-center gap-0.5 ${isPositive ? "text-status-green" : isNegative ? "text-status-red" : "text-text-3"}`}>
-                          {isPositive && <TrendingUp size={10} />}
-                          {isNegative && <TrendingDown size={10} />}
+                        <span className={`text-[11px] flex items-center gap-0.5 ${up ? "text-status-green" : down ? "text-text-1" : "text-text-3"}`}>
+                          {up && <TrendingUp size={10} />}
+                          {down && <TrendingDown size={10} />}
                           {delta > 0 ? "+" : ""}{delta}
                         </span>
                       )}
