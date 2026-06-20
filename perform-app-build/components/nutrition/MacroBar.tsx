@@ -103,9 +103,23 @@ export function MacroRing({
         </div>
       </div>
       <div className="text-xs text-text-2">{label}</div>
-      <div className="text-[11px] text-text-3">
-        {pct}% of {target}
-        {unit}
+      <div className="text-[11px] tabular-nums">
+        <span className="text-text-1 font-medium">{Math.round(value)}</span>
+        <span className="text-text-3">
+          /{target}
+          {unit}
+        </span>
+      </div>
+      <div
+        className={`text-[10px] mt-0.5 tabular-nums ${
+          Math.round(value) >= target ? "text-status-green" : "text-text-3"
+        }`}
+      >
+        {Math.round(value) >= target
+          ? Math.round(value) === target
+            ? "Goal hit"
+            : `+${Math.round(value) - target}${unit} over`
+          : `${target - Math.round(value)}${unit} to go`}
       </div>
     </div>
   );
