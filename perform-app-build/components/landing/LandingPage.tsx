@@ -123,29 +123,8 @@ export function LandingPage() {
               <ShieldCheck size={13} /> Private &amp; secure — your data is yours.
             </p>
 
-            {/* Hero video — framed product showcase with a subtle 3D tilt */}
-            <Reveal delay={0.1} className="mt-14 [perspective:1600px]">
-              <div className="relative mx-auto max-w-4xl">
-                <div className="absolute -inset-6 -z-10 bg-brand-gradient opacity-25 blur-3xl rounded-[2rem]" />
-                <div className="panel hairline-top p-2 sm:p-2.5 transition-transform duration-500 will-change-transform sm:[transform:rotateX(7deg)] sm:hover:[transform:rotateX(0deg)]">
-                  <div className="relative overflow-hidden rounded-xl bg-bg-0">
-                    <video
-                      className="w-full h-auto block"
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      poster="/bodytracker-logo.png"
-                    >
-                      <source src="/bodytracker-hero.mp4" type="video/mp4" />
-                    </video>
-                  </div>
-                </div>
-              </div>
-            </Reveal>
-
             {/* Compact live-stat strip */}
-            <Stagger className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-4xl mx-auto">
+            <Stagger className="mt-12 grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-4xl mx-auto">
               {STATS.map((s) => (
                 <StaggerItem key={s.label}>
                   <div className="stat-card text-left h-full">
