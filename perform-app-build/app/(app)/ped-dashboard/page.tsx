@@ -10,6 +10,7 @@ import {
   useProtocols,
   useAllDoses,
   useLogDose,
+  useDeleteDose,
   useDoseHistory,
 } from "@/hooks/useCompounds";
 import { CompoundProtocol } from "@/types/database";
@@ -27,6 +28,19 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Stagger, StaggerItem } from "@/components/visual/Motion";
+import { DoseHistory } from "@/components/compounds/DoseHistory";
+
+// True when the timestamp falls on today's local calendar date.
+function loggedToday(iso?: string | null): boolean {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const n = new Date();
+  return (
+    d.getFullYear() === n.getFullYear() &&
+    d.getMonth() === n.getMonth() &&
+    d.getDate() === n.getDate()
+  );
+}
 
 function StatCard({
   label,
@@ -73,7 +87,8 @@ export default function PedDashboardPage() {
   const { data: protocols = [] } = useProtocols();
   const { data: allDoses = [] } = useAllDoses();
   const logDose = useLogDose();
-  const [done, setDone] = useState<Record<string, boolean>>({});
+  const deleteDose = useDeleteDose();
+  const [pending, setPending] = useState<Record<string, boolean>>({});
 
   const activeProtocols = protocols.filter((p) => p.is_active);
   const allCompounds = activeProtocols.flatMap((p) =>
@@ -87,10 +102,13 @@ export default function PedDashboardPage() {
       const hoursUntil = c.last_dose?.logged_at
         ? (new Date(c.last_dose.logged_at).getTime() + hrs * 3600000 - Date.now()) / 3600000
         : -1;
-      return { c, p, info, hoursUntil };
+      const doneToday = loggedToday(c.last_dose?.logged_at);
+      return { c, p, info, hoursUntil, doneToday };
     })
-    .filter((e) => e.hoursUntil < 24)
-    .sort((a, b) => a.hoursUntil - b.hoursUntil);
+    // Keep items still due today AND items already taken today, so a dose
+    // logged by accident can be unchecked from the same list.
+    .filter((e) => e.doneToday || e.hoursUntil < 24)
+    .sort((a, b) => Number(a.doneToday) - Number(b.doneToday) || a.hoursUntil - b.hoursUntil);
 
   const overdueCount = allCompounds.filter(
     ({ c }) => getNextDoseInfo(c.last_dose?.logged_at || null, c.frequency).status === "overdue"
@@ -100,9 +118,20 @@ export default function PedDashboardPage() {
     .sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime())
     .slice(0, 8);
 
-  function complete(e: (typeof dueToday)[number]) {
-    if (done[e.c.id]) return;
-    setDone((d) => ({ ...d, [e.c.id]: true }));
+  function toggle(e: (typeof dueToday)[number]) {
+    if (pending[e.c.id]) return;
+    setPending((d) => ({ ...d, [e.c.id]: true }));
+
+    // Already taken today → uncheck removes the dose logged by accident.
+    if (e.doneToday && e.c.last_dose?.id) {
+      deleteDose.mutate(e.c.last_dose.id, {
+        onSuccess: () => toast.success(`${e.c.compound_name} dose removed`),
+        onError: (err) => toast.error(err.message),
+        onSettled: () => setPending((d) => ({ ...d, [e.c.id]: false })),
+      });
+      return;
+    }
+
     logDose.mutate(
       {
         protocol_id: e.p.id,
@@ -114,10 +143,8 @@ export default function PedDashboardPage() {
       },
       {
         onSuccess: () => toast.success(`${e.c.compound_name} logged`),
-        onError: (err) => {
-          toast.error(err.message);
-          setDone((d) => ({ ...d, [e.c.id]: false }));
-        },
+        onError: (err) => toast.error(err.message),
+        onSettled: () => setPending((d) => ({ ...d, [e.c.id]: false })),
       }
     );
   }
@@ -152,7 +179,7 @@ export default function PedDashboardPage() {
       <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         <StaggerItem><StatCard label="Active Protocols" value={activeProtocols.length} sub={`${protocols.length} total`} icon={<FlaskConical size={18} />} /></StaggerItem>
         <StaggerItem><StatCard label="Compounds Running" value={allCompounds.length} icon={<Syringe size={18} />} /></StaggerItem>
-        <StaggerItem><StatCard label="Doses Due Today" value={dueToday.length} tone={dueToday.length ? "amber" : "green"} icon={<Clock size={18} />} /></StaggerItem>
+        <StaggerItem><StatCard label="Doses Due Today" value={dueToday.filter((e) => !e.doneToday).length} tone={dueToday.some((e) => !e.doneToday) ? "amber" : "green"} icon={<Clock size={18} />} /></StaggerItem>
         <StaggerItem><StatCard label="Overdue" value={overdueCount} tone={overdueCount ? "red" : "green"} icon={<Activity size={18} />} /></StaggerItem>
       </Stagger>
 
@@ -212,6 +239,9 @@ export default function PedDashboardPage() {
                 </div>
               )}
             </div>
+
+            {/* Complete dose history — grouped by compound, expandable */}
+            <DoseHistory />
           </div>
 
           {/* Today's checklist sidebar */}
@@ -224,7 +254,8 @@ export default function PedDashboardPage() {
             ) : (
               <div className="space-y-1.5">
                 {dueToday.map((e) => {
-                  const isDone = !!done[e.c.id];
+                  const isDone = e.doneToday;
+                  const busy = !!pending[e.c.id];
                   return (
                     <div
                       key={e.c.id}
@@ -234,11 +265,14 @@ export default function PedDashboardPage() {
                       )}
                     >
                       <button
-                        onClick={() => complete(e)}
-                        disabled={isDone}
+                        onClick={() => toggle(e)}
+                        disabled={busy}
+                        title={isDone ? "Tap to uncheck — removes today's dose" : "Mark dose taken"}
                         className={cn(
-                          "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
-                          isDone ? "bg-status-green border-status-green scale-110" : "border-border-2 hover:border-accent"
+                          "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all disabled:opacity-50",
+                          isDone
+                            ? "bg-status-green border-status-green scale-110 hover:bg-status-green/80"
+                            : "border-border-2 hover:border-accent"
                         )}
                       >
                         {isDone && <Check size={14} className="text-white animate-fade-in" strokeWidth={3} />}
