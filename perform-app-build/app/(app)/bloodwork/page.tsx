@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Reveal, Stagger, StaggerItem } from "@/components/visual/Motion";
 import { BloodworkChart, MarkerSeries } from "@/components/charts/BloodworkChart";
+import { BloodworkAnalysisModal } from "@/components/bloodwork/BloodworkAnalysisModal";
 import {
   useBloodwork,
   useAddBloodwork,
@@ -27,6 +28,7 @@ import {
   Search,
   TestTubes,
   Activity,
+  Sparkles,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -212,6 +214,7 @@ export default function BloodworkPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<BloodworkEntry | null>(null);
+  const [analyzeEntry, setAnalyzeEntry] = useState<BloodworkEntry | null>(null);
   const [range, setRange] = useState<"1mo" | "3mo" | "6mo" | "1yr" | "all">("all");
   const [markerSearch, setMarkerSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -519,6 +522,14 @@ export default function BloodworkPage() {
                       </div>
                       <div className="flex gap-1">
                         <button
+                          onClick={() => setAnalyzeEntry(e)}
+                          disabled={!e.markers?.length}
+                          title="AI analysis"
+                          className="p-1.5 text-accent hover:text-accent-bright transition-colors active:scale-90 disabled:opacity-30"
+                        >
+                          <Sparkles size={14} />
+                        </button>
+                        <button
                           onClick={() => {
                             setEditing(e);
                             setModalOpen(true);
@@ -631,6 +642,12 @@ export default function BloodworkPage() {
           saving={addEntry.isPending || updateEntry.isPending}
         />
       )}
+
+      <BloodworkAnalysisModal
+        open={!!analyzeEntry}
+        onClose={() => setAnalyzeEntry(null)}
+        entry={analyzeEntry}
+      />
     </div>
   );
 }
