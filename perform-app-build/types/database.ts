@@ -36,6 +36,9 @@ export interface UserPreferences {
   tab_order?: string[];
   hidden_tabs?: string[];
   dashboard_widgets?: { id: string; w: number; h: number; order: number; hidden?: boolean }[];
+  // Show/hide + order of sections on the Gym and PED dashboards.
+  gym_sections?: { id: string; order: number; hidden?: boolean }[];
+  ped_sections?: { id: string; order: number; hidden?: boolean }[];
   available_equipment?: string[];
   hydration_goal_ml?: number;
   sleep_weekly_goal_hours?: number;

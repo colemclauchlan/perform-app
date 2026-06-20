@@ -308,7 +308,7 @@ function CompoundInfoModal({
         )}
 
         {error && (
-          <div className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2.5 text-sm text-text-2">
+          <div className="rounded-xl border border-status-red/30 bg-status-red/10 px-3 py-2.5 text-sm text-text-2">
             {error}
           </div>
         )}

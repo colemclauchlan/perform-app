@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { DashboardSwitcher } from "@/components/DashboardSwitcher";
 import { Reveal, Stagger, StaggerItem } from "@/components/visual/Motion";
+import { SectionCustomizer, useSectionLayout, type SectionDef } from "@/components/dashboard/SectionCustomizer";
 import { useWorkouts, useLiftProgression, useExercises } from "@/hooks/useTraining";
 import { useProtocols } from "@/hooks/useCompounds";
 import { formatDate, getNextDoseInfo, localISO } from "@/lib/utils";
@@ -19,7 +20,14 @@ import {
   Syringe,
   BarChart3,
   PieChart,
+  Settings2,
 } from "lucide-react";
+
+const GYM_SECTIONS: SectionDef[] = [
+  { id: "week-summary", label: "Weekly Summary Stats" },
+  { id: "analytics", label: "Training Analytics Charts" },
+  { id: "activity", label: "Sessions · Protocol · PRs" },
+];
 
 function estimate1RM(weight: number, reps: number): number {
   if (reps <= 1) return weight;
@@ -108,9 +116,15 @@ export default function GymDashboardPage() {
     return rows;
   }, [protocols]);
 
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  const layout = useSectionLayout("gym_sections", GYM_SECTIONS);
+  const vis = (id: string) => !layout.find((s) => s.id === id)?.hidden;
+  const ord = (id: string) => layout.findIndex((s) => s.id === id);
+
   return (
     <div className="p-6 max-w-[1200px]">
       <DashboardSwitcher />
+      <SectionCustomizer open={customizeOpen} onClose={() => setCustomizeOpen(false)} layoutKey="gym_sections" defaults={GYM_SECTIONS} title="Customize Gym Dashboard" />
 
       {/* Hero spotlight — weekly tonnage headline */}
       <div className="panel hairline-top px-5 py-5 sm:px-6 sm:py-6 mb-5 animate-fade-in">
@@ -129,13 +143,21 @@ export default function GymDashboardPage() {
               <span className="text-text-3"> · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</span>
             </p>
           </div>
-          <Link href="/workouts" className="btn btn-primary btn-sm group active:scale-95">
-            <span className="shine-overlay" />
-            <Dumbbell size={14} /> Log Workout
-          </Link>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setCustomizeOpen(true)} className="btn btn-ghost btn-sm" title="Customize layout">
+              <Settings2 size={14} /> Customize
+            </button>
+            <Link href="/workouts" className="btn btn-primary btn-sm group active:scale-95">
+              <span className="shine-overlay" />
+              <Dumbbell size={14} /> Log Workout
+            </Link>
+          </div>
         </div>
       </div>
 
+      <div className="flex flex-col">
+      {vis("week-summary") && (
+      <div style={{ order: ord("week-summary") }}>
       {/* Week summary */}
       <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         <StaggerItem>
@@ -197,7 +219,10 @@ export default function GymDashboardPage() {
           </div>
         </StaggerItem>
       </Stagger>
+      </div>)}
 
+      {vis("analytics") && (
+      <div style={{ order: ord("analytics") }}>
       {/* Analytics */}
       <Reveal className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
         <div className="card">
@@ -213,7 +238,10 @@ export default function GymDashboardPage() {
           <MuscleSplitChart workouts={workouts} muscleMap={muscleMap} />
         </div>
       </Reveal>
+      </div>)}
 
+      {vis("activity") && (
+      <div style={{ order: ord("activity") }}>
       <Reveal className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Recent sessions */}
         <div className="card">
@@ -333,6 +361,8 @@ export default function GymDashboardPage() {
           )}
         </div>
       </Reveal>
+      </div>)}
+      </div>
     </div>
   );
 }

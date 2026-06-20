@@ -25,10 +25,19 @@ import {
   Activity,
   Calendar,
   ListChecks,
+  Settings2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Stagger, StaggerItem } from "@/components/visual/Motion";
 import { DoseHistory } from "@/components/compounds/DoseHistory";
+import { SectionCustomizer, useSectionLayout, type SectionDef } from "@/components/dashboard/SectionCustomizer";
+
+const PED_SECTIONS: SectionDef[] = [
+  { id: "cycle", label: "Cycle Progress" },
+  { id: "blood", label: "Simulated Blood Levels" },
+  { id: "recent", label: "Recent Doses" },
+  { id: "history", label: "Dose History (every compound)" },
+];
 
 // True when the timestamp falls on today's local calendar date.
 function loggedToday(iso?: string | null): boolean {
@@ -89,6 +98,10 @@ export default function PedDashboardPage() {
   const logDose = useLogDose();
   const deleteDose = useDeleteDose();
   const [pending, setPending] = useState<Record<string, boolean>>({});
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  const layout = useSectionLayout("ped_sections", PED_SECTIONS);
+  const vis = (id: string) => !layout.find((s) => s.id === id)?.hidden;
+  const ord = (id: string) => layout.findIndex((s) => s.id === id);
 
   const activeProtocols = protocols.filter((p) => p.is_active);
   const allCompounds = activeProtocols.flatMap((p) =>
@@ -157,6 +170,9 @@ export default function PedDashboardPage() {
         subtitle="Cycle overview, dose schedule and simulated blood levels"
         action={
           <div className="flex gap-2">
+            <button onClick={() => setCustomizeOpen(true)} className="btn btn-ghost btn-sm" title="Customize layout">
+              <Settings2 size={16} /> Customize
+            </button>
             <Link href="/peptide-calculator" className="btn btn-ghost">
               <Calculator size={16} /> Dose Calculator
             </Link>
@@ -166,6 +182,8 @@ export default function PedDashboardPage() {
           </div>
         }
       />
+
+      <SectionCustomizer open={customizeOpen} onClose={() => setCustomizeOpen(false)} layoutKey="ped_sections" defaults={PED_SECTIONS} title="Customize PED Dashboard" />
 
       {/* Quick links */}
       <div className="flex flex-wrap gap-2 mb-5">
@@ -193,7 +211,9 @@ export default function PedDashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
+            {vis("cycle") && (
+            <div style={{ order: ord("cycle") }}>
             {/* Cycle progress */}
             <div className="card">
               <div className="card-title flex items-center gap-2">
@@ -205,12 +225,18 @@ export default function PedDashboardPage() {
                 ))}
               </div>
             </div>
+            </div>)}
 
+            {vis("blood") && (
+            <div className="flex flex-col gap-4" style={{ order: ord("blood") }}>
             {/* Blood levels */}
             {activeProtocols.map((p) => (
               <PedBloodCard key={p.id} protocol={p} />
             ))}
+            </div>)}
 
+            {vis("recent") && (
+            <div style={{ order: ord("recent") }}>
             {/* Recent doses */}
             <div className="card">
               <div className="card-title flex items-center gap-2">
@@ -239,9 +265,13 @@ export default function PedDashboardPage() {
                 </div>
               )}
             </div>
+            </div>)}
 
+            {vis("history") && (
+            <div style={{ order: ord("history") }}>
             {/* Complete dose history — grouped by compound, expandable */}
             <DoseHistory />
+            </div>)}
           </div>
 
           {/* Today's checklist sidebar */}
