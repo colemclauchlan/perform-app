@@ -31,7 +31,9 @@ import {
   Activity,
   Sparkles,
   Upload,
+  HeartPulse,
 } from "lucide-react";
+import Link from "next/link";
 import toast from "react-hot-toast";
 
 // ─── Marker presets ─────────────────────────────────────────────────────────
@@ -366,7 +368,10 @@ export default function BloodworkPage() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Link href="/blood-pressure" className="btn btn-ghost btn-sm active:scale-95">
+                <HeartPulse size={14} /> Blood Pressure
+              </Link>
               {entries.length > 0 && (
                 <button onClick={exportCSV} className="btn btn-ghost btn-sm active:scale-95">
                   <Download size={14} /> Export CSV

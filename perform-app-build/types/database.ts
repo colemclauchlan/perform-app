@@ -267,6 +267,17 @@ export interface BloodworkMarker {
   created_at: string;
 }
 
+export interface BloodPressureLog {
+  id: string;
+  user_id: string;
+  systolic: number;
+  diastolic: number;
+  pulse: number | null;
+  logged_at: string;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface CheckinPhoto {
   id: string;
   user_id: string;

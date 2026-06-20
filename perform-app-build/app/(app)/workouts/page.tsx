@@ -339,7 +339,17 @@ export default function WorkoutsPage() {
                     {expanded === s.id && s.sets && (
                       <div className="mt-1.5 mb-2 animate-fade-in">
                         <ExerciseBreakdown sets={s.sets} catalogByName={catalogByName} />
-                        {s.photo_urls?.length > 0 && <SessionPhotos paths={s.photo_urls} />}
+                        {(s.photo_urls?.length > 0 || s.notes) && (
+                          <div className="mt-2 flex flex-wrap gap-3 items-start">
+                            {s.photo_urls?.length > 0 && <SessionPhotos paths={s.photo_urls} />}
+                            {s.notes && (
+                              <div className="flex-1 min-w-[180px] text-[13px] text-text-2 bg-bg-2/60 border border-border rounded-lg px-3 py-2 whitespace-pre-wrap">
+                                <div className="text-[10px] uppercase tracking-wider text-text-3 mb-1">Notes</div>
+                                {s.notes}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -461,7 +471,7 @@ function StatCard({
 function SessionPhotos({ paths }: { paths: string[] }) {
   const { data: signed = {} } = useWorkoutPhotoUrls(paths);
   return (
-    <div className="flex flex-wrap gap-2 mt-2 px-1">
+    <div className="flex flex-wrap gap-2">
       {paths.map((p) =>
         signed[p] ? (
           <a key={p} href={signed[p]} target="_blank" rel="noreferrer" className="block w-20 h-20 rounded-lg overflow-hidden border border-border hover:border-accent/50 transition-colors">
