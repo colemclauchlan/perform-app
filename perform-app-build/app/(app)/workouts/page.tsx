@@ -584,22 +584,25 @@ function ExerciseBreakdown({
   return (
     <div className="space-y-2 pl-2">
       {grouped.map((g) => {
+        // Only show sets that actually have weight logged; skip the exercise if none.
+        const weighted = g.sets.filter((s) => s.weight);
+        if (weighted.length === 0) return null;
         const mg = catalogByName.get(g.name)?.muscle_group || "Other";
-        const topE1 = Math.max(...g.sets.map((s) => s.e1rm || 0));
+        const topE1 = Math.max(...weighted.map((s) => s.e1rm || 0));
         return (
           <div key={g.name} className="bg-bg-1 rounded-lg px-3 py-2.5 border border-border/50">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-text-1 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full" style={{ background: muscleColor(mg) }} />
                 {g.name}
-                {g.sets[0].superset_group && (
-                  <span className="text-[9px] font-bold text-accent bg-accent-dim px-1 rounded">SS {g.sets[0].superset_group}</span>
+                {weighted[0].superset_group && (
+                  <span className="text-[9px] font-bold text-accent bg-accent-dim px-1 rounded">SS {weighted[0].superset_group}</span>
                 )}
               </span>
-              <span className="text-[10px] text-text-3">{g.sets.length} sets</span>
+              <span className="text-[10px] text-text-3">{weighted.length} sets</span>
             </div>
             <div className="flex gap-1.5 flex-wrap">
-              {g.sets.map((set) => {
+              {weighted.map((set) => {
                 const isTop = (set.e1rm || 0) === topE1 && topE1 > 0;
                 return (
                   <div

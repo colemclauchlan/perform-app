@@ -31,6 +31,7 @@ import {
   Syringe,
   GripVertical,
   HeartPulse,
+  Droplet,
 } from "lucide-react";
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?: number }> };
@@ -52,6 +53,7 @@ const TRACK_DEFAULT: NavItem[] = [
   { href: "/checkin", label: "Check-in", icon: Camera },
   { href: "/bloodwork", label: "Bloodwork", icon: TestTubes },
   { href: "/blood-pressure", label: "Blood Pressure", icon: HeartPulse },
+  { href: "/blood-sugar", label: "Blood Sugar", icon: Droplet },
   { href: "/peptide-calculator", label: "Peptide Calculator", icon: Calculator },
   { href: "/weight", label: "Body Weight", icon: Scale },
   { href: "/measurements", label: "Measurements", icon: Ruler },

@@ -21,6 +21,7 @@ import {
   BarChart3,
   PieChart,
   Settings2,
+  BookOpen,
 } from "lucide-react";
 
 const GYM_SECTIONS: SectionDef[] = [
@@ -143,7 +144,10 @@ export default function GymDashboardPage() {
               <span className="text-text-3"> · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</span>
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link href="/catalog/exercises" className="btn btn-ghost btn-sm active:scale-95">
+              <BookOpen size={14} /> Exercise Catalog
+            </Link>
             <button onClick={() => setCustomizeOpen(true)} className="btn btn-ghost btn-sm" title="Customize layout">
               <Settings2 size={14} /> Customize
             </button>

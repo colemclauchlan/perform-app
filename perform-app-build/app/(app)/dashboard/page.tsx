@@ -26,7 +26,6 @@ const WIDGET_LABELS: Record<string, string> = {
   calories: "Calorie Intake (7d)",
   macros: "Today's Macros",
   "weight-trend": "Weight Trend",
-  compounds: "Active Compounds",
   "last-workout": "Last Workout",
   "weight-history": "Weight History",
 };
@@ -35,7 +34,6 @@ const DEFAULT_WIDGETS: WidgetCfg[] = [
   { id: "calories", w: 2, h: 1, order: 0 },
   { id: "macros", w: 2, h: 1, order: 1 },
   { id: "weight-trend", w: 2, h: 1, order: 2 },
-  { id: "compounds", w: 1, h: 1, order: 3 },
   { id: "last-workout", w: 1, h: 1, order: 4 },
   { id: "weight-history", w: 1, h: 1, order: 5 },
 ];
@@ -186,12 +184,21 @@ export default function DashboardPage() {
                   <div key={m.label} className="card-sm">
                     <div className="flex justify-between items-center mb-1.5">
                       <span className="text-[11px] text-text-2">{m.label}</span>
-                      <span className="text-[11px] font-semibold">{m.value}{m.unit}</span>
+                      <span className="text-[11px] font-semibold tabular-nums">
+                        {m.value}
+                        <span className="text-text-3 font-normal">/{m.target}{m.unit}</span>
+                      </span>
                     </div>
                     <div className="h-1.5 bg-bg-3 rounded-full overflow-hidden">
                       <div className="h-full rounded-full progress-bar" style={{ width: `${pct}%`, background: m.color }} />
                     </div>
-                    <div className="text-[10px] text-text-3 mt-1">{pct}% of goal</div>
+                    <div className={`text-[10px] mt-1 tabular-nums ${m.value >= m.target ? "text-status-green" : "text-text-3"}`}>
+                      {m.value >= m.target
+                        ? m.value === m.target
+                          ? "Goal hit"
+                          : `+${m.value - m.target}${m.unit} over`
+                        : `${m.target - m.value}${m.unit} to go`}
+                    </div>
                   </div>
                 );
               })}

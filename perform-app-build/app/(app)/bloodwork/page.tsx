@@ -32,6 +32,7 @@ import {
   Sparkles,
   Upload,
   HeartPulse,
+  Droplet,
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -371,6 +372,9 @@ export default function BloodworkPage() {
             <div className="flex gap-2 flex-wrap">
               <Link href="/blood-pressure" className="btn btn-ghost btn-sm active:scale-95">
                 <HeartPulse size={14} /> Blood Pressure
+              </Link>
+              <Link href="/blood-sugar" className="btn btn-ghost btn-sm active:scale-95">
+                <Droplet size={14} /> Blood Sugar
               </Link>
               {entries.length > 0 && (
                 <button onClick={exportCSV} className="btn btn-ghost btn-sm active:scale-95">

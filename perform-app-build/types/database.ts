@@ -278,6 +278,16 @@ export interface BloodPressureLog {
   created_at: string;
 }
 
+export interface BloodSugarLog {
+  id: string;
+  user_id: string;
+  value: number;
+  fasted: boolean;
+  logged_at: string;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface CheckinPhoto {
   id: string;
   user_id: string;
