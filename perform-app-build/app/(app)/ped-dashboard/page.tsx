@@ -26,6 +26,7 @@ import {
   Calendar,
   ListChecks,
   Settings2,
+  BookOpen,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Stagger, StaggerItem } from "@/components/visual/Motion";
@@ -173,6 +174,9 @@ export default function PedDashboardPage() {
             <button onClick={() => setCustomizeOpen(true)} className="btn btn-ghost btn-sm" title="Customize layout">
               <Settings2 size={16} /> Customize
             </button>
+            <Link href="/catalog/compounds" className="btn btn-ghost">
+              <BookOpen size={16} /> Compound Catalog
+            </Link>
             <Link href="/peptide-calculator" className="btn btn-ghost">
               <Calculator size={16} /> Dose Calculator
             </Link>
