@@ -154,7 +154,7 @@ export default function DashboardPage() {
                 const label = new Date(d.date + "T00:00").toLocaleDateString("en", { weekday: "short" }).slice(0, 2);
                 const over = d.calories > targetCal;
                 return (
-                  <div key={d.date} className="flex-1 flex flex-col items-center group relative">
+                  <div key={d.date} className="flex-1 flex flex-col items-center justify-end h-full group relative">
                     <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-bg-3 text-text-1 text-[10px] rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-border">
                       {d.calories} kcal
                     </div>
@@ -295,7 +295,7 @@ export default function DashboardPage() {
                       <span className="text-[11px] text-text-2">{formatDate(w.logged_date)}</span>
                       <div className="flex items-center gap-2">
                         {delta != null && (
-                          <span className={`text-[10px] ${delta > 0 ? "text-status-red" : delta < 0 ? "text-status-green" : "text-text-3"}`}>
+                          <span className={`text-[10px] ${delta > 0 ? "text-status-green" : delta < 0 ? "text-status-red" : "text-text-3"}`}>
                             {delta > 0 ? "+" : ""}{delta}
                           </span>
                         )}

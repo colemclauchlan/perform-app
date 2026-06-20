@@ -268,7 +268,7 @@ export default function HydrationPage() {
               const isToday = d.date === date;
               const over = d.total_ml >= DAILY_TARGET_ML;
               return (
-                <div key={d.date} className="flex-1 flex flex-col items-center group relative">
+                <div key={d.date} className="flex-1 flex flex-col items-center justify-end h-full group relative">
                   <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-bg-3 text-text-1 text-[10px] rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-border">
                     {d.total_ml}ml
                   </div>

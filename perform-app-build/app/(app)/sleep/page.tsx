@@ -228,7 +228,7 @@ export default function SleepPage() {
                   const enough = (l.duration_hours || 0) >= SLEEP_TARGET;
                   const label = new Date(l.logged_date + "T00:00").getDate();
                   return (
-                    <div key={l.id} className="flex-1 flex flex-col items-center group relative">
+                    <div key={l.id} className="flex-1 flex flex-col items-center justify-end h-full group relative">
                       <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-bg-3 text-text-1 text-[10px] rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-border">
                         {l.duration_hours}h · {l.quality || "—"}/5
                       </div>

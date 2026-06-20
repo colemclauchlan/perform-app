@@ -27,10 +27,6 @@ const FAQ = [
     q: "Apple Health isn\u2019t syncing.",
     a: "In the iOS app go to Settings \u2192 Apple Health \u2192 Sync, and make sure you granted the Health permission. You can manage access in iOS Settings \u2192 Privacy & Security \u2192 Health.",
   },
-  {
-    q: "The AI Coach says it isn\u2019t configured.",
-    a: "AI features require the app owner to enable them. If you\u2019re self-hosting, add an ANTHROPIC_API_KEY in your deployment environment.",
-  },
 ];
 
 export default function SupportPage() {

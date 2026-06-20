@@ -45,13 +45,13 @@ const FEATURES = [
   {
     icon: Syringe,
     title: "Compound Protocols",
-    desc: "Plan and log peptide and PED protocols with dosing schedules, half-life math, and a dose calculator.",
+    desc: "Plan and log peptide and compound protocols with dosing schedules, half-life plotting, and a reconstitution/dose calculator.",
     tint: "#7c5cff",
   },
   {
     icon: Sparkles,
-    title: "AI Coach",
-    desc: "An IFBB-level coach that reads your data and gives direct, actionable training, nutrition, and recovery guidance.",
+    title: "AI Coach, Chef & Meal Plans",
+    desc: "An IFBB-level coach that reads your data for training, nutrition, and recovery — plus an AI chef and AI meal-plan builder that generate plans around your goals.",
     tint: "#22d3a5",
   },
 ];
@@ -69,7 +69,7 @@ export function LandingPage() {
       {/* Header */}
       <header className="sticky top-0 z-30 glass">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
-          <Logo variant="full" size={30} className="rounded-lg" />
+          <Logo variant="icon" size={40} className="rounded-full ring-1 ring-white/10" />
           <nav className="flex items-center gap-2">
             <Link href="/auth/login" className="btn btn-ghost btn-sm">
               Log in
@@ -219,6 +219,7 @@ export function LandingPage() {
                   <ul className="space-y-2.5">
                     {[
                       "Builds bulking, cutting, recomp, and contest-prep plans",
+                      "AI chef + meal-plan builder creates plans around your goals",
                       "Programs training splits with sets, reps, and progression",
                       "Interprets bloodwork trends and flags concerns",
                     ].map((t) => (
