@@ -633,6 +633,7 @@ function PlanBuilderModal({
   const [mealType, setMealType] = useState<MealPlan["meal_type"]>("Full Day");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<FormItem[]>([]);
+  const [mealLabels, setMealLabels] = useState<Record<string, string>>({});
   const [pickerOpen, setPickerOpen] = useState(false);
   const [initKey, setInitKey] = useState("");
 
@@ -659,11 +660,13 @@ function PlanBuilderModal({
           fat: String(it.fat),
         }))
       );
+      setMealLabels(editing.meal_labels || {});
     } else {
       setName("");
       setMealType("Full Day");
       setNotes("");
       setItems([]);
+      setMealLabels({});
     }
   }
 
@@ -737,10 +740,20 @@ function PlanBuilderModal({
     if (items.length === 0) return toast.error("Add at least one food");
     if (items.some((it) => !it.name.trim())) return toast.error("Every food needs a name");
 
+    // Keep only meaningful, non-default meal labels (Full Day plans only).
+    const cleanedLabels: Record<string, string> = {};
+    if (mealType === "Full Day") {
+      for (const [k, v] of Object.entries(mealLabels)) {
+        const val = (v || "").trim();
+        if (val && val !== k) cleanedLabels[k] = val;
+      }
+    }
+
     const input: MealPlanInput = {
       name: name.trim(),
       meal_type: mealType,
       notes: notes || null,
+      meal_labels: cleanedLabels,
       items: items.map((it) => {
         const m = itemMacros(it);
         return {
@@ -793,6 +806,32 @@ function PlanBuilderModal({
             <span className="text-status-coral">{round(totals.fat)}f</span>
             <span className="ml-auto text-text-3">{items.length} foods</span>
           </div>
+
+          {mealType === "Full Day" &&
+            (() => {
+              const presentMeals = MEAL_SLOTS.filter((m) => items.some((it) => it.meal === m));
+              if (presentMeals.length === 0) return null;
+              return (
+                <div className="rounded-lg border border-border bg-bg-2/50 p-2.5">
+                  <div className="text-[11px] uppercase tracking-wide text-text-3 font-semibold mb-1.5">
+                    Meal names — rename each meal (optional)
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {presentMeals.map((m) => (
+                      <div key={m} className="flex items-center gap-2">
+                        <span className="text-[11px] text-text-3 w-24 shrink-0">{m}</span>
+                        <input
+                          value={mealLabels[m] || ""}
+                          onChange={(e) => setMealLabels((s) => ({ ...s, [m]: e.target.value }))}
+                          placeholder={m}
+                          className="!py-1 !text-[12px] flex-1"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
           <div className="space-y-2 max-h-[40vh] overflow-y-auto">
             {items.map((it) => {

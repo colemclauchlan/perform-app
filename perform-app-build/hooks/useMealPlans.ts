@@ -15,6 +15,7 @@ export type MealPlanInput = {
   name: string;
   meal_type: MealPlan["meal_type"];
   notes: string | null;
+  meal_labels?: Record<string, string>;
   items: PlanItemInput[];
 };
 
@@ -45,7 +46,12 @@ export function useSaveMealPlan() {
       if (id) {
         const { error } = await supabase
           .from("meal_plans")
-          .update({ name: input.name, meal_type: input.meal_type, notes: input.notes })
+          .update({
+            name: input.name,
+            meal_type: input.meal_type,
+            notes: input.notes,
+            meal_labels: input.meal_labels ?? {},
+          })
           .eq("id", id);
         if (error) throw error;
         await supabase.from("meal_plan_items").delete().eq("meal_plan_id", id);
@@ -57,6 +63,7 @@ export function useSaveMealPlan() {
             name: input.name,
             meal_type: input.meal_type,
             notes: input.notes,
+            meal_labels: input.meal_labels ?? {},
           })
           .select()
           .single();
