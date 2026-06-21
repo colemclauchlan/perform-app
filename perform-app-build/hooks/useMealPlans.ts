@@ -89,6 +89,18 @@ export function useDeleteMealPlan() {
   });
 }
 
+// Update just the custom meal-group labels of a Full Day plan.
+export function useUpdatePlanMealLabels() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, meal_labels }: { id: string; meal_labels: Record<string, string> }) => {
+      const { error } = await supabase.from("meal_plans").update({ meal_labels }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["meal-plans"] }),
+  });
+}
+
 // Add every item of a plan to a day's food log.
 export function useAddPlanToLog() {
   const qc = useQueryClient();

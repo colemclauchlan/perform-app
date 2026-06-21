@@ -333,14 +333,35 @@ function FoodLogger({
   const { data: plans = [] } = useMealPlans();
   const addPlanToLog = useAddPlanToLog();
   const [planId, setPlanId] = useState("");
+  const [planMeal, setPlanMeal] = useState("");
+
+  const selectedPlan = plans.find((p) => p.id === planId);
+  const isFullDayPlan = selectedPlan?.meal_type === "Full Day";
+  const planMeals = isFullDayPlan
+    ? MEALS.filter((m) => (selectedPlan?.items || []).some((it) => it.meal === m))
+    : [];
 
   function logPlan() {
     const plan = plans.find((p) => p.id === planId);
     if (!plan) return;
+    // Full-day plan + a specific meal chosen → log only that meal's items.
+    const toLog =
+      planMeal && plan.meal_type === "Full Day"
+        ? { ...plan, items: (plan.items || []).filter((it) => it.meal === planMeal) }
+        : plan;
+    if (!(toLog.items || []).length) {
+      toast.error("Nothing to log for that meal");
+      return;
+    }
+    const what = planMeal ? plan.meal_labels?.[planMeal] || planMeal : plan.name;
     addPlanToLog.mutate(
-      { plan, date },
+      { plan: toLog, date },
       {
-        onSuccess: () => { toast.success(`Logged "${plan.name}"`); setPlanId(""); },
+        onSuccess: () => {
+          toast.success(`Logged ${what}`);
+          setPlanId("");
+          setPlanMeal("");
+        },
         onError: (e) => toast.error(e.message),
       }
     );
@@ -629,7 +650,10 @@ function FoodLogger({
           </span>
           <select
             value={planId}
-            onChange={(e) => setPlanId(e.target.value)}
+            onChange={(e) => {
+              setPlanId(e.target.value);
+              setPlanMeal("");
+            }}
             className="flex-1 min-w-[150px]"
             disabled={plans.length === 0}
           >
@@ -643,6 +667,21 @@ function FoodLogger({
               );
             })}
           </select>
+          {isFullDayPlan && (
+            <select
+              value={planMeal}
+              onChange={(e) => setPlanMeal(e.target.value)}
+              className="min-w-[120px]"
+              title="Which meal of this plan to log"
+            >
+              <option value="">Whole day</option>
+              {planMeals.map((m) => (
+                <option key={m} value={m}>
+                  {selectedPlan?.meal_labels?.[m] || m}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             className="btn btn-primary btn-sm group"
             onClick={logPlan}

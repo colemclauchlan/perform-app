@@ -224,6 +224,8 @@ export interface MealPlan {
   notes: string | null;
   is_global: boolean;
   created_at: string;
+  // Custom display names for meal groups in a Full Day plan (keyed by MealType).
+  meal_labels?: Record<string, string> | null;
   items?: MealPlanItem[];
 }
 

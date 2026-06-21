@@ -11,9 +11,10 @@ import {
   useSaveMealPlan,
   useDeleteMealPlan,
   useAddPlanToLog,
+  useUpdatePlanMealLabels,
   MealPlanInput,
 } from "@/hooks/useMealPlans";
-import { MealPlan, MealType, FoodCatalogItem } from "@/types/database";
+import { MealPlan, MealPlanItem, MealType, FoodCatalogItem } from "@/types/database";
 import { computeMacros, round, todayISO, cn } from "@/lib/utils";
 import {
   Plus,
@@ -29,6 +30,7 @@ import {
   Loader2,
   ThumbsUp,
   AlertCircle,
+  Check,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -56,6 +58,31 @@ function planTotals(plan: MealPlan) {
   );
 }
 
+// A single food row inside a plan card. In a grouped (Full Day) view the meal is
+// shown in the group header, so it's hidden on the row.
+function ItemRow({ it, hideMeal }: { it: MealPlanItem; hideMeal?: boolean }) {
+  return (
+    <div className="flex items-center justify-between text-[13px] bg-bg-2 rounded-lg px-2.5 py-1.5 border border-border/50">
+      <div className="min-w-0">
+        <span className="font-medium truncate">{it.name}</span>
+        <span className="text-text-3 ml-1.5 text-[11px]">
+          {hideMeal ? "" : `${it.meal} · `}
+          {round(Number(it.quantity))}
+          {it.quantity_unit}
+        </span>
+      </div>
+      <div className="shrink-0 ml-2 text-right">
+        <div className="text-text-2 text-xs">{Math.round(Number(it.calories))} cal</div>
+        <div className="text-[10px] flex items-center justify-end gap-1.5">
+          <span className="text-accent">{round(Number(it.protein))}p</span>
+          <span className="text-status-teal">{round(Number(it.carbs))}c</span>
+          <span className="text-status-coral">{round(Number(it.fat))}f</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MealPlansPage() {
   const { data: plans = [] } = useMealPlans();
   const deletePlan = useDeleteMealPlan();
@@ -65,6 +92,26 @@ export default function MealPlansPage() {
   const [addTarget, setAddTarget] = useState<MealPlan | null>(null);
   const [reviewTarget, setReviewTarget] = useState<MealPlan | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
+  const [renaming, setRenaming] = useState<{ planId: string; meal: string } | null>(null);
+  const [renameVal, setRenameVal] = useState("");
+  const updateLabels = useUpdatePlanMealLabels();
+
+  function saveLabel(plan: MealPlan, meal: string) {
+    const val = renameVal.trim();
+    const labels = { ...(plan.meal_labels || {}) };
+    if (val && val !== meal) labels[meal] = val;
+    else delete labels[meal];
+    updateLabels.mutate(
+      { id: plan.id, meal_labels: labels },
+      {
+        onSuccess: () => {
+          toast.success("Meal renamed");
+          setRenaming(null);
+        },
+        onError: (e) => toast.error(e.message),
+      }
+    );
+  }
 
   function openNew() {
     setEditing(null);
@@ -160,27 +207,76 @@ export default function MealPlansPage() {
 
                 {plan.notes && <div className="text-xs text-text-3 mb-2 italic">{plan.notes}</div>}
 
-                <div className="space-y-1 max-h-44 overflow-y-auto">
-                  {(plan.items || []).map((it) => (
-                    <div key={it.id} className="flex items-center justify-between text-[13px] bg-bg-2 rounded-lg px-2.5 py-1.5 border border-border/50">
-                      <div className="min-w-0">
-                        <span className="font-medium truncate">{it.name}</span>
-                        <span className="text-text-3 ml-1.5 text-[11px]">{it.meal} · {round(Number(it.quantity))}{it.quantity_unit}</span>
-                      </div>
-                      <div className="shrink-0 ml-2 text-right">
-                        <div className="text-text-2 text-xs">{Math.round(Number(it.calories))} cal</div>
-                        <div className="text-[10px] flex items-center justify-end gap-1.5">
-                          <span className="text-accent">{round(Number(it.protein))}p</span>
-                          <span className="text-status-teal">{round(Number(it.carbs))}c</span>
-                          <span className="text-status-coral">{round(Number(it.fat))}f</span>
+                {(plan.items || []).length === 0 ? (
+                  <div className="text-xs text-text-3 text-center py-2">No foods in this plan.</div>
+                ) : plan.meal_type === "Full Day" ? (
+                  // Full Day → split into meal groups (Breakfast / Lunch / …), each renameable.
+                  <div className="space-y-2.5 max-h-72 overflow-y-auto pr-0.5">
+                    {MEAL_SLOTS.map((meal) => {
+                      const items = (plan.items || []).filter((it) => it.meal === meal);
+                      if (items.length === 0) return null;
+                      const mealCal = items.reduce((a, it) => a + Number(it.calories), 0);
+                      const label = plan.meal_labels?.[meal] || meal;
+                      const isEditing = renaming?.planId === plan.id && renaming?.meal === meal;
+                      return (
+                        <div key={meal}>
+                          <div className="flex items-center justify-between mb-1 px-0.5 gap-2">
+                            {isEditing ? (
+                              <div className="flex items-center gap-1 flex-1">
+                                <input
+                                  value={renameVal}
+                                  onChange={(e) => setRenameVal(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") saveLabel(plan, meal);
+                                    if (e.key === "Escape") setRenaming(null);
+                                  }}
+                                  autoFocus
+                                  placeholder={meal}
+                                  className="!py-1 !text-[12px] flex-1"
+                                />
+                                <button onClick={() => saveLabel(plan, meal)} className="p-1 text-status-green" title="Save">
+                                  <Check size={14} />
+                                </button>
+                                <button onClick={() => setRenaming(null)} className="p-1 text-text-3" title="Cancel">
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="text-[11px] uppercase tracking-wider text-text-2 font-semibold flex items-center gap-1.5 min-w-0">
+                                  <span className="truncate">{label}</span>
+                                  <button
+                                    onClick={() => {
+                                      setRenaming({ planId: plan.id, meal });
+                                      setRenameVal(plan.meal_labels?.[meal] || "");
+                                    }}
+                                    className="text-text-3/60 hover:text-accent shrink-0"
+                                    title="Rename meal"
+                                  >
+                                    <Pencil size={10} />
+                                  </button>
+                                </span>
+                                <span className="text-[10px] text-text-3 tabular-nums shrink-0">{Math.round(mealCal)} cal</span>
+                              </>
+                            )}
+                          </div>
+                          <div className="space-y-1">
+                            {items.map((it) => (
+                              <ItemRow key={it.id} it={it} hideMeal />
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                  {(plan.items || []).length === 0 && (
-                    <div className="text-xs text-text-3 text-center py-2">No foods in this plan.</div>
-                  )}
-                </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  // Single meal → flat list
+                  <div className="space-y-1 max-h-44 overflow-y-auto">
+                    {(plan.items || []).map((it) => (
+                      <ItemRow key={it.id} it={it} />
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
