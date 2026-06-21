@@ -904,7 +904,7 @@ function PlanBuilderModal({
                     </select>
                     {it.per100 ? (
                       <span className="text-xs tabular-nums flex items-center gap-1.5">
-                        <span className="text-text-3">{Math.round(m.calories)} cal</span>
+                        <span className="text-status-amber">{Math.round(m.calories)} cal</span>
                         <span className="text-accent">{round(m.protein)}p</span>
                         <span className="text-status-teal">{round(m.carbs)}c</span>
                         <span className="text-status-coral">{round(m.fat)}f</span>
@@ -959,7 +959,15 @@ function PlanBuilderModal({
 
 function MiniMacro({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   const labelColor =
-    label === "p" ? "text-accent" : label === "c" ? "text-status-teal" : label === "f" ? "text-status-coral" : "text-text-3";
+    label === "p"
+      ? "text-accent"
+      : label === "c"
+      ? "text-status-teal"
+      : label === "f"
+      ? "text-status-coral"
+      : label === "cal"
+      ? "text-status-amber"
+      : "text-text-3";
   return (
     <span className="inline-flex items-center gap-0.5">
       <input
