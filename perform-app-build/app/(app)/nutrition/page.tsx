@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { MacroRing } from "@/components/nutrition/MacroBar";
 import { WeeklyMacroGoals } from "@/components/nutrition/WeeklyMacroGoals";
@@ -61,6 +61,109 @@ function portionStep(unit: string): number {
   return 1;
 }
 
+const DIARY_UNITS = ["g", "oz", "serving", "cup"];
+
+// Inline portion editor for a logged food: type an exact amount, pick a unit, or
+// tap −/+ (hold to repeat by the unit's step — e.g. 10g per tick). Stepping is
+// accumulated locally and committed once on release so we don't spam writes.
+function PortionControl({ entry, onCommit }: { entry: FoodLogEntry; onCommit: (qty: number, unit: string) => void }) {
+  const [qty, setQty] = useState(String(entry.quantity));
+  const [unit, setUnit] = useState(entry.quantity_unit);
+  const workingRef = useRef(Number(entry.quantity));
+  const holdRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Re-sync when the entry changes underneath (e.g. after a commit round-trips).
+  useEffect(() => {
+    setQty(String(entry.quantity));
+    setUnit(entry.quantity_unit);
+    workingRef.current = Number(entry.quantity);
+  }, [entry.quantity, entry.quantity_unit]);
+
+  // Clear any running hold timer on unmount.
+  useEffect(() => () => {
+    if (holdRef.current) clearInterval(holdRef.current);
+  }, []);
+
+  function step(dir: 1 | -1) {
+    const s = portionStep(unit);
+    const next = round(Math.max(s, workingRef.current + dir * s));
+    workingRef.current = next;
+    setQty(String(next));
+  }
+  function startHold(dir: 1 | -1) {
+    stopHold(false);
+    step(dir);
+    holdRef.current = setInterval(() => step(dir), 120);
+  }
+  function stopHold(commit = true) {
+    if (holdRef.current) {
+      clearInterval(holdRef.current);
+      holdRef.current = null;
+    }
+    if (commit && workingRef.current !== Number(entry.quantity)) onCommit(workingRef.current, unit);
+  }
+  function commitTyped() {
+    const n = parseFloat(qty);
+    if (!isNaN(n) && n > 0) {
+      workingRef.current = n;
+      if (n !== Number(entry.quantity)) onCommit(n, unit);
+    } else {
+      setQty(String(entry.quantity));
+      workingRef.current = Number(entry.quantity);
+    }
+  }
+  function changeUnit(u: string) {
+    setUnit(u);
+    const n = parseFloat(qty) || Number(entry.quantity);
+    workingRef.current = n;
+    onCommit(n, u);
+  }
+
+  const holdProps = (dir: 1 | -1) => ({
+    onMouseDown: () => startHold(dir),
+    onMouseUp: () => stopHold(),
+    onMouseLeave: () => stopHold(),
+    onTouchStart: (ev: { preventDefault: () => void }) => {
+      ev.preventDefault();
+      startHold(dir);
+    },
+    onTouchEnd: () => stopHold(),
+  });
+
+  return (
+    <div className="flex items-center gap-0.5 bg-bg-3 rounded-lg border border-border px-1">
+      <button type="button" className="p-1 text-text-3 hover:text-text-1" title="Decrease (hold to repeat)" {...holdProps(-1)}>
+        <Minus size={12} />
+      </button>
+      <input
+        value={qty}
+        inputMode="decimal"
+        aria-label="Quantity"
+        onChange={(e) => setQty(e.target.value)}
+        onBlur={commitTyped}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        }}
+        className="w-9 bg-transparent text-center text-[11px] text-text-1 tabular-nums focus:outline-none"
+      />
+      <select
+        value={unit}
+        onChange={(e) => changeUnit(e.target.value)}
+        className="bg-transparent text-[11px] text-text-2 focus:outline-none cursor-pointer -ml-0.5"
+        title="Unit"
+        aria-label="Unit"
+      >
+        {DIARY_UNITS.map((u) => (
+          <option key={u}>{u}</option>
+        ))}
+      </select>
+      <button type="button" className="p-1 text-text-3 hover:text-text-1" title="Increase (hold to repeat)" {...holdProps(1)}>
+        <Plus size={12} />
+      </button>
+    </div>
+  );
+}
+
 const MEALS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack", "Pre-workout", "Post-workout"];
 
 export default function NutritionPage() {
@@ -84,21 +187,36 @@ export default function NutritionPage() {
     return m;
   }, [fullCatalog]);
 
-  function adjustPortion(e: FoodLogEntry, dir: 1 | -1) {
-    const step = portionStep(e.quantity_unit);
-    const newQty = round(Math.max(step, Number(e.quantity) + dir * step));
-    if (newQty === Number(e.quantity)) return;
-    const factor = newQty / Number(e.quantity);
-    updateLog.mutate({
-      id: e.id,
-      updates: {
-        quantity: newQty,
-        calories: round(Number(e.calories) * factor),
-        protein: round(Number(e.protein) * factor),
-        carbs: round(Number(e.carbs) * factor),
-        fat: round(Number(e.fat) * factor),
-      },
-    });
+  // Re-portion a logged entry to an exact quantity + unit. When the food came
+  // from the catalog we recompute macros from its per-100g source (accurate for
+  // unit changes); otherwise we scale the stored macros by the quantity ratio.
+  function setEntryPortion(e: FoodLogEntry, rawQty: number, newUnit: string) {
+    const newQty = round(Math.max(0, rawQty));
+    if (newQty <= 0) return;
+    if (newQty === Number(e.quantity) && newUnit === e.quantity_unit) return;
+    const f = e.food_catalog_id ? fullCatalog.find((x) => x.id === e.food_catalog_id) : null;
+    if (f) {
+      const m = computeMacros(
+        { calories: f.calories_per_100g, protein: f.protein_per_100g, carbs: f.carbs_per_100g, fat: f.fat_per_100g },
+        newQty,
+        newUnit
+      );
+      updateLog.mutate({ id: e.id, updates: { quantity: newQty, quantity_unit: newUnit, ...m } });
+    } else {
+      const oldQty = Number(e.quantity) || newQty;
+      const factor = oldQty > 0 ? newQty / oldQty : 1;
+      updateLog.mutate({
+        id: e.id,
+        updates: {
+          quantity: newQty,
+          quantity_unit: newUnit,
+          calories: round(Number(e.calories) * factor),
+          protein: round(Number(e.protein) * factor),
+          carbs: round(Number(e.carbs) * factor),
+          fat: round(Number(e.fat) * factor),
+        },
+      });
+    }
   }
 
   const totals = log.reduce(
@@ -119,7 +237,7 @@ export default function NutritionPage() {
 
   const rings = [
     { label: "Calories", value: totals.cal, target: calGoal, unit: "kcal", color: "#2563eb" },
-    { label: "Protein", value: totals.p, target: proteinGoal, unit: "g", color: "#2dd4bf" },
+    { label: "Protein", value: totals.p, target: proteinGoal, unit: "g", color: "#2dd4bf", higherIsBetter: true },
     { label: "Carbs", value: totals.c, target: profile?.target_carbs || 250, unit: "g", color: "#fbbf24" },
     { label: "Fat", value: totals.f, target: profile?.target_fat || 80, unit: "g", color: "#fb7185" },
   ];
@@ -221,15 +339,7 @@ export default function NutritionPage() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <div className="flex items-center gap-1 bg-bg-3 rounded-lg border border-border px-1">
-                                <button className="p-1 text-text-3 hover:text-text-1 disabled:opacity-30" title="Decrease portion" disabled={updateLog.isPending} onClick={() => adjustPortion(e, -1)}>
-                                  <Minus size={12} />
-                                </button>
-                                <span className="text-[11px] text-text-2 min-w-[52px] text-center tabular-nums">{e.quantity}{e.quantity_unit}</span>
-                                <button className="p-1 text-text-3 hover:text-text-1 disabled:opacity-30" title="Increase portion" disabled={updateLog.isPending} onClick={() => adjustPortion(e, 1)}>
-                                  <Plus size={12} />
-                                </button>
-                              </div>
+                              <PortionControl entry={e} onCommit={(q, u) => setEntryPortion(e, q, u)} />
                               <span className="text-sm font-bold font-display text-accent-bright tabular-nums">{Math.round(e.calories)}</span>
                               <span className="text-[11px] text-text-3">kcal</span>
                               <button className="btn btn-ghost btn-sm !px-1.5" onClick={() => { deleteLog.mutate(e.id); toast.success("Removed"); }}>

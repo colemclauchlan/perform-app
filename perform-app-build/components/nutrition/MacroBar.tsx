@@ -55,12 +55,16 @@ export function MacroRing({
   target,
   unit,
   color,
+  higherIsBetter,
 }: {
   label: string;
   value: number;
   target: number;
   unit: string;
   color: string;
+  // Protein: over-goal is good (green), under is bad (red). Everything else
+  // (calories/carbs/fat): over-goal is bad (red), under is neutral.
+  higherIsBetter?: boolean;
 }) {
   const pct = Math.min(100, Math.round((value / (target || 1)) * 100));
   const r = 36;
@@ -110,17 +114,20 @@ export function MacroRing({
           {unit}
         </span>
       </div>
-      <div
-        className={`text-[10px] mt-0.5 tabular-nums ${
-          Math.round(value) >= target ? "text-status-green" : "text-text-3"
-        }`}
-      >
-        {Math.round(value) >= target
-          ? Math.round(value) === target
-            ? "Goal hit"
-            : `+${Math.round(value) - target}${unit} over`
-          : `${target - Math.round(value)}${unit} to go`}
-      </div>
+      {(() => {
+        const v = Math.round(value);
+        const over = v > target;
+        const hit = v === target;
+        const cls = higherIsBetter
+          ? v >= target
+            ? "text-status-green" // protein at/over goal = good
+            : "text-status-red" //  protein under goal = bad
+          : over
+          ? "text-status-red" //   calories/carbs/fat over goal = bad
+          : "text-text-3"; //      under/neutral
+        const text = v >= target ? (hit ? "Goal hit" : `+${v - target}${unit} over`) : `${target - v}${unit} to go`;
+        return <div className={`text-[10px] mt-0.5 tabular-nums ${cls}`}>{text}</div>;
+      })()}
     </div>
   );
 }

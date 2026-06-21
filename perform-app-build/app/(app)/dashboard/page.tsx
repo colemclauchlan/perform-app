@@ -175,9 +175,9 @@ export default function DashboardPage() {
             <MacroBar protein={totals.p} carbs={totals.c} fat={totals.f} calories={totals.cal} />
             <div className="mt-3 grid grid-cols-3 gap-2">
               {[
-                { label: "Protein", value: Math.round(totals.p), target: targetP, unit: "g", color: "#2563eb" },
-                { label: "Carbs", value: Math.round(totals.c), target: profile?.target_carbs || 300, unit: "g", color: "#22d3a5" },
-                { label: "Fat", value: Math.round(totals.f), target: profile?.target_fat || 80, unit: "g", color: "#f6ad55" },
+                { label: "Protein", value: Math.round(totals.p), target: targetP, unit: "g", color: "#2563eb", higherIsBetter: true },
+                { label: "Carbs", value: Math.round(totals.c), target: profile?.target_carbs || 300, unit: "g", color: "#22d3a5", higherIsBetter: false },
+                { label: "Fat", value: Math.round(totals.f), target: profile?.target_fat || 80, unit: "g", color: "#f6ad55", higherIsBetter: false },
               ].map((m) => {
                 const pct = Math.min(100, Math.round((m.value / m.target) * 100)) || 0;
                 return (
@@ -192,7 +192,17 @@ export default function DashboardPage() {
                     <div className="h-1.5 bg-bg-3 rounded-full overflow-hidden">
                       <div className="h-full rounded-full progress-bar" style={{ width: `${pct}%`, background: m.color }} />
                     </div>
-                    <div className={`text-[10px] mt-1 tabular-nums ${m.value >= m.target ? "text-status-green" : "text-text-3"}`}>
+                    <div
+                      className={`text-[10px] mt-1 tabular-nums ${
+                        m.higherIsBetter
+                          ? m.value >= m.target
+                            ? "text-status-green"
+                            : "text-status-red"
+                          : m.value > m.target
+                          ? "text-status-red"
+                          : "text-text-3"
+                      }`}
+                    >
                       {m.value >= m.target
                         ? m.value === m.target
                           ? "Goal hit"
