@@ -315,15 +315,28 @@ function AddToIntakeModal({
   onConfirm: (plan: MealPlan, portions: number) => void;
 }) {
   const [portions, setPortions] = useState(1);
+  const [meal, setMeal] = useState("");
   const [initId, setInitId] = useState<string | null>(null);
 
   if (plan && initId !== plan.id) {
     setInitId(plan.id);
     setPortions(1);
+    setMeal("");
   }
 
   if (!plan) return null;
-  const t = planTotals(plan);
+  const isFullDay = plan.meal_type === "Full Day";
+  const planMeals = isFullDay
+    ? MEAL_SLOTS.filter((m) => (plan.items || []).some((it) => it.meal === m))
+    : [];
+  const mealLabel = meal ? plan.meal_labels?.[meal] || meal : "";
+  // When a single meal of a Full Day plan is picked, log only that meal's items.
+  const effectivePlan: MealPlan = {
+    ...plan,
+    name: meal ? `${plan.name} · ${mealLabel}` : plan.name,
+    items: meal && isFullDay ? (plan.items || []).filter((it) => it.meal === meal) : plan.items || [],
+  };
+  const t = planTotals(effectivePlan);
 
   return (
     <Modal open={!!plan} onClose={onClose} title="Add to Daily Intake">
@@ -332,6 +345,20 @@ function AddToIntakeModal({
           <div className="text-base font-semibold">{plan.name}</div>
           <Badge variant="teal">{plan.meal_type}</Badge>
         </div>
+
+        {isFullDay && (
+          <div>
+            <label className="label">Which meal</label>
+            <select value={meal} onChange={(e) => setMeal(e.target.value)}>
+              <option value="">Whole day</option>
+              {planMeals.map((m) => (
+                <option key={m} value={m}>
+                  {plan.meal_labels?.[m] || m}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div>
           <label className="label">Portions</label>
@@ -361,8 +388,8 @@ function AddToIntakeModal({
         </div>
 
         <div className="flex gap-2 pt-1">
-          <button className="btn btn-primary flex-1" onClick={() => onConfirm(plan, portions)}>
-            <CalendarPlus size={15} /> Add to today
+          <button className="btn btn-primary flex-1" onClick={() => onConfirm(effectivePlan, portions)}>
+            <CalendarPlus size={15} /> Add {meal ? mealLabel : "to today"}
           </button>
           <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
         </div>
