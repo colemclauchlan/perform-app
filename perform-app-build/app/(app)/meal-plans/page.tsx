@@ -215,7 +215,15 @@ export default function MealPlansPage() {
                     {MEAL_SLOTS.map((meal) => {
                       const items = (plan.items || []).filter((it) => it.meal === meal);
                       if (items.length === 0) return null;
-                      const mealCal = items.reduce((a, it) => a + Number(it.calories), 0);
+                      const mt = items.reduce(
+                        (a, it) => ({
+                          calories: a.calories + Number(it.calories),
+                          protein: a.protein + Number(it.protein),
+                          carbs: a.carbs + Number(it.carbs),
+                          fat: a.fat + Number(it.fat),
+                        }),
+                        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                      );
                       const label = plan.meal_labels?.[meal] || meal;
                       const isEditing = renaming?.planId === plan.id && renaming?.meal === meal;
                       return (
@@ -256,7 +264,12 @@ export default function MealPlansPage() {
                                     <Pencil size={10} />
                                   </button>
                                 </span>
-                                <span className="text-[10px] text-text-3 tabular-nums shrink-0">{Math.round(mealCal)} cal</span>
+                                <span className="flex items-center gap-1.5 text-[10px] tabular-nums shrink-0">
+                                  <span className="text-text-3">{Math.round(mt.calories)} cal</span>
+                                  <span className="text-accent">{round(mt.protein)}p</span>
+                                  <span className="text-status-teal">{round(mt.carbs)}c</span>
+                                  <span className="text-status-coral">{round(mt.fat)}f</span>
+                                </span>
                               </>
                             )}
                           </div>
