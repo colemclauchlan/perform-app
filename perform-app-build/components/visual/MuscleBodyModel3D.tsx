@@ -61,38 +61,69 @@ function buildLevels(primary: string, secondary: string[]): Record<Region, Level
   return levels;
 }
 
-// Muscle zones in body-fraction space: x = -1 left … +1 right, y = 0 feet … 1
-// head, z = -1 back … +1 front. r is a soft radius.
-const REGION_ZONES: Record<Region, { x: number; y: number; z: number; r: number }[]> = {
-  traps:      [{ x: 0, y: 0.8, z: -0.4, r: 0.34 }],
-  chest:      [{ x: -0.18, y: 0.69, z: 0.6, r: 0.3 }, { x: 0.18, y: 0.69, z: 0.6, r: 0.3 }],
-  shoulders:  [{ x: -0.5, y: 0.75, z: 0.1, r: 0.28 }, { x: 0.5, y: 0.75, z: 0.1, r: 0.28 }],
-  biceps:     [{ x: -0.56, y: 0.6, z: 0.4, r: 0.24 }, { x: 0.56, y: 0.6, z: 0.4, r: 0.24 }],
-  triceps:    [{ x: -0.56, y: 0.6, z: -0.4, r: 0.24 }, { x: 0.56, y: 0.6, z: -0.4, r: 0.24 }],
-  forearms:   [{ x: -0.6, y: 0.48, z: 0.3, r: 0.26 }, { x: 0.6, y: 0.48, z: 0.3, r: 0.26 }],
-  abs:        [{ x: 0, y: 0.6, z: 0.6, r: 0.32 }],
-  obliques:   [{ x: -0.2, y: 0.6, z: 0.5, r: 0.22 }, { x: 0.2, y: 0.6, z: 0.5, r: 0.22 }],
-  lats:       [{ x: -0.3, y: 0.65, z: -0.5, r: 0.3 }, { x: 0.3, y: 0.65, z: -0.5, r: 0.3 }],
-  lowerback:  [{ x: 0, y: 0.57, z: -0.6, r: 0.26 }],
-  glutes:     [{ x: -0.18, y: 0.5, z: -0.6, r: 0.26 }, { x: 0.18, y: 0.5, z: -0.6, r: 0.26 }],
-  quads:      [{ x: -0.2, y: 0.36, z: 0.5, r: 0.34 }, { x: 0.2, y: 0.36, z: 0.5, r: 0.34 }],
-  hamstrings: [{ x: -0.2, y: 0.36, z: -0.5, r: 0.34 }, { x: 0.2, y: 0.36, z: -0.5, r: 0.34 }],
-  calves:     [{ x: -0.2, y: 0.2, z: -0.4, r: 0.28 }, { x: 0.2, y: 0.2, z: -0.4, r: 0.28 }],
-};
+// The mesh has no muscle sub-objects, so we segment it ourselves: each
+// anatomical point claims its nearest vertices (Voronoi), giving solid per-muscle
+// regions with crisp edges instead of soft radial blobs. "off" points (head,
+// hands, feet, throat) keep those areas neutral so they never light up.
+// Body-fraction space: x = -1 left … +1 right, y = 0 feet … 1 head, z = -1 back
+// … +1 front.
+type Seg = { r: Region | "off"; x: number; y: number; z: number };
+const SEGMENTS: Seg[] = [
+  { r: "off", x: 0, y: 0.93, z: 0 }, //         head
+  { r: "off", x: 0, y: 0.85, z: 0.3 }, //       throat / front neck
+  { r: "traps", x: 0, y: 0.8, z: -0.35 },
+  { r: "shoulders", x: -0.52, y: 0.77, z: 0 },
+  { r: "shoulders", x: 0.52, y: 0.77, z: 0 },
+  { r: "chest", x: -0.2, y: 0.7, z: 0.75 },
+  { r: "chest", x: 0.2, y: 0.7, z: 0.75 },
+  { r: "lats", x: -0.33, y: 0.66, z: -0.6 },
+  { r: "lats", x: 0.33, y: 0.66, z: -0.6 },
+  { r: "abs", x: 0, y: 0.61, z: 0.75 },
+  { r: "obliques", x: -0.3, y: 0.6, z: 0.5 },
+  { r: "obliques", x: 0.3, y: 0.6, z: 0.5 },
+  { r: "lowerback", x: 0, y: 0.58, z: -0.7 },
+  { r: "biceps", x: -0.58, y: 0.62, z: 0.5 },
+  { r: "biceps", x: 0.58, y: 0.62, z: 0.5 },
+  { r: "triceps", x: -0.58, y: 0.62, z: -0.5 },
+  { r: "triceps", x: 0.58, y: 0.62, z: -0.5 },
+  { r: "forearms", x: -0.66, y: 0.47, z: 0.2 },
+  { r: "forearms", x: 0.66, y: 0.47, z: 0.2 },
+  { r: "off", x: -0.72, y: 0.37, z: 0.12 }, //  hand
+  { r: "off", x: 0.72, y: 0.37, z: 0.12 },
+  { r: "glutes", x: -0.2, y: 0.5, z: -0.62 },
+  { r: "glutes", x: 0.2, y: 0.5, z: -0.62 },
+  { r: "quads", x: -0.2, y: 0.37, z: 0.55 },
+  { r: "quads", x: 0.2, y: 0.37, z: 0.55 },
+  { r: "hamstrings", x: -0.2, y: 0.37, z: -0.55 },
+  { r: "hamstrings", x: 0.2, y: 0.37, z: -0.55 },
+  { r: "calves", x: -0.2, y: 0.18, z: -0.4 },
+  { r: "calves", x: 0.2, y: 0.18, z: -0.4 },
+  { r: "off", x: -0.2, y: 0.03, z: 0.2 }, //    foot
+  { r: "off", x: 0.2, y: 0.03, z: 0.2 },
+];
 
-function zoneIntensity(fx: number, fy: number, fz: number, z: { x: number; y: number; z: number; r: number }) {
-  const dx = fx - z.x;
-  const dy = (fy - z.y) * 2.0; // y spans 0..1, x/z span -1..1 — weight to match
-  const dz = fz - z.z;
-  const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-  return d < z.r ? 1 - d / z.r : 0;
+// Nearest anatomical point for a vertex (y weighted to the x/z scale).
+function classify(fx: number, fy: number, fz: number): Region | "off" {
+  let best: Region | "off" = "off";
+  let bestD = Infinity;
+  for (const s of SEGMENTS) {
+    const dx = fx - s.x;
+    const dy = (fy - s.y) * 2.1;
+    const dz = fz - s.z;
+    const d = dx * dx + dy * dy + dz * dz;
+    if (d < bestD) {
+      bestD = d;
+      best = s.r;
+    }
+  }
+  return best;
 }
 
-const CLAY = new THREE.Color("#b9c2d4");
-const PRIMARY = new THREE.Color("#ff3b3b");
-const SECONDARY = new THREE.Color("#cf5b54");
+const CLAY = new THREE.Color("#aab4c6");
+const PRIMARY = new THREE.Color("#ff2424");
+const SECONDARY = new THREE.Color("#c8463f");
 
-// Clone + paint the targeted muscle zones into per-vertex colours.
+// Clone + paint each vertex solidly by the muscle group it belongs to.
 function paintMuscles(scene: THREE.Object3D, levels: Record<Region, Level>): THREE.Object3D {
   const root = scene.clone(true);
   const box = new THREE.Box3().setFromObject(root);
@@ -105,9 +136,6 @@ function paintMuscles(scene: THREE.Object3D, levels: Record<Region, Level>): THR
   const hd = (size.z || 1) / 2;
   const minY = box.min.y;
 
-  const primaryZones = ALL_REGIONS.filter((r) => levels[r] === "primary").flatMap((r) => REGION_ZONES[r]);
-  const secondaryZones = ALL_REGIONS.filter((r) => levels[r] === "secondary").flatMap((r) => REGION_ZONES[r]);
-
   root.traverse((o) => {
     const m = o as THREE.Mesh;
     if (!m.isMesh || !m.geometry) return;
@@ -116,26 +144,21 @@ function paintMuscles(scene: THREE.Object3D, levels: Record<Region, Level>): THR
     const pos = geo.getAttribute("position") as THREE.BufferAttribute;
     const colors = new Float32Array(pos.count * 3);
     const v = new THREE.Vector3();
-    const c = new THREE.Color();
     for (let i = 0; i < pos.count; i++) {
       v.fromBufferAttribute(pos, i);
       const fx = (v.x - center.x) / hw;
       const fy = (v.y - minY) / hh;
       const fz = (FRONT_Z * (v.z - center.z)) / hd;
-      c.copy(CLAY);
-      let sInt = 0;
-      for (const z of secondaryZones) sInt = Math.max(sInt, zoneIntensity(fx, fy, fz, z));
-      if (sInt > 0) c.lerp(SECONDARY, Math.min(1, sInt));
-      let pInt = 0;
-      for (const z of primaryZones) pInt = Math.max(pInt, zoneIntensity(fx, fy, fz, z));
-      if (pInt > 0) c.lerp(PRIMARY, Math.min(1, pInt));
-      colors[i * 3] = c.r;
-      colors[i * 3 + 1] = c.g;
-      colors[i * 3 + 2] = c.b;
+      const reg = classify(fx, fy, fz);
+      const lvl = reg === "off" ? "off" : levels[reg];
+      const col = lvl === "primary" ? PRIMARY : lvl === "secondary" ? SECONDARY : CLAY;
+      colors[i * 3] = col.r;
+      colors[i * 3 + 1] = col.g;
+      colors[i * 3 + 2] = col.b;
     }
     geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     m.geometry = geo;
-    m.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.04, side: THREE.DoubleSide });
+    m.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.04, side: THREE.DoubleSide });
   });
   return root;
 }

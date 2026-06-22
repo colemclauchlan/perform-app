@@ -47,13 +47,13 @@ export function MuscleBodyModel3DView({
       {showLegend && (
         <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-text-2">
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#ff3b3b", boxShadow: "0 0 8px #ff3b3b88" }} /> Primary
+            <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#ff2424", boxShadow: "0 0 8px #ff242488" }} /> Primary
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#cf5b54" }} /> Secondary
+            <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#c8463f" }} /> Secondary
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#b9c2d4" }} /> Not targeted
+            <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#aab4c6" }} /> Not targeted
           </span>
         </div>
       )}
