@@ -11,7 +11,7 @@ import { useProfile, useFoodLog, useWeeklyCalories, useUpdateProfile } from "@/h
 import { useProtocols, useLogDose } from "@/hooks/useCompounds";
 import { useBodyWeights, useWorkouts, useAddBodyWeight } from "@/hooks/useTraining";
 import { useAddHydration } from "@/hooks/useBodyMetrics";
-import { todayISO, formatDate, round, getNextDoseInfo } from "@/lib/utils";
+import { todayISO, formatDate, round, getNextDoseInfo, MACRO_HEX } from "@/lib/utils";
 import { UserPreferences } from "@/types/database";
 import {
   TrendingUp, TrendingDown, Minus, Dumbbell, FlaskConical, Apple, Activity,
@@ -175,9 +175,9 @@ export default function DashboardPage() {
             <MacroBar protein={totals.p} carbs={totals.c} fat={totals.f} calories={totals.cal} />
             <div className="mt-3 grid grid-cols-3 gap-2">
               {[
-                { label: "Protein", value: Math.round(totals.p), target: targetP, unit: "g", color: "#2563eb", higherIsBetter: true },
-                { label: "Carbs", value: Math.round(totals.c), target: profile?.target_carbs || 300, unit: "g", color: "#22d3a5", higherIsBetter: false },
-                { label: "Fat", value: Math.round(totals.f), target: profile?.target_fat || 80, unit: "g", color: "#f6ad55", higherIsBetter: false },
+                { label: "Protein", value: Math.round(totals.p), target: targetP, unit: "g", color: MACRO_HEX.protein, higherIsBetter: true },
+                { label: "Carbs", value: Math.round(totals.c), target: profile?.target_carbs || 300, unit: "g", color: MACRO_HEX.carbs, higherIsBetter: false },
+                { label: "Fat", value: Math.round(totals.f), target: profile?.target_fat || 80, unit: "g", color: MACRO_HEX.fat, higherIsBetter: false },
               ].map((m) => {
                 const pct = Math.min(100, Math.round((m.value / m.target) * 100)) || 0;
                 return (

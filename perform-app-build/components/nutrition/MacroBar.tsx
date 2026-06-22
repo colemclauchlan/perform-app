@@ -1,5 +1,7 @@
 "use client";
 
+import { MACRO_HEX } from "@/lib/utils";
+
 export function MacroBar({
   protein,
   carbs,
@@ -21,28 +23,21 @@ export function MacroBar({
       <div className="flex h-1.5 rounded-full overflow-hidden gap-0.5 my-2">
         <div
           className="h-full rounded-sm transition-all duration-300"
-          style={{ width: `${pPct}%`, background: "#2563eb" }}
+          style={{ width: `${pPct}%`, background: MACRO_HEX.protein }}
         />
         <div
           className="h-full rounded-sm transition-all duration-300"
-          style={{ width: `${cPct}%`, background: "#2dd4bf" }}
+          style={{ width: `${cPct}%`, background: MACRO_HEX.carbs }}
         />
         <div
           className="h-full rounded-sm transition-all duration-300"
-          style={{ width: `${fPct}%`, background: "#fbbf24" }}
+          style={{ width: `${fPct}%`, background: MACRO_HEX.fat }}
         />
       </div>
-      <div className="flex gap-3 text-xs text-text-2 mt-1.5 flex-wrap">
-        <span>
-          <span style={{ color: "#2563eb" }}>●</span> Protein{" "}
-          {Math.round(protein)}g
-        </span>
-        <span>
-          <span style={{ color: "#2dd4bf" }}>●</span> Carbs {Math.round(carbs)}g
-        </span>
-        <span>
-          <span style={{ color: "#fbbf24" }}>●</span> Fat {Math.round(fat)}g
-        </span>
+      <div className="flex gap-3 text-xs mt-1.5 flex-wrap">
+        <span style={{ color: MACRO_HEX.protein }}>● Protein {Math.round(protein)}g</span>
+        <span style={{ color: MACRO_HEX.carbs }}>● Carbs {Math.round(carbs)}g</span>
+        <span style={{ color: MACRO_HEX.fat }}>● Fat {Math.round(fat)}g</span>
       </div>
     </div>
   );

@@ -211,6 +211,25 @@ export function computeMacros(
   };
 }
 
+// ─── MACRO COLORS ─────────────────────────────────────────────────────────────
+// One canonical color per macro, used site-wide. Hex values mirror the Tailwind
+// theme tokens (status-amber / accent / status-teal / status-coral) so inline
+// styles and `text-*` classes stay in sync.
+export const MACRO_HEX = {
+  calories: "#f6ad55", // status-amber
+  protein: "#2563eb", //  accent
+  carbs: "#2dd4bf", //    status-teal
+  fat: "#fc8181", //      status-coral
+} as const;
+
+// Matching Tailwind text-color classes for the same four macros.
+export const MACRO_TEXT = {
+  calories: "text-status-amber",
+  protein: "text-accent",
+  carbs: "text-status-teal",
+  fat: "text-status-coral",
+} as const;
+
 // ─── FOOD CATEGORY COLORS ─────────────────────────────────────────────────────
 // Static palette for the built-in food catalog categories.
 export const FOOD_CATEGORY_COLORS: Record<string, string> = {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useSaveMealPlan } from "@/hooks/useMealPlans";
 import { MealType } from "@/types/database";
+import { MACRO_HEX, MACRO_TEXT } from "@/lib/utils";
 import { Sparkles, Loader2, ChefHat, Save, RotateCcw, Flame } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -252,10 +253,10 @@ export function AIMealPlanModal({ open, onClose }: { open: boolean; onClose: () 
           {totals && (
             <div className="grid grid-cols-4 gap-2">
               {[
-                { k: "Calories", v: totals.calories, c: "#f6ad55", u: "" },
-                { k: "Protein", v: totals.protein, c: "#2dd4bf", u: "g" },
-                { k: "Carbs", v: totals.carbs, c: "#fbbf24", u: "g" },
-                { k: "Fat", v: totals.fat, c: "#fb7185", u: "g" },
+                { k: "Calories", v: totals.calories, c: MACRO_HEX.calories, u: "" },
+                { k: "Protein", v: totals.protein, c: MACRO_HEX.protein, u: "g" },
+                { k: "Carbs", v: totals.carbs, c: MACRO_HEX.carbs, u: "g" },
+                { k: "Fat", v: totals.fat, c: MACRO_HEX.fat, u: "g" },
               ].map((m) => (
                 <div key={m.k} className="rounded-xl border border-border bg-bg-2/70 px-3 py-2 text-center">
                   <div className="text-[10px] uppercase tracking-wide text-text-3">{m.k}</div>
@@ -289,8 +290,9 @@ export function AIMealPlanModal({ open, onClose }: { open: boolean; onClose: () 
                             {it.unit}
                           </span>
                         </span>
-                        <span className="text-text-2 tabular-nums shrink-0 ml-2">
-                          {n(it.calories)} kcal · {n(it.protein)}p
+                        <span className="tabular-nums shrink-0 ml-2 flex items-center gap-1.5">
+                          <span className={MACRO_TEXT.calories}>{n(it.calories)} kcal</span>
+                          <span className={MACRO_TEXT.protein}>{n(it.protein)}p</span>
                         </span>
                       </div>
                     ))}

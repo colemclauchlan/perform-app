@@ -25,6 +25,8 @@ import {
   round,
   foodCategoryColor,
   FOOD_CATEGORY_COLORS,
+  MACRO_HEX,
+  MACRO_TEXT,
   cn,
 } from "@/lib/utils";
 import {
@@ -236,10 +238,10 @@ export default function NutritionPage() {
   }
 
   const rings = [
-    { label: "Calories", value: totals.cal, target: calGoal, unit: "kcal", color: "#2563eb" },
-    { label: "Protein", value: totals.p, target: proteinGoal, unit: "g", color: "#2dd4bf", higherIsBetter: true },
-    { label: "Carbs", value: totals.c, target: profile?.target_carbs || 250, unit: "g", color: "#fbbf24" },
-    { label: "Fat", value: totals.f, target: profile?.target_fat || 80, unit: "g", color: "#fb7185" },
+    { label: "Calories", value: totals.cal, target: calGoal, unit: "kcal", color: MACRO_HEX.calories },
+    { label: "Protein", value: totals.p, target: proteinGoal, unit: "g", color: MACRO_HEX.protein, higherIsBetter: true },
+    { label: "Carbs", value: totals.c, target: profile?.target_carbs || 250, unit: "g", color: MACRO_HEX.carbs },
+    { label: "Fat", value: totals.f, target: profile?.target_fat || 80, unit: "g", color: MACRO_HEX.fat },
   ];
 
   const calRemaining = Math.round(calGoal - totals.cal);
@@ -333,14 +335,18 @@ export default function NutritionPage() {
                               <CategoryDot category={e.food_catalog_id ? categoryById.get(e.food_catalog_id) : "Custom"} custom={customCategories} />
                               <div className="min-w-0">
                                 <div className="text-sm truncate">{e.name}</div>
-                                <div className="text-[11px] text-text-2 tabular-nums">
-                                  {Math.round(e.protein)}g P · {Math.round(e.carbs)}g C · {Math.round(e.fat)}g F
+                                <div className="text-[11px] tabular-nums flex items-center gap-1.5">
+                                  <span className={MACRO_TEXT.protein}>{Math.round(e.protein)}g P</span>
+                                  <span className="text-text-3">·</span>
+                                  <span className={MACRO_TEXT.carbs}>{Math.round(e.carbs)}g C</span>
+                                  <span className="text-text-3">·</span>
+                                  <span className={MACRO_TEXT.fat}>{Math.round(e.fat)}g F</span>
                                 </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <PortionControl entry={e} onCommit={(q, u) => setEntryPortion(e, q, u)} />
-                              <span className="text-sm font-bold font-display text-accent-bright tabular-nums">{Math.round(e.calories)}</span>
+                              <span className="text-sm font-bold font-display text-status-amber tabular-nums">{Math.round(e.calories)}</span>
                               <span className="text-[11px] text-text-3">kcal</span>
                               <button className="btn btn-ghost btn-sm !px-1.5" onClick={() => { deleteLog.mutate(e.id); toast.success("Removed"); }}>
                                 <Trash2 size={13} />
@@ -627,7 +633,10 @@ function FoodLogger({
                       <button className="flex-1 min-w-0 text-left" onClick={() => { setSelected(f); setSearch(f.name); }} title="Adjust portion">
                         <div className="text-sm truncate">{f.name}</div>
                         <div className="text-[11px] text-text-3 tabular-nums">
-                          {f.calories_per_100g} kcal · {f.protein_per_100g}P / {f.carbs_per_100g}C / {f.fat_per_100g}F per 100g
+                          <span className={MACRO_TEXT.calories}>{f.calories_per_100g} kcal</span> ·{" "}
+                          <span className={MACRO_TEXT.protein}>{f.protein_per_100g}P</span> /{" "}
+                          <span className={MACRO_TEXT.carbs}>{f.carbs_per_100g}C</span> /{" "}
+                          <span className={MACRO_TEXT.fat}>{f.fat_per_100g}F</span> per 100g
                         </div>
                       </button>
                       <button
@@ -671,7 +680,11 @@ function FoodLogger({
                 </div>
                 {preview && (
                   <div className="text-xs text-text-2 mt-2 tabular-nums">
-                    {qty}{unit} → <b className="text-accent">{Math.round(preview.calories)} kcal</b> · {Math.round(preview.protein)}g P · {Math.round(preview.carbs)}g C · {Math.round(preview.fat)}g F
+                    {qty}
+                    {unit} → <b className={MACRO_TEXT.calories}>{Math.round(preview.calories)} kcal</b> ·{" "}
+                    <span className={MACRO_TEXT.protein}>{Math.round(preview.protein)}g P</span> ·{" "}
+                    <span className={MACRO_TEXT.carbs}>{Math.round(preview.carbs)}g C</span> ·{" "}
+                    <span className={MACRO_TEXT.fat}>{Math.round(preview.fat)}g F</span>
                   </div>
                 )}
               </div>
