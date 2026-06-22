@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { Providers } from "@/components/Providers";
@@ -18,14 +18,6 @@ const display = Space_Grotesk({
   weight: ["500", "600", "700"],
   display: "swap",
   variable: "--font-display",
-});
-
-// Monospaced figures for the "Clinical Readout" instrument styling (data/units).
-const mono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-  variable: "--font-mono",
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -96,7 +88,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${display.variable} ${mono.variable}`}>
+    <html lang="en" className={`${inter.variable} ${display.variable}`}>
       <body>
         <Providers>
           {children}
