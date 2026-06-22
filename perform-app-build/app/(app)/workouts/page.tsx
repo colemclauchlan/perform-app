@@ -17,6 +17,7 @@ import { formatDate, cn, muscleColor } from "@/lib/utils";
 import { WorkoutBuilder } from "@/components/training/WorkoutBuilder";
 import { ExerciseDetailModal } from "@/components/training/ExerciseDetailModal";
 import { AIWorkoutModal } from "@/components/training/AIWorkoutModal";
+import { TemplateEditorModal } from "@/components/training/TemplateEditorModal";
 import { MuscleModel3DView } from "@/components/visual/MuscleModel3DView";
 import { Reveal, Stagger, StaggerItem } from "@/components/visual/Motion";
 import { motion } from "framer-motion";
@@ -52,6 +53,8 @@ export default function WorkoutsPage() {
   const [aiOpen, setAiOpen] = useState(false);
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
   const [presetTemplate, setPresetTemplate] = useState<WorkoutTemplate | null>(null);
+  const [editTemplate, setEditTemplate] = useState<WorkoutTemplate | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [liftSearch, setLiftSearch] = useState("");
   const [sessionSearch, setSessionSearch] = useState("");
@@ -321,7 +324,18 @@ export default function WorkoutsPage() {
       {/* templates */}
       {templates.length > 0 && (
         <div className="card mb-4">
-          <div className="card-title flex items-center gap-2"><LayoutTemplate size={14} /> Pre-saved Programs</div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="card-title !mb-0 flex items-center gap-2"><LayoutTemplate size={14} /> Pre-saved Programs</div>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setEditTemplate(null);
+                setEditorOpen(true);
+              }}
+            >
+              <Plus size={14} /> New Program
+            </button>
+          </div>
           <div className="flex gap-2 flex-wrap">
             {templates.map((t) => (
               <div key={t.id} className="flex items-center gap-1.5 bg-bg-2 border border-border rounded-xl pl-3 pr-1.5 py-1.5 hover:border-border-2 transition-all">
@@ -335,9 +349,20 @@ export default function WorkoutsPage() {
                 <button
                   className="btn btn-ghost btn-sm !px-1.5"
                   onClick={() => {
+                    setEditTemplate(t);
+                    setEditorOpen(true);
+                  }}
+                  title="Edit program"
+                >
+                  <Pencil size={12} />
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm !px-1.5"
+                  onClick={() => {
                     deleteTemplate.mutate(t.id);
                     toast.success("Template deleted");
                   }}
+                  title="Delete program"
                 >
                   <Trash2 size={12} />
                 </button>
@@ -506,6 +531,7 @@ export default function WorkoutsPage() {
         exercise={detail?.ex ?? null}
         progression={detail?.prog}
       />
+      <TemplateEditorModal template={editTemplate} open={editorOpen} onClose={() => setEditorOpen(false)} />
     </div>
   );
 }

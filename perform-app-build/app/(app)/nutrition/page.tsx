@@ -434,6 +434,9 @@ function FoodLogger({
   const [qty, setQty] = useState("100");
   const [unit, setUnit] = useState("g");
   const [meal, setMeal] = useState<MealType>("Breakfast");
+  // Food-group include filter for search. Empty = search all foods (default).
+  const [catFilter, setCatFilter] = useState<string[]>([]);
+  const toggleCat = (c: string) => setCatFilter((s) => (s.includes(c) ? s.filter((x) => x !== c) : [...s, c]));
 
   // Manual fields
   const [mName, setMName] = useState("");
@@ -492,7 +495,11 @@ function FoodLogger({
     return Array.from(names);
   }, [customCategories]);
 
-  const matches = useMemo(() => (search.length < 2 ? [] : catalog.slice(0, 10)), [catalog, search]);
+  const matches = useMemo(() => {
+    if (search.length < 2 && catFilter.length === 0) return [];
+    const list = catFilter.length > 0 ? catalog.filter((f) => catFilter.includes(f.category)) : catalog;
+    return list.slice(0, 12);
+  }, [catalog, search, catFilter]);
 
   const preview = useMemo(() => {
     if (!selected) return null;
@@ -579,14 +586,43 @@ function FoodLogger({
             </span>
             Log Food
           </div>
-          {/* Food-group color legend (matches the dots beside each logged food) */}
-          <div className="flex items-center gap-x-2.5 gap-y-1 flex-wrap text-[10px] text-text-3 flex-1 min-w-0">
-            {[...LEGEND_CATEGORIES, ...customCategories.map((c) => c.name)].map((cat) => (
-              <span key={cat} className="inline-flex items-center gap-1 whitespace-nowrap">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: foodCategoryColor(cat, customCategories) }} />
-                {cat}
-              </span>
-            ))}
+          {/* Food-group filters: click a circle to include only that group; none = all foods */}
+          <div className="flex items-center gap-1 flex-wrap flex-1 min-w-0">
+            {[...LEGEND_CATEGORIES, ...customCategories.map((c) => c.name)].map((cat) => {
+              const on = catFilter.includes(cat);
+              const dim = catFilter.length > 0 && !on;
+              const color = foodCategoryColor(cat, customCategories);
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => toggleCat(cat)}
+                  title={on ? `Showing ${cat} — click to remove` : `Filter to ${cat}`}
+                  className={cn(
+                    "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] border transition-all",
+                    on ? "text-text-1 font-medium" : "text-text-3 hover:text-text-2",
+                    dim && "opacity-45"
+                  )}
+                  style={
+                    on
+                      ? { background: `${color}1f`, borderColor: `${color}88` }
+                      : { borderColor: "transparent" }
+                  }
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                  {cat}
+                </button>
+              );
+            })}
+            {catFilter.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setCatFilter([])}
+                className="text-[10px] text-text-3 hover:text-text-1 underline underline-offset-2 ml-0.5"
+              >
+                All
+              </button>
+            )}
           </div>
           <div className="flex gap-1 bg-bg-2 p-1 rounded-lg border border-border">
             {(["search", "manual"] as const).map((t) => (
@@ -632,7 +668,7 @@ function FoodLogger({
               />
             </div>
 
-            {!selected && search.length >= 2 && (
+            {!selected && (search.length >= 2 || catFilter.length > 0) && (
               <div className="mt-2 rounded-xl border border-border bg-bg-2/50 divide-y divide-border/50 max-h-72 overflow-y-auto">
                 {matches.length === 0 ? (
                   <div className="px-3 py-4 text-sm text-text-3 text-center">
