@@ -9,8 +9,8 @@ import {
 } from "@/hooks/useBodyMetrics";
 import { todayISO, formatDate } from "@/lib/utils";
 import { Trash2, Ruler, TrendingUp, TrendingDown, Activity, CalendarDays } from "lucide-react";
-import { BodyMeasureModel3DView } from "@/components/visual/BodyMeasureModel3DView";
-import type { MeasurePoint } from "@/components/visual/BodyMeasureModel3D";
+import { BodyGltfModel3DView } from "@/components/visual/BodyGltfModel3DView";
+import type { MeasurePoint } from "@/components/visual/BodyGltfModel3D";
 import { Reveal } from "@/components/visual/Motion";
 import toast from "react-hot-toast";
 import {
@@ -137,7 +137,7 @@ export default function MeasurementsPage() {
           <div className="relative grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-4 items-center">
             <div>
               {latest ? (
-                <BodyMeasureModel3DView points={points} height={460} />
+                <BodyGltfModel3DView points={points} height={460} />
               ) : (
                 <div className="h-[300px] rounded-xl border border-border bg-bg-2/40 flex flex-col items-center justify-center text-text-3 text-sm gap-2">
                   <Ruler size={26} className="text-text-3" />
