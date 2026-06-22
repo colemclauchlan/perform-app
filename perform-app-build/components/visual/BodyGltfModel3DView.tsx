@@ -35,8 +35,8 @@ export function BodyGltfModel3DView({
         style={{ height }}
       >
         <BodyGltfModel3D points={points} autoRotate={autoRotate} />
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-text-3 pointer-events-none select-none">
-          drag to rotate · scroll to zoom · right-drag to pan
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-text-3 pointer-events-none select-none text-center">
+          drag to rotate · scroll to zoom · hover or tap a dot for its measurement
         </div>
       </div>
       {caption && <div className="text-center text-[11px] text-text-3 mt-2">{caption}</div>}

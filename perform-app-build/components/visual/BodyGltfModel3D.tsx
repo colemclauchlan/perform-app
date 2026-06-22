@@ -2,21 +2,20 @@
 
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Html, Bounds } from "@react-three/drei";
-import { Suspense, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 /**
  * Body viewer for the measurements page. Loads a real human GLB from
- * /public/models/body.glb (swap that file to change the body — the model is
- * auto-centered/scaled and the measurement callouts anchor to it by body
- * fraction, so any humanoid mesh works without code changes).
+ * /public/models/body.glb (swap that file to change the body — it's auto-centered
+ * /scaled and any humanoid mesh works without code changes).
  *
- * The bundled placeholder is a CC0 model. Drop in a realistic CC0/CC-BY body
- * (e.g. a MakeHuman export or a Sketchfab download) at the same path to upgrade.
+ * Each tracked measurement is a small dot raycast onto the actual mesh surface
+ * at the matching body region. Readouts are hidden by default: hover a dot to
+ * reveal its value (one at a time), or tap/click to pin it (multiple allowed).
  */
 
-// Bump the ?v query whenever the underlying body.glb changes so browsers/CDN
-// don't serve a stale cached copy (the path stays the same).
+// Bump the ?v query whenever body.glb changes so browsers/CDN don't serve stale.
 const MODEL_URL = "/models/body.glb?v=3";
 useGLTF.preload(MODEL_URL);
 
@@ -28,85 +27,64 @@ export type MeasurePoint = {
   delta: number | null;
 };
 
-// Anchor each callout by body fraction (works regardless of the GLB's scale):
-//   y = 0 feet … 1 head;  x = -1 left edge … +1 right edge (of the body width)
-const ANCHORS: Record<string, { y: number; x: number; side: "l" | "r" | "c" }> = {
-  neck: { y: 0.83, x: 0, side: "c" },
-  chest: { y: 0.72, x: 0, side: "c" },
-  leftArm: { y: 0.64, x: -0.85, side: "l" },
-  rightArm: { y: 0.64, x: 0.85, side: "r" },
-  waist: { y: 0.6, x: 0, side: "c" },
-  hips: { y: 0.53, x: 0, side: "c" },
-  leftThigh: { y: 0.42, x: -0.32, side: "l" },
-  rightThigh: { y: 0.42, x: 0.32, side: "r" },
-  leftCalf: { y: 0.22, x: -0.38, side: "l" },
-  rightCalf: { y: 0.22, x: 0.38, side: "r" },
+// Where to drop each dot, as a body fraction: y = 0 feet … 1 head, x = -1 left
+// edge … +1 right edge. A ray from the front finds the real surface point.
+const ANCHORS: Record<string, { y: number; x: number }> = {
+  neck: { y: 0.83, x: 0 },
+  chest: { y: 0.72, x: 0 },
+  leftArm: { y: 0.66, x: -0.62 },
+  rightArm: { y: 0.66, x: 0.62 },
+  waist: { y: 0.6, x: 0 },
+  hips: { y: 0.53, x: 0 },
+  leftThigh: { y: 0.42, x: -0.3 },
+  rightThigh: { y: 0.42, x: 0.3 },
+  leftCalf: { y: 0.22, x: -0.34 },
+  rightCalf: { y: 0.22, x: 0.34 },
 };
 
-function Callout({ point, pos, side }: { point: MeasurePoint; pos: THREE.Vector3; side: "l" | "r" | "c" }) {
+function Readout({ point }: { point: MeasurePoint }) {
   const up = point.delta != null && point.delta > 0;
   const down = point.delta != null && point.delta < 0;
-  const deltaCls = up ? "text-status-green" : down ? "text-text-1" : "text-text-3";
-  const justify = side === "l" ? "flex-end" : "flex-start";
   return (
-    <>
-      <mesh position={pos}>
-        <sphereGeometry args={[0.015, 16, 16]} />
-        <meshBasicMaterial color="#2563eb" toneMapped={false} />
-      </mesh>
-      <Html position={pos} center zIndexRange={[20, 0]} style={{ pointerEvents: "none", width: 170, display: "flex", justifyContent: justify }}>
-        <div
-          className="rounded-lg border border-white/12 bg-bg-1/85 backdrop-blur-sm px-2 py-1 leading-tight shadow-lg"
-          style={{ transform: side === "l" ? "translateX(-14px)" : side === "r" ? "translateX(14px)" : "none" }}
-        >
-          <div className="text-[10px] uppercase tracking-wide text-text-3">{point.label}</div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-[13px] font-semibold text-text-1 tabular-nums">
-              {point.value}
-              <span className="text-text-3 font-normal text-[10px] ml-0.5">{point.unit}</span>
+    <Html center zIndexRange={[40, 0]} position={[0, 0.07, 0]} style={{ pointerEvents: "none" }}>
+      <div className="rounded-lg border border-white/15 bg-bg-1/90 backdrop-blur-sm px-2 py-1 leading-tight shadow-lg whitespace-nowrap animate-scale-in">
+        <div className="text-[10px] uppercase tracking-wide text-text-3">{point.label}</div>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[13px] font-semibold text-text-1 tabular-nums">
+            {point.value}
+            <span className="text-text-3 font-normal text-[10px] ml-0.5">{point.unit}</span>
+          </span>
+          {point.delta != null && point.delta !== 0 && (
+            <span className={`text-[10px] tabular-nums ${up ? "text-status-green" : down ? "text-text-1" : "text-text-3"}`}>
+              {point.delta > 0 ? "+" : ""}
+              {point.delta}
             </span>
-            {point.delta != null && point.delta !== 0 && (
-              <span className={`text-[10px] tabular-nums ${deltaCls}`}>
-                {point.delta > 0 ? "+" : ""}
-                {point.delta}
-              </span>
-            )}
-          </div>
+          )}
         </div>
-      </Html>
-    </>
+      </div>
+    </Html>
   );
 }
 
 function Body({ points }: { points: MeasurePoint[] }) {
   const { scene } = useGLTF(MODEL_URL);
 
-  // Clone + re-skin to a neutral clay so any GLB reads as a clean anatomy figure.
-  // Compute normals when the mesh has none (OBJ→GLB conversions often drop them,
-  // which renders as an unlit black silhouette) and use DoubleSide so inverted
-  // faces still show.
+  // Clone + clay finish; compute normals when missing (OBJ→GLB often drops them).
   const model = useMemo(() => {
     const s = scene.clone(true);
-    const clay = new THREE.MeshStandardMaterial({
-      color: "#b9c2d4",
-      roughness: 0.6,
-      metalness: 0.04,
-      side: THREE.DoubleSide,
-    });
+    const clay = new THREE.MeshStandardMaterial({ color: "#b9c2d4", roughness: 0.6, metalness: 0.04, side: THREE.DoubleSide });
     s.traverse((o) => {
       const m = o as THREE.Mesh;
       if (m.isMesh) {
-        if (m.geometry && !m.geometry.getAttribute("normal")) {
-          m.geometry.computeVertexNormals();
-        }
+        if (m.geometry && !m.geometry.getAttribute("normal")) m.geometry.computeVertexNormals();
         m.material = clay;
       }
     });
     return s;
   }, [scene]);
 
-  // Auto-center + scale to a fixed display height; derive callout anchor frame.
-  const { transform, anchorWorld } = useMemo(() => {
+  // Auto-center + scale to a fixed display height.
+  const frame = useMemo(() => {
     const box = new THREE.Box3().setFromObject(model);
     const size = new THREE.Vector3();
     const center = new THREE.Vector3();
@@ -114,28 +92,85 @@ function Body({ points }: { points: MeasurePoint[] }) {
     box.getCenter(center);
     const H = 1.7;
     const scale = H / (size.y || 1);
-    const halfW = (size.x * scale) / 2;
-    const halfD = (size.z * scale) / 2;
-    const bottom = -H / 2;
     return {
-      transform: {
-        scale,
-        position: [-center.x * scale, -center.y * scale, -center.z * scale] as [number, number, number],
-      },
-      anchorWorld: (a: { x: number; y: number }) =>
-        new THREE.Vector3(a.x * halfW, bottom + a.y * H, halfD + 0.05),
+      scale,
+      position: [-center.x * scale, -center.y * scale, -center.z * scale] as [number, number, number],
+      halfW: (size.x * scale) / 2,
+      halfD: (size.z * scale) / 2,
+      H,
+      bottom: -H / 2,
     };
   }, [model]);
 
+  const groupRef = useRef<THREE.Group>(null);
+  const [surface, setSurface] = useState<Record<string, [number, number, number]>>({});
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [pinned, setPinned] = useState<Set<string>>(() => new Set());
+
+  // Raycast each anchor from the front onto the real mesh surface.
+  const ids = points.map((p) => p.id).join(",");
+  useEffect(() => {
+    const g = groupRef.current;
+    if (!g) return;
+    g.updateWorldMatrix(true, true);
+    const ray = new THREE.Raycaster();
+    const res: Record<string, [number, number, number]> = {};
+    for (const p of points) {
+      const a = ANCHORS[p.id];
+      if (!a) continue;
+      const wx = a.x * frame.halfW;
+      const wy = frame.bottom + a.y * frame.H;
+      ray.set(new THREE.Vector3(wx, wy, 4), new THREE.Vector3(0, 0, -1));
+      const hits = ray.intersectObject(g, true);
+      res[p.id] = hits.length ? [hits[0].point.x, hits[0].point.y, hits[0].point.z + 0.012] : [wx, wy, frame.halfD + 0.012];
+    }
+    setSurface(res);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model, frame, ids]);
+
+  function togglePin(id: string) {
+    setPinned((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  }
+
   return (
     <>
-      <group scale={transform.scale} position={transform.position}>
+      <group ref={groupRef} scale={frame.scale} position={frame.position}>
         <primitive object={model} />
       </group>
+
       {points.map((p) => {
-        const a = ANCHORS[p.id];
-        if (!a) return null;
-        return <Callout key={p.id} point={p} pos={anchorWorld(a)} side={a.side} />;
+        const pos = surface[p.id];
+        if (!pos) return null;
+        const visible = hovered === p.id || pinned.has(p.id);
+        return (
+          <group key={p.id} position={pos}>
+            <mesh
+              onPointerOver={(e) => {
+                e.stopPropagation();
+                setHovered(p.id);
+                document.body.style.cursor = "pointer";
+              }}
+              onPointerOut={(e) => {
+                e.stopPropagation();
+                setHovered((h) => (h === p.id ? null : h));
+                document.body.style.cursor = "auto";
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePin(p.id);
+              }}
+            >
+              <sphereGeometry args={[visible ? 0.022 : 0.015, 16, 16]} />
+              <meshBasicMaterial color={visible ? "#7cc0ff" : "#2563eb"} toneMapped={false} />
+            </mesh>
+            {visible && <Readout point={p} />}
+          </group>
+        );
       })}
     </>
   );
@@ -150,7 +185,6 @@ export default function BodyGltfModel3D({ points = [], autoRotate = false }: { p
       <directionalLight position={[-4, 2, -3]} intensity={1.5} color="#6f8cff" />
       <directionalLight position={[-2, -1.5, 3]} intensity={0.45} color="#ff9d6f" />
       <Suspense fallback={null}>
-        {/* Auto-fit the body to the viewport (robust to any model's scale) */}
         <Bounds fit clip observe margin={1.15}>
           <Body points={points} />
         </Bounds>
