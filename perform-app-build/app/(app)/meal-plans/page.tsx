@@ -45,6 +45,8 @@ const PLAN_TYPES: MealPlan["meal_type"][] = [
 ];
 const MEAL_SLOTS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack", "Pre-workout", "Post-workout"];
 const UNITS = ["g", "oz", "cup", "serving"];
+// Units a single serving can be expressed in (no "serving" — that'd be circular).
+const SERVING_UNITS = ["g", "oz", "cup", "ml"];
 
 function planTotals(plan: MealPlan) {
   return (plan.items || []).reduce(
@@ -61,14 +63,21 @@ function planTotals(plan: MealPlan) {
 // A single food row inside a plan card. In a grouped (Full Day) view the meal is
 // shown in the group header, so it's hidden on the row.
 function ItemRow({ it, hideMeal }: { it: MealPlanItem; hideMeal?: boolean }) {
+  const qty = round(Number(it.quantity));
+  const isServing = it.quantity_unit === "serving";
+  const ssize = Number(it.serving_size ?? 100);
+  const sunit = it.serving_unit ?? "g";
+  // e.g. "1 serving (100g)", "2 servings (200g)", "1 serving (1cup)"
+  const amountLabel = isServing
+    ? `${qty} serving${qty !== 1 ? "s" : ""}${ssize > 0 ? ` (${round(qty * ssize)}${sunit})` : ""}`
+    : `${qty}${it.quantity_unit}`;
   return (
     <div className="flex items-center justify-between text-[13px] bg-bg-2 rounded-lg px-2.5 py-1.5 border border-border/50">
       <div className="min-w-0">
         <span className="font-medium truncate">{it.name}</span>
         <span className="text-text-3 ml-1.5 text-[11px]">
           {hideMeal ? "" : `${it.meal} · `}
-          {round(Number(it.quantity))}
-          {it.quantity_unit}
+          {amountLabel}
         </span>
       </div>
       <div className="shrink-0 ml-2 text-right">
@@ -636,6 +645,8 @@ type FormItem = {
   meal: MealType;
   quantity: string;
   quantity_unit: string;
+  serving_size: string;
+  serving_unit: string;
   per100: { calories: number; protein: number; carbs: number; fat: number } | null;
   calories: string;
   protein: string;
@@ -693,6 +704,8 @@ function PlanBuilderModal({
           meal: it.meal as MealType,
           quantity: String(it.quantity),
           quantity_unit: it.quantity_unit,
+          serving_size: String(it.serving_size ?? 100),
+          serving_unit: it.serving_unit ?? "g",
           per100: null,
           calories: String(it.calories),
           protein: String(it.protein),
@@ -720,6 +733,8 @@ function PlanBuilderModal({
         meal: "Breakfast",
         quantity: "100",
         quantity_unit: "g",
+        serving_size: "100",
+        serving_unit: "g",
         per100: {
           calories: food.calories_per_100g,
           protein: food.protein_per_100g,
@@ -743,6 +758,8 @@ function PlanBuilderModal({
         meal: "Breakfast",
         quantity: "1",
         quantity_unit: "serving",
+        serving_size: "100",
+        serving_unit: "g",
         per100: null,
         calories: "",
         protein: "",
@@ -802,6 +819,8 @@ function PlanBuilderModal({
           meal: it.meal,
           quantity: parseFloat(it.quantity) || 0,
           quantity_unit: it.quantity_unit,
+          serving_size: parseFloat(it.serving_size) || 100,
+          serving_unit: it.serving_unit || "g",
           calories: round(m.calories),
           protein: round(m.protein),
           carbs: round(m.carbs),
@@ -902,6 +921,28 @@ function PlanBuilderModal({
                     <select value={it.quantity_unit} onChange={(e) => patch(it.key, { quantity_unit: e.target.value })} className="!py-1 text-xs w-24">
                       {UNITS.map((u) => <option key={u}>{u}</option>)}
                     </select>
+                    {it.quantity_unit === "serving" && (
+                      <span className="flex items-center gap-1 text-[11px] text-text-3">
+                        <span className="whitespace-nowrap">1 serving =</span>
+                        <input
+                          type="number"
+                          value={it.serving_size}
+                          onChange={(e) => patch(it.key, { serving_size: e.target.value })}
+                          className="!py-1 text-xs w-14"
+                          aria-label="Serving size"
+                        />
+                        <select
+                          value={it.serving_unit}
+                          onChange={(e) => patch(it.key, { serving_unit: e.target.value })}
+                          className="!py-1 text-xs w-16"
+                          aria-label="Serving unit"
+                        >
+                          {SERVING_UNITS.map((u) => (
+                            <option key={u}>{u}</option>
+                          ))}
+                        </select>
+                      </span>
+                    )}
                     {it.per100 ? (
                       <span className="text-xs tabular-nums flex items-center gap-1.5">
                         <span className="text-status-amber">{Math.round(m.calories)} cal</span>

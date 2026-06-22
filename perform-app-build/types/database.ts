@@ -238,6 +238,9 @@ export interface MealPlanItem {
   meal: MealType;
   quantity: number;
   quantity_unit: string;
+  // What "1 serving" of this item equals, for display when quantity_unit is "serving".
+  serving_size?: number;
+  serving_unit?: string;
   calories: number;
   protein: number;
   carbs: number;
