@@ -153,9 +153,9 @@ export function Sidebar() {
       {/* Logo + brand — click returns to Health Dashboard */}
       <Link href="/dashboard" className="px-3 pb-5 flex items-center justify-center group">
         <Logo
-          variant="full"
-          size={84}
-          className="rounded-lg transition-transform group-hover:scale-105"
+          variant="icon"
+          size={72}
+          className="rounded-full ring-1 ring-white/10 drop-shadow-[0_6px_20px_rgba(37,99,235,0.35)] transition-transform group-hover:scale-105"
         />
       </Link>
 
