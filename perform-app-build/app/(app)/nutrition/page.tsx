@@ -146,7 +146,7 @@ function PortionControl({ entry, onCommit }: { entry: FoodLogEntry; onCommit: (q
         onKeyDown={(e) => {
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         }}
-        className="w-9 bg-transparent text-center text-[11px] text-text-1 tabular-nums focus:outline-none"
+        className="w-12 bg-transparent text-center text-[11px] text-text-1 tabular-nums focus:outline-none"
       />
       <select
         value={unit}
