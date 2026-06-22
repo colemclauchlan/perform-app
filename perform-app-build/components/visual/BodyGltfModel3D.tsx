@@ -80,12 +80,25 @@ function Body({ points }: { points: MeasurePoint[] }) {
   const { scene } = useGLTF(MODEL_URL);
 
   // Clone + re-skin to a neutral clay so any GLB reads as a clean anatomy figure.
+  // Compute normals when the mesh has none (OBJ→GLB conversions often drop them,
+  // which renders as an unlit black silhouette) and use DoubleSide so inverted
+  // faces still show.
   const model = useMemo(() => {
     const s = scene.clone(true);
-    const clay = new THREE.MeshStandardMaterial({ color: "#aeb7c9", roughness: 0.55, metalness: 0.05 });
+    const clay = new THREE.MeshStandardMaterial({
+      color: "#b9c2d4",
+      roughness: 0.6,
+      metalness: 0.04,
+      side: THREE.DoubleSide,
+    });
     s.traverse((o) => {
       const m = o as THREE.Mesh;
-      if (m.isMesh) m.material = clay;
+      if (m.isMesh) {
+        if (m.geometry && !m.geometry.getAttribute("normal")) {
+          m.geometry.computeVertexNormals();
+        }
+        m.material = clay;
+      }
     });
     return s;
   }, [scene]);

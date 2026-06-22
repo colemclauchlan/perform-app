@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import {
   useBodyMeasurements,
@@ -58,7 +58,7 @@ const defaultMeasurement = {
   notes: "",
 };
 
-const unitFor = (k: Col) => (k === "body_fat_pct" ? "%" : "cm");
+const CM_PER_IN = 2.54;
 
 export default function MeasurementsPage() {
   const { data: measurements = [] } = useBodyMeasurements();
@@ -68,9 +68,40 @@ export default function MeasurementsPage() {
   const [date, setDate] = useState(todayISO());
   const [form, setForm] = useState(defaultMeasurement);
   const [trendKey, setTrendKey] = useState<Col>("waist_cm");
+  // Girth measurements are stored in cm; the user can view/enter in cm or inches.
+  const [unit, setUnit] = useState<"cm" | "in">("cm");
+  useEffect(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("bt_measure_unit") : null;
+    if (saved === "in" || saved === "cm") setUnit(saved);
+  }, []);
+
+  // % stays as-is; lengths convert between the stored cm and the display unit.
+  const dispUnit = (k: Col) => (k === "body_fat_pct" ? "%" : unit);
+  const cmToU = (cm: number) => (unit === "in" ? Math.round((cm / CM_PER_IN) * 10) / 10 : Math.round(cm * 10) / 10);
+  const toDisp = (k: Col, cm: number) => (k === "body_fat_pct" ? cm : cmToU(cm));
 
   function updateField(key: string, val: string) {
     setForm((f) => ({ ...f, [key]: val }));
+  }
+
+  // Switch units and convert any values already typed into the form.
+  function changeUnit(next: "cm" | "in") {
+    if (next === unit) return;
+    setForm((f) => {
+      const nf = { ...f };
+      FIELDS.forEach((fld) => {
+        if (fld.key === "body_fat_pct") return;
+        const raw = nf[fld.key] as string;
+        if (raw === "") return;
+        const v = parseFloat(raw);
+        if (Number.isNaN(v)) return;
+        const cm = unit === "in" ? v * CM_PER_IN : v;
+        nf[fld.key] = String(Math.round((next === "in" ? cm / CM_PER_IN : cm) * 10) / 10);
+      });
+      return nf;
+    });
+    setUnit(next);
+    if (typeof window !== "undefined") localStorage.setItem("bt_measure_unit", next);
   }
 
   function handleSave() {
@@ -83,7 +114,10 @@ export default function MeasurementsPage() {
     FIELDS.forEach((f) => {
       if (form[f.key] !== "") {
         const v = parseFloat(form[f.key] as string);
-        if (!Number.isNaN(v)) payload[f.key] = v;
+        if (!Number.isNaN(v)) {
+          // body fat is a %, everything else is a length stored in cm
+          payload[f.key] = f.key === "body_fat_pct" ? v : Math.round((unit === "in" ? v * CM_PER_IN : v) * 100) / 100;
+        }
       }
     });
     if (form.notes) payload.notes = form.notes;
@@ -108,10 +142,13 @@ export default function MeasurementsPage() {
       const cur = latest[f.key] as number | null;
       if (cur == null) return [];
       const old = prev ? (prev[f.key] as number | null) : null;
-      const delta = old != null ? Math.round((cur - old) * 10) / 10 : null;
-      return [{ id: f.pointId, label: f.label.replace("Left ", "L ").replace("Right ", "R "), value: cur, unit: "cm", delta }];
+      const dCur = cmToU(cur);
+      const dOld = old != null ? cmToU(old) : null;
+      const delta = dOld != null ? Math.round((dCur - dOld) * 10) / 10 : null;
+      return [{ id: f.pointId, label: f.label.replace("Left ", "L ").replace("Right ", "R "), value: dCur, unit, delta }];
     });
-  }, [latest, prev]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latest, prev, unit]);
 
   const trackedCount = points.length;
   const bodyFat = latest?.body_fat_pct as number | null | undefined;
@@ -122,9 +159,10 @@ export default function MeasurementsPage() {
     const rows = measurements.filter((m) => m[trendKey] != null);
     return {
       labels: rows.map((m) => formatDate(m.logged_date)),
-      values: rows.map((m) => m[trendKey] as number),
+      values: rows.map((m) => toDisp(trendKey, m[trendKey] as number)),
     };
-  }, [measurements, trendKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [measurements, trendKey, unit]);
 
   return (
     <div className="p-6 max-w-[1100px]">
@@ -178,7 +216,22 @@ export default function MeasurementsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
         {/* Log form */}
         <div className="card">
-          <div className="card-title">Log Measurements</div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="card-title !mb-0">Log Measurements</div>
+            <div className="inline-flex rounded-lg border border-border overflow-hidden text-[11px]" role="group" aria-label="Units">
+              {(["cm", "in"] as const).map((u) => (
+                <button
+                  key={u}
+                  type="button"
+                  onClick={() => changeUnit(u)}
+                  className={`px-2.5 py-1 font-medium transition-colors ${unit === u ? "bg-accent text-white" : "text-text-3 hover:text-text-1"}`}
+                >
+                  {u}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="text-[11px] text-text-3 mb-3 -mt-1">Girth around each muscle group — not clothing size.</div>
           <div className="mb-3">
             <label className="label">Date</label>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -187,7 +240,7 @@ export default function MeasurementsPage() {
             {FIELDS.map((f) => (
               <div key={f.key}>
                 <label className="label">
-                  {f.label} ({unitFor(f.key)})
+                  {f.label} ({dispUnit(f.key)})
                 </label>
                 <input
                   type="number"
@@ -268,8 +321,10 @@ export default function MeasurementsPage() {
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 {FIELDS.filter((f) => latest[f.key] != null).map((f) => {
-                  const cur = latest[f.key] as number;
-                  const old = prev ? (prev[f.key] as number | null) : null;
+                  const curCm = latest[f.key] as number;
+                  const oldCm = prev ? (prev[f.key] as number | null) : null;
+                  const cur = toDisp(f.key, curCm);
+                  const old = oldCm != null ? toDisp(f.key, oldCm) : null;
                   const delta = old != null ? Math.round((cur - old) * 10) / 10 : null;
                   const up = delta != null && delta > 0;
                   const down = delta != null && delta < 0;
@@ -279,7 +334,7 @@ export default function MeasurementsPage() {
                       <div className="flex items-baseline justify-between gap-1">
                         <span className="text-sm font-semibold text-text-1 tabular-nums">
                           {cur}
-                          <span className="text-text-3 font-normal text-[10px] ml-0.5">{unitFor(f.key)}</span>
+                          <span className="text-text-3 font-normal text-[10px] ml-0.5">{dispUnit(f.key)}</span>
                         </span>
                         {delta != null && delta !== 0 && (
                           <span className={`text-[11px] flex items-center gap-0.5 tabular-nums ${up ? "text-status-green" : "text-text-1"}`}>
@@ -300,7 +355,10 @@ export default function MeasurementsPage() {
 
       {/* ── History ── */}
       <div className="card">
-        <div className="card-title">Measurement History</div>
+        <div className="card-title flex items-center gap-2">
+          Measurement History
+          <span className="text-text-3 text-[10px] normal-case tracking-normal font-normal">· lengths in {unit}</span>
+        </div>
         {measurements.length === 0 ? (
           <div className="text-text-3 text-sm py-4">No entries yet.</div>
         ) : (
@@ -323,7 +381,7 @@ export default function MeasurementsPage() {
                     <td className="py-2 pr-3 text-text-2 whitespace-nowrap">{formatDate(m.logged_date)}</td>
                     {FIELDS.filter((f) => measurements.some((e) => e[f.key] != null)).map((f) => (
                       <td key={f.key} className="py-2 pr-3 text-right text-text-1 tabular-nums">
-                        {m[f.key] != null ? `${m[f.key]}${f.key === "body_fat_pct" ? "%" : ""}` : "—"}
+                        {m[f.key] != null ? `${toDisp(f.key, m[f.key] as number)}${f.key === "body_fat_pct" ? "%" : ""}` : "—"}
                       </td>
                     ))}
                     <td className="py-2">
