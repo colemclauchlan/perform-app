@@ -15,7 +15,9 @@ import * as THREE from "three";
  * (e.g. a MakeHuman export or a Sketchfab download) at the same path to upgrade.
  */
 
-const MODEL_URL = "/models/body.glb";
+// Bump the ?v query whenever the underlying body.glb changes so browsers/CDN
+// don't serve a stale cached copy (the path stays the same).
+const MODEL_URL = "/models/body.glb?v=3";
 useGLTF.preload(MODEL_URL);
 
 export type MeasurePoint = {
