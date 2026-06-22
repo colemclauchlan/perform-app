@@ -95,6 +95,24 @@ function StatCard({
   );
 }
 
+// Instrument readout cell for the Clinical Readout dashboard.
+function Readout({
+  label, value, unit, sub, tone, small,
+}: {
+  label: string; value: string | number; unit?: string; sub?: string; tone?: string; small?: boolean;
+}) {
+  return (
+    <div className="cell p-3">
+      <div className="eyebrow truncate">{label}</div>
+      <div className="mt-1.5 flex items-baseline gap-1 min-w-0">
+        <span className={`fig text-text-1 ${small ? "text-sm truncate" : "text-xl"}`}>{value}</span>
+        {unit && <span className="eyebrow">{unit}</span>}
+      </div>
+      {sub && <div className={`fig text-[10px] mt-1 truncate ${tone || "text-text-3"}`}>{sub}</div>}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const today = todayISO();
   const { data: profile } = useProfile();
@@ -333,32 +351,107 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-6 max-w-[1200px]">
+    <div className="clinical p-6 max-w-[1200px]">
       <DashboardSwitcher />
 
       {/* Hero spotlight — today's headline metric */}
-      <div className="panel hairline-top px-5 py-5 sm:px-6 sm:py-6 mb-5 animate-fade-in">
-        <div className="absolute -top-24 -right-16 w-72 h-72 bg-brand-gradient opacity-20 blur-3xl pointer-events-none" />
-        <div className="relative flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="text-[11px] uppercase tracking-[0.14em] text-text-3 font-semibold">
-              Health Dashboard
-            </div>
-            <h1 className="mt-1.5 text-3xl sm:text-4xl font-display font-bold leading-none tabular-nums">
-              <span className="text-brand">{Math.round(totals.cal).toLocaleString()}</span>
-              <span className="text-text-3 text-2xl font-normal"> / {targetCal.toLocaleString()}</span>
-              <span className="text-base text-text-2 font-normal ml-2">kcal today</span>
-            </h1>
-            <p className="text-sm text-text-2 mt-2">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long", year: "numeric", month: "long", day: "numeric",
-              })}
-              <span className="text-text-3"> · {calPct}% of goal · {Math.round(totals.p)}g protein</span>
-            </p>
+      <div className="cell px-5 py-5 sm:px-6 sm:py-6 mb-4 animate-fade-in">
+        {/* status strip */}
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="eyebrow sig">Health Dashboard</span>
+            <span className="w-px h-3" style={{ background: "var(--grid)" }} />
+            <span className="eyebrow truncate">
+              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+            </span>
           </div>
           <button className="btn btn-ghost btn-sm flex items-center gap-1.5" onClick={() => setCustomizeOpen(true)}>
             <Settings2 size={14} /> Customize
           </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 items-start">
+          {/* primary energy readout — the thesis */}
+          <div>
+            <div className="eyebrow mb-2">Energy intake · today</div>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span
+                className="fig text-5xl sm:text-6xl font-semibold leading-none"
+                style={{ color: calPct > 110 ? "var(--warn)" : "var(--sig)" }}
+              >
+                {Math.round(totals.cal).toLocaleString()}
+              </span>
+              <span className="fig text-text-3 text-xl">/ {targetCal.toLocaleString()}</span>
+              <span className="eyebrow ml-0.5">kcal</span>
+            </div>
+            <div className={`track mt-4 ${calPct > 100 ? "over" : ""}`}>
+              <span style={{ width: `${Math.min(100, calPct)}%` }} />
+            </div>
+            <div className="ticks mt-1" />
+            <div className="flex items-center justify-between mt-2">
+              <span className="eyebrow">{calPct}% of target</span>
+              <span className="fig text-[11px] text-text-2">
+                {targetCal - Math.round(totals.cal) >= 0
+                  ? `${(targetCal - Math.round(totals.cal)).toLocaleString()} remaining`
+                  : `${(Math.round(totals.cal) - targetCal).toLocaleString()} over`}
+              </span>
+            </div>
+          </div>
+
+          {/* macro instrument cells */}
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: "Protein", value: Math.round(totals.p), target: targetP, color: MACRO_HEX.protein, hib: true },
+              { label: "Carbs", value: Math.round(totals.c), target: profile?.target_carbs || 300, color: MACRO_HEX.carbs, hib: false },
+              { label: "Fat", value: Math.round(totals.f), target: profile?.target_fat || 80, color: MACRO_HEX.fat, hib: false },
+            ].map((m) => {
+              const pct = Math.min(100, Math.round((m.value / m.target) * 100)) || 0;
+              const good = m.hib ? m.value >= m.target : m.value <= m.target;
+              return (
+                <div key={m.label} className="cell p-2.5">
+                  <div className="eyebrow">{m.label}</div>
+                  <div className="mt-1.5">
+                    <span className="fig text-lg text-text-1">{m.value}</span>
+                    <span className="eyebrow ml-0.5">g</span>
+                  </div>
+                  <div className="track mt-2">
+                    <span style={{ width: `${pct}%`, background: m.color }} />
+                  </div>
+                  <div className="fig text-[10px] mt-1.5" style={{ color: good ? "#22d3a5" : "var(--warn)" }}>
+                    {m.value >= m.target ? `+${m.value - m.target}` : `−${m.target - m.value}`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* vitals row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5 pt-5" style={{ borderTop: "1px solid var(--grid)" }}>
+          <Readout
+            label="Body weight"
+            value={latestWeight ? latestWeight.weight : "—"}
+            unit={latestWeight ? latestWeight.unit : ""}
+            sub={bwDelta != null ? `${bwDelta >= 0 ? "+" : ""}${bwDelta} vs prev` : "no entries"}
+            tone={bwDelta != null && bwDelta > 0 ? "text-status-green" : bwDelta != null && bwDelta < 0 ? "text-text-1" : "text-text-3"}
+          />
+          <Readout
+            label="Active protocols"
+            value={activeProtocols.length}
+            sub={activeProtocols.length ? activeProtocols[0].name : "none active"}
+          />
+          <Readout
+            label="Doses due"
+            value={overdueDoses.length}
+            sub={overdueDoses.length ? "needs logging" : "all current"}
+            tone={overdueDoses.length ? "text-status-red" : "text-status-green"}
+          />
+          <Readout
+            label="Last session"
+            value={recentWorkout ? recentWorkout.name : "—"}
+            sub={recentWorkout ? formatDate(recentWorkout.session_date) : "no sessions"}
+            small
+          />
         </div>
       </div>
 
@@ -369,40 +462,6 @@ export default function DashboardPage() {
         activeProtocols={activeProtocols}
         onLogWeight={() => setWeightModal(true)}
       />
-
-      {/* Top stat cards */}
-      <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <StaggerItem>
-          <StatCard
-            label="Calories Today" value={Math.round(totals.cal)} unit={`/ ${targetCal}`}
-            sub={`${calPct}% of goal`} trend={calPct > 110 ? "down" : calPct >= 80 ? "up" : "neutral"}
-            icon={<Apple size={18} />} color={calPct > 110 ? "red" : "blue"}
-          />
-        </StaggerItem>
-        <StaggerItem>
-          <StatCard
-            label="Protein Today" value={`${Math.round(totals.p)}g`} unit={`/ ${targetP}g`}
-            sub={`${protPct}% of goal`} trend={totals.p >= targetP ? "up" : "neutral"}
-            icon={<Activity size={18} />} color={totals.p >= targetP ? "green" : "blue"}
-          />
-        </StaggerItem>
-        <StaggerItem>
-          <StatCard
-            label="Active Protocols" value={activeProtocols.length}
-            sub={activeProtocols.length ? activeProtocols[0].name : "No active cycles"}
-            icon={<FlaskConical size={18} />} color={overdueDoses.length > 0 ? "red" : "blue"}
-          />
-        </StaggerItem>
-        <StaggerItem>
-          <StatCard
-            label="Body Weight" value={latestWeight ? latestWeight.weight : "—"}
-            unit={latestWeight ? latestWeight.unit : ""}
-            sub={bwDelta != null ? `${bwDelta >= 0 ? "+" : ""}${bwDelta} vs prev` : "No entries yet"}
-            trend={bwDelta != null && bwDelta > 0 ? "up" : bwDelta != null && bwDelta < 0 ? "down" : "neutral"}
-            icon={<TrendingUp size={18} />} color="blue"
-          />
-        </StaggerItem>
-      </Stagger>
 
       {/* Overdue dose alert */}
       {overdueDoses.length > 0 && (
