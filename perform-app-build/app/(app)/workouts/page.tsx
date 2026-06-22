@@ -18,7 +18,7 @@ import { WorkoutBuilder } from "@/components/training/WorkoutBuilder";
 import { ExerciseDetailModal } from "@/components/training/ExerciseDetailModal";
 import { AIWorkoutModal } from "@/components/training/AIWorkoutModal";
 import { TemplateEditorModal } from "@/components/training/TemplateEditorModal";
-import { MuscleModel3DView } from "@/components/visual/MuscleModel3DView";
+import { MuscleBodyModel3DView } from "@/components/visual/MuscleBodyModel3DView";
 import { Reveal, Stagger, StaggerItem } from "@/components/visual/Motion";
 import { motion } from "framer-motion";
 import {
@@ -284,7 +284,7 @@ export default function WorkoutsPage() {
 
           {/* 3D muscle model — muscles trained this week glow red */}
           <div className="hidden sm:block">
-            <MuscleModel3DView primary="" secondary={musclesThisWeek} height={300} showLegend={false} caption="Worked this week" />
+            <MuscleBodyModel3DView primary="" secondary={musclesThisWeek} height={300} showLegend={false} caption="Worked this week" />
           </div>
         </div>
       </motion.div>

@@ -6,7 +6,7 @@ import { LiftProgression } from "@/hooks/useTraining";
 import { muscleColor } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { LiftProgressionChart } from "@/components/charts/LiftProgressionChart";
-import { MuscleModel3DView } from "@/components/visual/MuscleModel3DView";
+import { MuscleBodyModel3DView } from "@/components/visual/MuscleBodyModel3DView";
 import { Dumbbell, Target, Activity, Trophy, Lightbulb, AlertTriangle, ListChecks, LineChart } from "lucide-react";
 
 function MuscleDot({ muscle }: { muscle: string }) {
@@ -54,7 +54,7 @@ export function ExerciseDetailModal({
           <div className="flex items-center gap-1.5 text-[11px] font-semibold text-text-2 mb-1">
             <Target size={13} className="text-accent" /> Muscles worked
           </div>
-          <MuscleModel3DView primary={exercise.muscle_group} secondary={secondary} height={320} />
+          <MuscleBodyModel3DView primary={exercise.muscle_group} secondary={secondary} height={320} />
         </div>
 
         {progression && progression.sessions > 0 && (
