@@ -168,6 +168,9 @@ function PortionControl({ entry, onCommit }: { entry: FoodLogEntry; onCommit: (q
 
 const MEALS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack", "Pre-workout", "Post-workout"];
 
+// Built-in food groups shown in the Log Food color legend.
+const LEGEND_CATEGORIES = ["Protein", "Carb", "Fat", "Fruit", "Vegetable", "Dairy", "Supplement"];
+
 export default function NutritionPage() {
   const [date, setDate] = useState(todayISO());
   const { data: profile } = useProfile();
@@ -575,6 +578,15 @@ function FoodLogger({
               <Utensils size={16} className="text-white" />
             </span>
             Log Food
+          </div>
+          {/* Food-group color legend (matches the dots beside each logged food) */}
+          <div className="flex items-center gap-x-2.5 gap-y-1 flex-wrap text-[10px] text-text-3 flex-1 min-w-0">
+            {[...LEGEND_CATEGORIES, ...customCategories.map((c) => c.name)].map((cat) => (
+              <span key={cat} className="inline-flex items-center gap-1 whitespace-nowrap">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: foodCategoryColor(cat, customCategories) }} />
+                {cat}
+              </span>
+            ))}
           </div>
           <div className="flex gap-1 bg-bg-2 p-1 rounded-lg border border-border">
             {(["search", "manual"] as const).map((t) => (
