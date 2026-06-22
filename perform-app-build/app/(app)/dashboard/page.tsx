@@ -8,7 +8,7 @@ import { DashboardSwitcher } from "@/components/DashboardSwitcher";
 import { Reveal, Stagger, StaggerItem } from "@/components/visual/Motion";
 import { WeightChart } from "@/components/charts/WeightChart";
 import { useProfile, useFoodLog, useWeeklyCalories, useUpdateProfile } from "@/hooks/useNutrition";
-import { useProtocols, useLogDose } from "@/hooks/useCompounds";
+import { useProtocols } from "@/hooks/useCompounds";
 import { useBodyWeights, useWorkouts, useAddBodyWeight } from "@/hooks/useTraining";
 import { useAddHydration } from "@/hooks/useBodyMetrics";
 import { todayISO, formatDate, round, getNextDoseInfo, MACRO_HEX } from "@/lib/utils";
@@ -452,21 +452,6 @@ function QuickLog({
   onLogWeight: () => void;
 }) {
   const addHydration = useAddHydration();
-  const logDose = useLogDose();
-
-  // Find the most-urgent due compound across active protocols to one-tap log.
-  const dueCompound = (activeProtocols ?? [])
-    .flatMap((p) =>
-      (p.compounds ?? []).map((c) => ({
-        protocol_id: p.id,
-        compound_name: c.compound_name,
-        compound_unit: c.compound_unit,
-        dose: c.dose,
-        info: getNextDoseInfo(c.last_dose?.logged_at || null, c.frequency),
-      }))
-    )
-    .filter((c) => c.info.status === "overdue" || c.info.status === "urgent")
-    .sort((a, b) => (a.info.status === "overdue" ? -1 : 1) - (b.info.status === "overdue" ? -1 : 1))[0];
 
   function quickWater() {
     addHydration.mutate(
@@ -475,27 +460,7 @@ function QuickLog({
     );
   }
 
-  function quickDose() {
-    if (!dueCompound) {
-      toast("No doses due. Open Compounds to log.", { icon: "💊" });
-      return;
-    }
-    logDose.mutate(
-      {
-        protocol_id: dueCompound.protocol_id,
-        compound_name: dueCompound.compound_name,
-        dose_amount: dueCompound.dose,
-        compound_unit: dueCompound.compound_unit,
-        logged_at: new Date().toISOString(),
-      },
-      {
-        onSuccess: () => toast.success(`Logged ${dueCompound.compound_name}`),
-        onError: (e) => toast.error(e.message),
-      }
-    );
-  }
-
-  const Btn = ({ icon, label, onClick, href }: { icon: React.ReactNode; label: string; onClick?: () => void; href?: string }) => {
+  const Btn =({ icon, label, onClick, href }: { icon: React.ReactNode; label: string; onClick?: () => void; href?: string }) => {
     const cls = "flex items-center gap-2 rounded-xl border border-border bg-bg-2/80 hover:border-accent/40 hover:bg-bg-3 hover:shadow-card px-3.5 py-2.5 text-sm text-text-2 hover:text-text-1 transition-all duration-200 active:scale-[0.97]";
     const inner = <>{icon}<span className="font-medium">{label}</span></>;
     return href ? <Link href={href} className={cls}>{inner}</Link> : <button onClick={onClick} className={cls}>{inner}</button>;
@@ -506,11 +471,6 @@ function QuickLog({
       <Btn icon={<Utensils size={15} className="text-accent" />} label="Log Food" href="/nutrition" />
       <Btn icon={<Scale size={15} className="text-status-teal" />} label="Log Weight" onClick={onLogWeight} />
       <Btn icon={<Droplets size={15} className="text-status-teal" />} label="+250ml Water" onClick={quickWater} />
-      <Btn
-        icon={<FlaskConical size={15} className={dueCompound ? "text-status-red" : "text-accent"} />}
-        label={dueCompound ? `Log ${dueCompound.compound_name}` : "Log Dose"}
-        onClick={quickDose}
-      />
       <Btn icon={<Dumbbell size={15} className="text-accent" />} label="Log Workout" href="/workouts" />
     </div>
   );
