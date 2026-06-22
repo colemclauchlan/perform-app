@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Html, Bounds } from "@react-three/drei";
+import { OrbitControls, useGLTF, Html, Bounds, Billboard } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
@@ -42,12 +42,62 @@ const ANCHORS: Record<string, { y: number; x: number }> = {
   rightCalf: { y: 0.22, x: 0.34 },
 };
 
-function Readout({ point }: { point: MeasurePoint }) {
+// Modern measurement marker: a camera-facing target node (glow + ring + center),
+// bigger and clearer than a plain dot, with an invisible larger hit area.
+function Marker({ active, onOver, onOut, onClick }: { active: boolean; onOver: () => void; onOut: () => void; onClick: () => void }) {
+  const r = active ? 0.036 : 0.028;
+  const col = active ? "#9ecbff" : "#3b82f6";
+  return (
+    <Billboard>
+      <mesh>
+        <circleGeometry args={[r * 1.35, 28]} />
+        <meshBasicMaterial color={col} transparent opacity={0.16} toneMapped={false} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, 0, 0.001]}>
+        <ringGeometry args={[r * 0.58, r, 32]} />
+        <meshBasicMaterial color={col} transparent opacity={0.96} toneMapped={false} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, 0, 0.002]}>
+        <circleGeometry args={[r * 0.3, 18]} />
+        <meshBasicMaterial color="#ffffff" toneMapped={false} depthWrite={false} />
+      </mesh>
+      <mesh
+        position={[0, 0, 0.003]}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          onOver();
+        }}
+        onPointerOut={(e) => {
+          e.stopPropagation();
+          onOut();
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+      >
+        <circleGeometry args={[r * 1.6, 18]} />
+        <meshBasicMaterial transparent opacity={0} toneMapped={false} depthWrite={false} />
+      </mesh>
+    </Billboard>
+  );
+}
+
+// Readout card — click it (or the marker) to close.
+function Readout({ point, onClose }: { point: MeasurePoint; onClose: () => void }) {
   const up = point.delta != null && point.delta > 0;
   const down = point.delta != null && point.delta < 0;
   return (
-    <Html center zIndexRange={[40, 0]} position={[0, 0.07, 0]} style={{ pointerEvents: "none" }}>
-      <div className="rounded-lg border border-white/15 bg-bg-1/90 backdrop-blur-sm px-2 py-1 leading-tight shadow-lg whitespace-nowrap animate-scale-in">
+    <Html center zIndexRange={[40, 0]} position={[0, 0.09, 0]} style={{ pointerEvents: "auto" }}>
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        title="Click to close"
+        className="cursor-pointer rounded-lg border border-white/15 bg-bg-1/90 backdrop-blur-sm pl-2 pr-5 py-1 leading-tight shadow-lg whitespace-nowrap animate-scale-in relative select-none"
+      >
+        <span className="absolute top-0.5 right-1.5 text-text-3 text-[11px] leading-none hover:text-text-1">×</span>
         <div className="text-[10px] uppercase tracking-wide text-text-3">{point.label}</div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-[13px] font-semibold text-text-1 tabular-nums">
@@ -136,6 +186,14 @@ function Body({ points }: { points: MeasurePoint[] }) {
       return n;
     });
   }
+  function closePoint(id: string) {
+    setPinned((s) => {
+      const n = new Set(s);
+      n.delete(id);
+      return n;
+    });
+    setHovered((h) => (h === id ? null : h));
+  }
 
   return (
     <>
@@ -149,26 +207,19 @@ function Body({ points }: { points: MeasurePoint[] }) {
         const visible = hovered === p.id || pinned.has(p.id);
         return (
           <group key={p.id} position={pos}>
-            <mesh
-              onPointerOver={(e) => {
-                e.stopPropagation();
+            <Marker
+              active={visible}
+              onOver={() => {
                 setHovered(p.id);
                 document.body.style.cursor = "pointer";
               }}
-              onPointerOut={(e) => {
-                e.stopPropagation();
+              onOut={() => {
                 setHovered((h) => (h === p.id ? null : h));
                 document.body.style.cursor = "auto";
               }}
-              onClick={(e) => {
-                e.stopPropagation();
-                togglePin(p.id);
-              }}
-            >
-              <sphereGeometry args={[visible ? 0.022 : 0.015, 16, 16]} />
-              <meshBasicMaterial color={visible ? "#7cc0ff" : "#2563eb"} toneMapped={false} />
-            </mesh>
-            {visible && <Readout point={p} />}
+              onClick={() => togglePin(p.id)}
+            />
+            {visible && <Readout point={p} onClose={() => closePoint(p.id)} />}
           </group>
         );
       })}
