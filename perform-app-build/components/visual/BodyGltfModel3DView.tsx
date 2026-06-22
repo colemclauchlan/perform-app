@@ -36,7 +36,7 @@ export function BodyGltfModel3DView({
       >
         <BodyGltfModel3D points={points} autoRotate={autoRotate} />
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-text-3 pointer-events-none select-none">
-          drag to rotate · front ↔ back
+          drag to rotate · scroll to zoom · right-drag to pan
         </div>
       </div>
       {caption && <div className="text-center text-[11px] text-text-3 mt-2">{caption}</div>}

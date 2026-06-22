@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Html } from "@react-three/drei";
+import { OrbitControls, useGLTF, Html, Bounds } from "@react-three/drei";
 import { Suspense, useMemo } from "react";
 import * as THREE from "three";
 
@@ -128,23 +128,28 @@ function Body({ points }: { points: MeasurePoint[] }) {
 
 export default function BodyGltfModel3D({ points = [], autoRotate = false }: { points?: MeasurePoint[]; autoRotate?: boolean }) {
   return (
-    <Canvas dpr={[1, 1.8]} camera={{ position: [1.0, 0.15, 4.2], fov: 32 }} gl={{ antialias: true, alpha: true }} style={{ background: "transparent" }}>
+    <Canvas dpr={[1, 1.8]} camera={{ position: [0.4, 0.1, 5.2], fov: 30 }} gl={{ antialias: true, alpha: true }} style={{ background: "transparent" }}>
       <ambientLight intensity={0.75} color="#46506a" />
       <hemisphereLight intensity={0.3} groundColor="#0b0f17" />
       <directionalLight position={[3, 5, 4]} intensity={2.3} />
       <directionalLight position={[-4, 2, -3]} intensity={1.5} color="#6f8cff" />
       <directionalLight position={[-2, -1.5, 3]} intensity={0.45} color="#ff9d6f" />
       <Suspense fallback={null}>
-        <Body points={points} />
+        {/* Auto-fit the body to the viewport (robust to any model's scale) */}
+        <Bounds fit clip observe margin={1.15}>
+          <Body points={points} />
+        </Bounds>
       </Suspense>
       <OrbitControls
-        enablePan={false}
-        enableZoom={false}
+        makeDefault
+        enablePan
+        enableZoom
         autoRotate={autoRotate}
         autoRotateSpeed={0.9}
-        target={[0, 0, 0]}
-        minPolarAngle={Math.PI / 2.6}
-        maxPolarAngle={Math.PI / 1.75}
+        minDistance={1.5}
+        maxDistance={16}
+        minPolarAngle={Math.PI / 3.4}
+        maxPolarAngle={Math.PI / 1.5}
       />
     </Canvas>
   );
