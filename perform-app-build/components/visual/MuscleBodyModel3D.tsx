@@ -102,22 +102,9 @@ const SEGMENTS: Seg[] = [
   { r: "off", x: 0.2, y: 0.03, z: 0.2 },
 ];
 
-// Nearest anatomical point for a vertex (y weighted to the x/z scale).
-function classify(fx: number, fy: number, fz: number): Region | "off" {
-  let best: Region | "off" = "off";
-  let bestD = Infinity;
-  for (const s of SEGMENTS) {
-    const dx = fx - s.x;
-    const dy = (fy - s.y) * 2.1;
-    const dz = fz - s.z;
-    const d = dx * dx + dy * dy + dz * dz;
-    if (d < bestD) {
-      bestD = d;
-      best = s.r;
-    }
-  }
-  return best;
-}
+// Width of the soft transition between adjacent regions (fraction-space units).
+// Larger = more feathering at muscle-group boundaries.
+const FEATHER = 0.11;
 
 const CLAY = new THREE.Color("#aab4c6");
 const PRIMARY = new THREE.Color("#ff2424");
@@ -149,12 +136,32 @@ function paintMuscles(scene: THREE.Object3D, levels: Record<Region, Level>): THR
       const fx = (v.x - center.x) / hw;
       const fy = (v.y - minY) / hh;
       const fz = (FRONT_Z * (v.z - center.z)) / hd;
-      const reg = classify(fx, fy, fz);
-      const lvl = reg === "off" ? "off" : levels[reg];
-      const col = lvl === "primary" ? PRIMARY : lvl === "secondary" ? SECONDARY : CLAY;
-      colors[i * 3] = col.r;
-      colors[i * 3 + 1] = col.g;
-      colors[i * 3 + 2] = col.b;
+      // Nearest distance to each colour class (primary / secondary / neutral),
+      // then a soft blend across boundaries for a little feathering.
+      let dP = Infinity;
+      let dS = Infinity;
+      let dO = Infinity;
+      for (const s of SEGMENTS) {
+        const dx = fx - s.x;
+        const dy = (fy - s.y) * 2.1;
+        const dz = fz - s.z;
+        const d2 = dx * dx + dy * dy + dz * dz;
+        const lvl = s.r === "off" ? "off" : levels[s.r];
+        if (lvl === "primary") { if (d2 < dP) dP = d2; }
+        else if (lvl === "secondary") { if (d2 < dS) dS = d2; }
+        else if (d2 < dO) dO = d2;
+      }
+      const rp = Math.sqrt(dP);
+      const rs = Math.sqrt(dS);
+      const ro = Math.sqrt(dO);
+      const minD = Math.min(rp, rs, ro);
+      const wp = Math.max(0, 1 - (rp - minD) / FEATHER);
+      const ws = Math.max(0, 1 - (rs - minD) / FEATHER);
+      const wo = Math.max(0, 1 - (ro - minD) / FEATHER);
+      const wsum = wp + ws + wo || 1;
+      colors[i * 3] = (PRIMARY.r * wp + SECONDARY.r * ws + CLAY.r * wo) / wsum;
+      colors[i * 3 + 1] = (PRIMARY.g * wp + SECONDARY.g * ws + CLAY.g * wo) / wsum;
+      colors[i * 3 + 2] = (PRIMARY.b * wp + SECONDARY.b * ws + CLAY.b * wo) / wsum;
     }
     geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     m.geometry = geo;
