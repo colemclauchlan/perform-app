@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Sidebar } from "@/components/Sidebar";
+import { TopBar } from "@/components/TopBar";
 import { MobileNav } from "@/components/MobileNav";
 import { PageTransition } from "@/components/PageTransition";
 import { Logo } from "@/components/ui/Logo";
@@ -25,16 +26,21 @@ export default async function AppLayout({
       <div className="hidden md:block">
         <Sidebar />
       </div>
-      <main className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
-        {/* Mobile top bar — brand logo on the left (tap to go home). Desktop uses
-            the sidebar logo, so this is hidden there. */}
-        <div className="md:hidden sticky top-0 z-20 flex justify-start px-5 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] bg-bg-0/70 backdrop-blur-xl border-b border-border/80">
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Desktop topbar — page title + date, search, pulse line, profile. */}
+        <div className="hidden md:block">
+          <TopBar email={user.email} />
+        </div>
+        {/* Mobile top bar — brand logo on the left (tap to go home). */}
+        <div className="md:hidden sticky top-0 z-20 flex justify-start px-5 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] bg-bg-1/80 backdrop-blur-xl border-b border-border">
           <Link href="/dashboard" className="transition-transform active:scale-95" aria-label="Go to Health Dashboard">
             <Logo variant="icon" size={40} className="rounded-lg" />
           </Link>
         </div>
-        <PageTransition>{children}</PageTransition>
-      </main>
+        <main className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
+          <PageTransition>{children}</PageTransition>
+        </main>
+      </div>
       <MobileNav />
     </div>
   );

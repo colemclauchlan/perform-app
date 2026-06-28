@@ -4,103 +4,129 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase-client";
-import { useProfile, useUpdateProfile } from "@/hooks/useNutrition";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
 import { PulseLine } from "@/components/ui/PulseLine";
 import {
-  LayoutDashboard,
-  Salad,
-  FlaskConical,
-  Dumbbell,
-  Scale,
-  BookOpen,
-  Pill,
-  ListChecks,
-  Settings,
-  LogOut,
-  Footprints,
-  Ruler,
-  Droplets,
-  Moon,
-  Sparkles,
-  Camera,
-  TestTubes,
-  Calculator,
-  UtensilsCrossed,
-  Activity,
-  Syringe,
-  GripVertical,
-  HeartPulse,
-  Droplet,
+  LayoutDashboard, HeartPulse, Dumbbell, FlaskConical, Sparkles, Salad,
+  Utensils, ClipboardList, Droplets, Camera, ListChecks, Calculator,
+  TestTubes, Droplet, Activity, Scale, Ruler, Moon, Footprints, BookOpen,
+  Apple, Pill, Settings, ChevronDown, LogOut,
 } from "lucide-react";
 
-type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?: number }> };
+type Leaf = { href: string; label: string; icon: React.ComponentType<{ size?: number }> };
+type Parent = { id: string; label: string; icon: React.ComponentType<{ size?: number }>; href?: string; children?: Leaf[] };
+type Group = { group: string; items: Parent[] };
 
-// Pinned top — primary dashboards + AI
-const PINNED_TOP: NavItem[] = [
-  { href: "/dashboard", label: "Health Dashboard", icon: LayoutDashboard },
-  { href: "/gym", label: "Gym Dashboard", icon: Activity },
-  { href: "/ped-dashboard", label: "PED Dashboard", icon: Syringe },
-  { href: "/coach", label: "AI Coach", icon: Sparkles },
+// Grouped, expandable nav — mirrors the Vital Signal kit shell, mapped to the
+// app's real routes.
+const NAV: Group[] = [
+  {
+    group: "Overview",
+    items: [
+      {
+        id: "dashboards", label: "Dashboards", icon: LayoutDashboard,
+        children: [
+          { href: "/dashboard", label: "Health", icon: HeartPulse },
+          { href: "/gym", label: "Gym", icon: Dumbbell },
+          { href: "/ped-dashboard", label: "PED", icon: FlaskConical },
+          { href: "/coach", label: "AI Coach", icon: Sparkles },
+        ],
+      },
+    ],
+  },
+  {
+    group: "Track",
+    items: [
+      {
+        id: "nutrition", label: "Nutrition", icon: Salad,
+        children: [
+          { href: "/nutrition", label: "Food & Meal Log", icon: Utensils },
+          { href: "/meal-plans", label: "Meal Plans", icon: ClipboardList },
+          { href: "/hydration", label: "Hydration", icon: Droplets },
+        ],
+      },
+      {
+        id: "training", label: "Training", icon: Dumbbell,
+        children: [
+          { href: "/workouts", label: "Log a Workout", icon: ClipboardList },
+          { href: "/checkin", label: "Check-ins", icon: Camera },
+          { href: "/catalog/exercises", label: "Exercise Library", icon: ListChecks },
+        ],
+      },
+      {
+        id: "compounds", label: "Compounds", icon: FlaskConical,
+        children: [
+          { href: "/compounds", label: "Protocols", icon: FlaskConical },
+          { href: "/peptide-calculator", label: "Peptide Calculator", icon: Calculator },
+        ],
+      },
+      {
+        id: "bloodwork", label: "Bloodwork", icon: Activity,
+        children: [
+          { href: "/bloodwork", label: "Blood Panels", icon: TestTubes },
+          { href: "/blood-pressure", label: "Blood Pressure", icon: HeartPulse },
+          { href: "/blood-sugar", label: "Blood Sugar", icon: Droplet },
+        ],
+      },
+      {
+        id: "vitals", label: "Health & Vitals", icon: HeartPulse,
+        children: [
+          { href: "/weight", label: "Body Weight", icon: Scale },
+          { href: "/measurements", label: "Measurements", icon: Ruler },
+          { href: "/sleep", label: "Sleep", icon: Moon },
+          { href: "/steps", label: "Steps", icon: Footprints },
+        ],
+      },
+    ],
+  },
+  {
+    group: "Manage",
+    items: [
+      {
+        id: "catalogs", label: "Catalogs", icon: BookOpen,
+        children: [
+          { href: "/catalog/food", label: "Food", icon: Apple },
+          { href: "/catalog/compounds", label: "Compounds", icon: Pill },
+          { href: "/catalog/exercises", label: "Exercises", icon: ListChecks },
+        ],
+      },
+      { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
+    ],
+  },
 ];
 
-// Reorderable "Track" list (drag to reorder; persists to preferences)
-const TRACK_DEFAULT: NavItem[] = [
-  { href: "/nutrition", label: "Nutrition", icon: Salad },
-  { href: "/meal-plans", label: "Meal Plans", icon: UtensilsCrossed },
-  { href: "/workouts", label: "Workouts", icon: Dumbbell },
-  { href: "/compounds", label: "Compounds", icon: FlaskConical },
-  { href: "/checkin", label: "Check-in", icon: Camera },
-  { href: "/bloodwork", label: "Bloodwork", icon: TestTubes },
-  { href: "/blood-pressure", label: "Blood Pressure", icon: HeartPulse },
-  { href: "/blood-sugar", label: "Blood Sugar", icon: Droplet },
-  { href: "/peptide-calculator", label: "Peptide Calculator", icon: Calculator },
-  { href: "/weight", label: "Body Weight", icon: Scale },
-  { href: "/measurements", label: "Measurements", icon: Ruler },
-  { href: "/steps", label: "Steps", icon: Footprints },
-  { href: "/hydration", label: "Hydration", icon: Droplets },
-  { href: "/sleep", label: "Sleep", icon: Moon },
-];
-
-const PINNED_BOTTOM: NavItem[] = [
-  { href: "/catalog/food", label: "Food Catalog", icon: BookOpen },
-  { href: "/catalog/compounds", label: "Compound Catalog", icon: Pill },
-  { href: "/catalog/exercises", label: "Exercise Catalog", icon: ListChecks },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
-
-function orderTrack(saved: string[] | undefined): NavItem[] {
-  if (!saved || saved.length === 0) return TRACK_DEFAULT;
-  const map = new Map(TRACK_DEFAULT.map((i) => [i.href, i]));
-  const out: NavItem[] = [];
-  saved.forEach((href) => {
-    const item = map.get(href);
-    if (item) {
-      out.push(item);
-      map.delete(href);
-    }
-  });
-  // append any new items not in saved order
-  map.forEach((item) => out.push(item));
-  return out;
+function LogoLockup() {
+  return (
+    <span className="inline-flex items-center gap-2.5">
+      <Logo variant="icon" size={30} className="rounded-lg" />
+      <span className="font-display font-bold text-[16px] tracking-tight leading-none">
+        BodyTrack<span className="text-accent">:AI</span>
+      </span>
+    </span>
+  );
 }
 
-export function Sidebar() {
-  const pathname = usePathname();
+export function Sidebar({ activePath }: { activePath?: string } = {}) {
+  const realPath = usePathname();
+  const pathname = activePath ?? realPath;
   const router = useRouter();
   const supabase = createClient();
-  const { data: profile } = useProfile();
-  const updateProfile = useUpdateProfile();
 
-  const [track, setTrack] = useState<NavItem[]>(TRACK_DEFAULT);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [overIndex, setOverIndex] = useState<number | null>(null);
+  const childActive = (p: Parent) => p.children?.some((c) => pathname === c.href || pathname.startsWith(c.href + "/")) ?? false;
 
-  // Sync ordering from saved preferences once profile loads
+  const [open, setOpen] = useState<Record<string, boolean>>({ dashboards: true });
+
+  // Auto-expand the group that owns the active route.
   useEffect(() => {
-    setTrack(orderTrack(profile?.preferences?.tab_order));
-  }, [profile?.preferences?.tab_order]);
+    NAV.forEach((g) =>
+      g.items.forEach((it) => {
+        if (it.children && it.children.some((c) => pathname === c.href || pathname.startsWith(c.href + "/"))) {
+          setOpen((o) => (o[it.id] ? o : { ...o, [it.id]: true }));
+        }
+      })
+    );
+  }, [pathname]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -108,135 +134,89 @@ export function Sidebar() {
     router.refresh();
   }
 
-  function persistOrder(items: NavItem[]) {
-    const tab_order = items.map((i) => i.href);
-    updateProfile.mutate({
-      preferences: { ...(profile?.preferences || {}), tab_order },
-    });
-  }
-
-  function onDrop(targetIndex: number) {
-    if (dragIndex === null || dragIndex === targetIndex) {
-      setDragIndex(null);
-      setOverIndex(null);
-      return;
-    }
-    const next = [...track];
-    const [moved] = next.splice(dragIndex, 1);
-    next.splice(targetIndex, 0, moved);
-    setTrack(next);
-    persistOrder(next);
-    setDragIndex(null);
-    setOverIndex(null);
-  }
-
-  const renderLink = (item: NavItem) => {
-    const active = pathname === item.href;
-    const Icon = item.icon;
-    return (
-      <Link
-        href={item.href}
-        className={cn(
-          "flex items-center gap-2.5 px-3 py-2 mx-1 text-[13px] transition-all border-l-2 rounded-r-lg group",
-          active
-            ? "text-accent bg-accent-dim border-accent font-medium shadow-[inset_0_0_18px_-8px_rgba(24,155,245,0.5)]"
-            : "text-text-2 border-transparent hover:text-text-1 hover:bg-bg-2 hover:translate-x-0.5"
-        )}
-      >
-        <Icon size={15} />
-        {item.label}
-      </Link>
-    );
-  };
-
   return (
-    <aside className="w-[230px] flex-shrink-0 bg-bg-1/80 backdrop-blur-xl border-r border-border flex flex-col py-4 h-screen sticky top-0">
-      {/* Logo + brand — click returns to Health Dashboard */}
-      <Link href="/dashboard" className="px-3 pb-5 flex items-center justify-center group">
-        <Logo
-          variant="icon"
-          size={72}
-          className="rounded-full ring-1 ring-white/10 drop-shadow-[0_6px_20px_rgba(24,155,245,0.35)] transition-transform group-hover:scale-105"
-        />
+    <aside
+      className="flex-none h-screen sticky top-0 flex flex-col py-4 bg-bg-1 border-r border-border"
+      style={{ width: 220 }}
+    >
+      <Link href="/dashboard" className="px-4 pb-4 group">
+        <LogoLockup />
       </Link>
 
       <nav className="flex-1 overflow-y-auto">
-        {/* Overview (pinned) */}
-        <div className="px-4 pt-1 pb-1.5 text-[9px] uppercase tracking-widest text-text-3 font-semibold">
-          Overview
-        </div>
-        {PINNED_TOP.map((item) => (
-          <div key={item.href}>{renderLink(item)}</div>
-        ))}
-
-        {/* Track (reorderable) */}
-        <div className="px-4 pt-4 pb-1.5 text-[9px] uppercase tracking-widest text-text-3 font-semibold flex items-center gap-1">
-          Track <span className="text-text-3/50 normal-case tracking-normal">· drag to reorder</span>
-        </div>
-        {track.map((item, i) => {
-          const Icon = item.icon;
-          const active = pathname === item.href;
-          return (
-            <div
-              key={item.href}
-              draggable
-              onDragStart={() => setDragIndex(i)}
-              onDragEnter={() => setOverIndex(i)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => onDrop(i)}
-              onDragEnd={() => {
-                setDragIndex(null);
-                setOverIndex(null);
-              }}
-              className={cn(
-                "group/item flex items-center transition-all",
-                dragIndex === i && "opacity-40",
-                overIndex === i && dragIndex !== null && dragIndex !== i && "border-t-2 border-accent"
-              )}
-            >
-              <span className="pl-2 text-text-3/40 group-hover/item:text-text-3 cursor-grab active:cursor-grabbing">
-                <GripVertical size={13} />
-              </span>
-              <Link
-                href={item.href}
-                className={cn(
-                  "flex-1 flex items-center gap-2.5 px-2 py-2 mr-1 text-[13px] transition-all border-l-2 rounded-r-lg",
-                  active
-                    ? "text-accent bg-accent-dim border-accent font-medium shadow-[inset_0_0_18px_-8px_rgba(24,155,245,0.5)]"
-                    : "text-text-2 border-transparent hover:text-text-1 hover:bg-bg-2"
-                )}
-              >
-                <Icon size={15} />
-                {item.label}
-              </Link>
-            </div>
-          );
-        })}
-
-        {/* Manage (pinned) */}
-        <div className="px-4 pt-4 pb-1.5 text-[9px] uppercase tracking-widest text-text-3 font-semibold">
-          Manage
-        </div>
-        {PINNED_BOTTOM.map((item) => (
-          <div key={item.href}>{renderLink(item)}</div>
+        {NAV.map((g) => (
+          <div key={g.group} className="mb-1">
+            <div className="lab-label px-4 pt-3.5 pb-1.5 text-[9.5px] tracking-[0.16em]">{g.group}</div>
+            {g.items.map((it) => {
+              const Icon = it.icon;
+              const hasChildren = !!it.children?.length;
+              const expanded = !!open[it.id];
+              const selfActive = it.href ? pathname === it.href || pathname.startsWith(it.href + "/") : false;
+              const highlight = selfActive || (hasChildren && childActive(it) && !expanded);
+              const row = (
+                <span
+                  className={cn(
+                    "flex items-center gap-2 w-[calc(100%-8px)] mx-1 px-2.5 py-2 rounded-r-md border-l-2 text-[13px] transition-colors cursor-pointer",
+                    highlight
+                      ? "bg-accent-dim border-accent text-accent-bright font-semibold"
+                      : "border-transparent text-text-2 hover:text-text-1 hover:bg-bg-2"
+                  )}
+                >
+                  <Icon size={15} />
+                  <span className="flex-1">{it.label}</span>
+                  {hasChildren && (
+                    <ChevronDown
+                      size={13}
+                      className={cn("text-text-3 transition-transform", expanded && "rotate-180")}
+                    />
+                  )}
+                </span>
+              );
+              return (
+                <div key={it.id}>
+                  {hasChildren ? (
+                    <button type="button" className="block w-full text-left" onClick={() => setOpen((o) => ({ ...o, [it.id]: !o[it.id] }))}>
+                      {row}
+                    </button>
+                  ) : (
+                    <Link href={it.href!}>{row}</Link>
+                  )}
+                  {hasChildren && expanded && (
+                    <div>
+                      {it.children!.map((c) => {
+                        const CIcon = c.icon;
+                        const cActive = pathname === c.href || pathname.startsWith(c.href + "/");
+                        return (
+                          <Link
+                            key={c.href}
+                            href={c.href}
+                            className={cn(
+                              "flex items-center gap-2 w-[calc(100%-8px)] mx-1 pl-8 pr-3 py-[7px] rounded-r-md border-l-2 text-[12.5px] transition-colors",
+                              cActive
+                                ? "bg-accent-dim border-accent text-accent-bright font-semibold"
+                                : "border-transparent text-text-2 hover:text-text-1 hover:bg-bg-2"
+                            )}
+                          >
+                            <CIcon size={14} />
+                            <span className="flex-1">{c.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ))}
       </nav>
 
-      {/* Connective tissue + lab identifier — the system signs itself. */}
-      <div className="px-4 pt-3 mt-1">
-        <PulseLine width={190} height={14} opacity={0.4} />
-        <div className="flex items-center justify-between mt-2">
-          <span className="lab-label">BTAI · VITAL SIGNAL</span>
-          <span className="data text-[9px] text-status-green flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-status-green signal-node" />
-            SYS-OK
-          </span>
-        </div>
+      <div className="px-4 pt-2">
+        <PulseLine width={186} height={14} opacity={0.4} />
       </div>
-
       <button
         onClick={handleLogout}
-        className="flex items-center gap-2.5 mx-2 px-3 py-2.5 text-[13px] text-text-2 hover:text-status-red hover:bg-bg-2 rounded-lg transition-colors mt-2"
+        className="flex items-center gap-2.5 mx-2 mt-1 px-3 py-2.5 text-[13px] text-text-3 hover:text-status-red hover:bg-bg-2 rounded-md transition-colors"
       >
         <LogOut size={15} />
         Log out

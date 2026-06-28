@@ -1,6 +1,11 @@
 import { cn } from "@/lib/utils";
-import { PulseLine } from "@/components/ui/PulseLine";
 
+/**
+ * In-content page header. The shell's TopBar now owns the page title + subtitle
+ * (matching the Vital Signal kit), so on desktop this renders only the page's
+ * action buttons (right-aligned). On mobile — where there is no desktop TopBar —
+ * it still shows the title so the screen is labelled.
+ */
 export function PageHeader({
   title,
   subtitle,
@@ -9,27 +14,22 @@ export function PageHeader({
 }: {
   title: string;
   subtitle?: string;
-  /** Optional mono lab-label above the title (e.g. "HEALTH · OVERVIEW"). */
+  /** Optional mono lab-label above the title (mobile only). */
   eyebrow?: string;
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex justify-between items-start mb-7 flex-wrap gap-3 animate-fade-in">
-      <div className="relative pl-4">
-        {/* Signal spine — a gradient rule capped by the bright node (signal peak). */}
+    <div className="flex justify-between items-start mb-5 flex-wrap gap-3 animate-fade-in">
+      {/* Mobile-only title (desktop gets it from the TopBar). */}
+      <div className="md:hidden relative pl-4">
         <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-brand-gradient" />
-        <span className="signal-node absolute left-[-2px] top-0.5 w-[7px] h-[7px] rounded-full bg-accent-bright" />
-
         {eyebrow && <div className="lab-label mb-1.5">{eyebrow}</div>}
-        <h1 className="font-display font-bold tracking-tight leading-[1.02] text-[27px] sm:text-[32px]">
-          {title}
-        </h1>
-        {subtitle && <p className="text-sm text-text-2 mt-2">{subtitle}</p>}
-
-        {/* Connective tissue — a single heartbeat threading under the title. */}
-        <PulseLine className="mt-3 -ml-0.5" width={200} height={16} opacity={0.32} />
+        <h1 className="font-display font-bold tracking-tight leading-[1.02] text-[24px]">{title}</h1>
+        {subtitle && <p className="text-sm text-text-2 mt-1.5">{subtitle}</p>}
       </div>
-      {action}
+      {/* Spacer keeps the action right-aligned on desktop. */}
+      <div className="hidden md:block" />
+      {action && <div className="flex-none">{action}</div>}
     </div>
   );
 }

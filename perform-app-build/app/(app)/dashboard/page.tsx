@@ -1,6 +1,5 @@
 "use client";
 
-import { DashboardSwitcher } from "@/components/DashboardSwitcher";
 import { SignalHero } from "@/components/dashboard/SignalHero";
 import {
   BarChart,
@@ -137,8 +136,6 @@ export default function DashboardPage() {
 
   return (
     <div className="p-6 max-w-[1200px]">
-      <DashboardSwitcher />
-
       <SignalHero
         eyebrow={`Health · ${dateLabel}`}
         title={heroTitle}
