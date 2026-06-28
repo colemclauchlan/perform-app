@@ -46,6 +46,7 @@ export default function CheckinPage() {
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
+        eyebrow="PHYSIQUE · CHECK-IN"
         title="Check-in"
         subtitle="Track your physique with progress photos over time"
         action={

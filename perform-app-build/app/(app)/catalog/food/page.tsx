@@ -56,6 +56,7 @@ export default function FoodCatalogPage() {
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
+        eyebrow="LIBRARY · FOOD"
         title="Food Catalog"
         subtitle="Search, add and manage foods"
         action={

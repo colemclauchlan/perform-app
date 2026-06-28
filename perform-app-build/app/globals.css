@@ -314,6 +314,59 @@ main,
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ── Vital Signal structural motifs ───────────────────────────────────────── */
+
+/* Lab-label / eyebrow — the mono "gauge" register, used outside cards too. */
+.lab-label {
+  font-family: var(--font-geist-mono), "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6c7f99;
+}
+
+/* Mono data readout — doses, timers, IDs, deltas, units. Tabular by default. */
+.data {
+  font-family: var(--font-geist-mono), "JetBrains Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Monumental display figure — the "monument" register for big KPI numbers. */
+.metric {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  font-variant-numeric: tabular-nums;
+  color: #eef3fa;
+}
+
+/* Inset well — sinks a data readout into the surface (the instrument bezel). */
+.inset-well {
+  background: #131d2c;
+  border: 1px solid #243349;
+  border-radius: 10px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+/* The pulse waveform — a single ECG line as connective tissue. Drop into a
+   relative container; it traces once on mount. */
+.pulse-line path {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: pulseTrace 1.6s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+@keyframes pulseTrace {
+  to { stroke-dashoffset: 0; }
+}
+
+/* The bright signal node — one glowing point per layout. */
+.signal-node {
+  box-shadow: 0 0 0 3px rgba(24, 155, 245, 0.18), 0 0 14px rgba(24, 155, 245, 0.55);
+}
+
 /* Tab panel */
 .tab-panel {
   animation: fadeIn 0.2s ease-out forwards;
@@ -340,8 +393,10 @@ main,
   .glass {
     @apply bg-bg-1/60 border border-white/10 backdrop-blur-2xl shadow-lift;
   }
+  /* Lab-label eyebrow — Geist Mono, the "gauge" register. The single most
+     identity-defining text style; every card title reads as an instrument label. */
   .card-title {
-    @apply text-[11px] uppercase tracking-[0.14em] text-text-3 font-semibold mb-3;
+    @apply font-mono text-[10.5px] uppercase tracking-[0.18em] text-text-3 font-medium mb-3;
   }
   .btn {
     @apply inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-150 border-none active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none select-none;
@@ -362,7 +417,7 @@ main,
     @apply text-xs text-text-2 block mb-1;
   }
   .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium;
+    @apply inline-flex items-center font-mono px-2 py-0.5 rounded-full text-[10.5px] font-medium tracking-[0.04em];
   }
   .stat-card {
     @apply relative bg-bg-2/90 border border-border rounded-xl p-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-border-2 hover:shadow-lift;

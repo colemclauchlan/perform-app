@@ -167,6 +167,7 @@ export default function PedDashboardPage() {
     <div className="p-6 max-w-[1200px]">
       <DashboardSwitcher />
       <PageHeader
+        eyebrow="PROTOCOL · OVERVIEW"
         title="PED Dashboard"
         subtitle="Cycle overview, dose schedule and simulated blood levels"
         action={

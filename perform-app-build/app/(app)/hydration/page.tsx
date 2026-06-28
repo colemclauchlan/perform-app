@@ -131,7 +131,7 @@ export default function HydrationPage() {
 
   return (
     <div className="p-6 max-w-[900px]">
-      <PageHeader title="Hydration" subtitle="Track your daily water intake" />
+      <PageHeader eyebrow="VITALS · HYDRATION" title="Hydration" subtitle="Track your daily water intake" />
 
       {/* Big ring/progress */}
       <div className="card mb-5">

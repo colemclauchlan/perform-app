@@ -166,7 +166,7 @@ export default function MeasurementsPage() {
 
   return (
     <div className="p-6 max-w-[1100px]">
-      <PageHeader title="Body Measurements" subtitle="Track your physique — plotted onto a 3D model" />
+      <PageHeader eyebrow="PHYSIQUE · GIRTH MAP" title="Body Measurements" subtitle="Track your physique — plotted onto a 3D model" />
 
       {/* ── Hero: 3D body with measurements plotted on it ── */}
       <Reveal>

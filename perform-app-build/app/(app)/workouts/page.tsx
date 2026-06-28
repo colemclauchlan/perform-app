@@ -196,6 +196,7 @@ export default function WorkoutsPage() {
   return (
     <div className="p-6 max-w-[1200px]">
       <PageHeader
+        eyebrow="TRAINING · WORKOUTS"
         title="Workouts"
         subtitle="Build sessions, track every set, and watch your lifts climb"
         action={

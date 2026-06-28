@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
-import { MacroBar } from "@/components/nutrition/MacroBar";
+import { MacroBar, MacroRing } from "@/components/nutrition/MacroBar";
 import { DashboardSwitcher } from "@/components/DashboardSwitcher";
 import { Reveal, Stagger, StaggerItem } from "@/components/visual/Motion";
 import { WeightChart } from "@/components/charts/WeightChart";
@@ -66,13 +66,13 @@ function StatCard({
     <div className="stat-card group">
       <div className="flex items-start justify-between">
         <div>
-          <div className="text-[11px] text-text-3 uppercase tracking-[0.12em] font-semibold">{label}</div>
-          <div className="text-2xl font-display font-bold mt-1.5 leading-none tabular-nums">
+          <div className="lab-label">{label}</div>
+          <div className="metric mt-2 text-[27px]">
             {value}
-            {unit && <span className="text-sm text-text-2 ml-1 font-normal">{unit}</span>}
+            {unit && <span className="data text-text-2 text-[13px] ml-1 font-normal">{unit}</span>}
           </div>
           {sub && (
-            <div className={`text-[11px] mt-1.5 flex items-center gap-1 ${
+            <div className={`data text-[11px] mt-2 flex items-center gap-1 ${
               trend === "up" ? "text-status-green" : trend === "down" ? "text-status-red" : "text-text-3"
             }`}>
               {trend === "up" && <TrendingUp size={10} />}
@@ -173,45 +173,10 @@ export default function DashboardPage() {
           <div className="card h-full">
             <div className="card-title">Today&apos;s Macros</div>
             <MacroBar protein={totals.p} carbs={totals.c} fat={totals.f} calories={totals.cal} />
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {[
-                { label: "Protein", value: Math.round(totals.p), target: targetP, unit: "g", color: MACRO_HEX.protein, higherIsBetter: true },
-                { label: "Carbs", value: Math.round(totals.c), target: profile?.target_carbs || 300, unit: "g", color: MACRO_HEX.carbs, higherIsBetter: false },
-                { label: "Fat", value: Math.round(totals.f), target: profile?.target_fat || 80, unit: "g", color: MACRO_HEX.fat, higherIsBetter: false },
-              ].map((m) => {
-                const pct = Math.min(100, Math.round((m.value / m.target) * 100)) || 0;
-                return (
-                  <div key={m.label} className="card-sm">
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-[11px] text-text-2">{m.label}</span>
-                      <span className="text-[11px] font-semibold tabular-nums">
-                        {m.value}
-                        <span className="text-text-3 font-normal">/{m.target}{m.unit}</span>
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-bg-3 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full progress-bar" style={{ width: `${pct}%`, background: m.color }} />
-                    </div>
-                    <div
-                      className={`text-[10px] mt-1 tabular-nums ${
-                        m.higherIsBetter
-                          ? m.value >= m.target
-                            ? "text-status-green"
-                            : "text-status-red"
-                          : m.value > m.target
-                          ? "text-status-red"
-                          : "text-text-3"
-                      }`}
-                    >
-                      {m.value >= m.target
-                        ? m.value === m.target
-                          ? "Goal hit"
-                          : `+${m.value - m.target}${m.unit} over`
-                        : `${m.target - m.value}${m.unit} to go`}
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <MacroRing label="Protein" value={totals.p} target={targetP} unit="g" color={MACRO_HEX.protein} higherIsBetter />
+              <MacroRing label="Carbs" value={totals.c} target={profile?.target_carbs || 300} unit="g" color={MACRO_HEX.carbs} />
+              <MacroRing label="Fat" value={totals.f} target={profile?.target_fat || 80} unit="g" color={MACRO_HEX.fat} />
             </div>
           </div>
         );

@@ -105,6 +105,7 @@ export default function BloodSugarPage() {
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
+        eyebrow="VITALS · BLOOD SUGAR"
         title="Blood Sugar"
         subtitle="Log and plot fasted & post-meal glucose over time"
         action={

@@ -108,7 +108,7 @@ export default function StepsPage() {
 
   return (
     <div className="p-6 max-w-[1100px]">
-      <PageHeader title="Steps" subtitle="Track daily step count" />
+      <PageHeader eyebrow="VITALS · STEPS" title="Steps" subtitle="Track daily step count" />
 
       {/* Apple Health notice */}
       <div className="card mb-4 border-accent/30">

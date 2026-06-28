@@ -117,6 +117,7 @@ export default function CompoundsPage() {
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
+        eyebrow="PROTOCOL · COMPOUNDS"
         title="Compound Protocols"
         subtitle="Track your cycles, peptides, ancillaries, and supplements"
         action={

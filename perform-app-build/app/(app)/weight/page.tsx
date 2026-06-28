@@ -130,7 +130,7 @@ export default function WeightPage() {
 
   return (
     <div className="p-6 max-w-[1100px]">
-      <PageHeader title="Body Weight" subtitle="Track your weight over time" />
+      <PageHeader eyebrow="VITALS · BODY WEIGHT" title="Body Weight" subtitle="Track your weight over time" />
 
       <Reveal className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
         {/* Log form */}

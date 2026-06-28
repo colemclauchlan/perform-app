@@ -134,6 +134,7 @@ export default function MealPlansPage() {
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
+        eyebrow="FUEL · MEAL PLANS"
         title="Meal Plans"
         subtitle="Reusable meal templates with full macro breakdowns — add a whole plan to your log in one tap"
         action={

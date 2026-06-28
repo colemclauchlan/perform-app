@@ -124,6 +124,7 @@ export default function BloodPressurePage() {
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
+        eyebrow="VITALS · BLOOD PRESSURE"
         title="Blood Pressure"
         subtitle="Log and plot your readings over time"
         action={

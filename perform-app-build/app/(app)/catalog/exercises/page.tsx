@@ -75,6 +75,7 @@ export default function ExerciseCatalogPage() {
   return (
     <div className="p-6 max-w-[1200px]">
       <PageHeader
+        eyebrow="LIBRARY · EXERCISES"
         title="Exercise Catalog"
         subtitle={`${exercises.length} exercises · tap any row for form cues, tips, and your PRs`}
         action={

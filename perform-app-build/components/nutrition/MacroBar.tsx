@@ -18,26 +18,27 @@ export function MacroBar({
   const cPct = Math.min(100, ((carbs * 4) / total) * 100);
   const fPct = Math.min(100, ((fat * 9) / total) * 100);
 
+  const legend = [
+    { label: "Protein", v: protein, color: MACRO_HEX.protein },
+    { label: "Carbs", v: carbs, color: MACRO_HEX.carbs },
+    { label: "Fat", v: fat, color: MACRO_HEX.fat },
+  ];
+
   return (
     <div>
-      <div className="flex h-1.5 rounded-full overflow-hidden gap-0.5 my-2">
-        <div
-          className="h-full rounded-sm transition-all duration-300"
-          style={{ width: `${pPct}%`, background: MACRO_HEX.protein }}
-        />
-        <div
-          className="h-full rounded-sm transition-all duration-300"
-          style={{ width: `${cPct}%`, background: MACRO_HEX.carbs }}
-        />
-        <div
-          className="h-full rounded-sm transition-all duration-300"
-          style={{ width: `${fPct}%`, background: MACRO_HEX.fat }}
-        />
+      {/* Calorie-weighted composition bar, sunk into a steel track. */}
+      <div className="flex h-2 rounded-full overflow-hidden gap-[3px] my-2 bg-bg-4">
+        <div className="h-full transition-all duration-500" style={{ width: `${pPct}%`, background: MACRO_HEX.protein }} />
+        <div className="h-full transition-all duration-500" style={{ width: `${cPct}%`, background: MACRO_HEX.carbs }} />
+        <div className="h-full transition-all duration-500" style={{ width: `${fPct}%`, background: MACRO_HEX.fat }} />
       </div>
-      <div className="flex gap-3 text-xs mt-1.5 flex-wrap">
-        <span style={{ color: MACRO_HEX.protein }}>● Protein {Math.round(protein)}g</span>
-        <span style={{ color: MACRO_HEX.carbs }}>● Carbs {Math.round(carbs)}g</span>
-        <span style={{ color: MACRO_HEX.fat }}>● Fat {Math.round(fat)}g</span>
+      <div className="flex gap-3.5 mt-2.5 flex-wrap">
+        {legend.map((m) => (
+          <span key={m.label} className="data text-[11.5px] text-text-2 inline-flex items-center gap-1.5">
+            <span className="w-[7px] h-[7px] rounded-full" style={{ background: m.color }} />
+            {m.label} <span className="text-text-1">{Math.round(m.v)}g</span>
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -65,6 +66,7 @@ export function MacroRing({
   const r = 36;
   const circ = 2 * Math.PI * r;
   const dash = circ * (pct / 100);
+  const gap = circ * 0.08; // the deliberate gap — the loop never fully closes
 
   return (
     <div className="card-sm text-center">
@@ -75,8 +77,11 @@ export function MacroRing({
             cy="45"
             r={r}
             fill="none"
-            stroke={`${color}22`}
+            stroke="#27344a"
             strokeWidth="7"
+            strokeLinecap="round"
+            strokeDasharray={`${circ - gap} ${gap}`}
+            style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
           />
           <circle
             cx="45"
@@ -90,20 +95,21 @@ export function MacroRing({
             style={{
               transform: "rotate(-90deg)",
               transformOrigin: "center",
-              transition: "stroke-dasharray 0.4s",
+              transition: "stroke-dasharray 0.7s cubic-bezier(0.4,0,0.2,1)",
+              filter: `drop-shadow(0 0 5px ${color}55)`,
             }}
           />
         </svg>
         <div className="absolute text-center">
-          <div className="text-base font-semibold" style={{ color }}>
-            {Math.round(value)}
+          <div className="metric text-[19px]" style={{ color }}>
+            {pct}<span className="data text-[10px] ml-0.5" style={{ color }}>%</span>
           </div>
-          <div className="text-[10px] text-text-3">{unit}</div>
+          <div className="data text-[9px] text-text-3 mt-0.5 uppercase tracking-wider">{label}</div>
         </div>
       </div>
-      <div className="text-xs text-text-2">{label}</div>
-      <div className="text-[11px] tabular-nums">
-        <span className="text-text-1 font-medium">{Math.round(value)}</span>
+      <div className="lab-label">{label}</div>
+      <div className="data text-[11px] mt-1">
+        <span className="text-text-1">{Math.round(value)}</span>
         <span className="text-text-3">
           /{target}
           {unit}
@@ -121,7 +127,7 @@ export function MacroRing({
           ? "text-status-red" //   calories/carbs/fat over goal = bad
           : "text-text-3"; //      under/neutral
         const text = v >= target ? (hit ? "Goal hit" : `+${v - target}${unit} over`) : `${target - v}${unit} to go`;
-        return <div className={`text-[10px] mt-0.5 tabular-nums ${cls}`}>{text}</div>;
+        return <div className={`data text-[10px] mt-1 ${cls}`}>{text}</div>;
       })()}
     </div>
   );

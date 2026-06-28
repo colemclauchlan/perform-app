@@ -170,6 +170,7 @@ export default function SettingsPage() {
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
+        eyebrow="SYSTEM · SETTINGS"
         title="Settings"
         subtitle="Configure your targets and preferences"
       />

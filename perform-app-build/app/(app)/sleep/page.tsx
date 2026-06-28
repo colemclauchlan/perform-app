@@ -96,7 +96,7 @@ export default function SleepPage() {
 
   return (
     <div className="p-6 max-w-[1000px]">
-      <PageHeader title="Sleep" subtitle="Track sleep duration and quality" />
+      <PageHeader eyebrow="VITALS · SLEEP" title="Sleep" subtitle="Track sleep duration and quality" />
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-5">

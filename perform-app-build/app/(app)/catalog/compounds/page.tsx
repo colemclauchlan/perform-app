@@ -67,6 +67,7 @@ export default function CompoundCatalogPage() {
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
+        eyebrow="LIBRARY · COMPOUNDS"
         title="Compound Catalog"
         subtitle="Browse and manage your compound library"
         action={

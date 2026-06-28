@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase-client";
 import { useProfile, useUpdateProfile } from "@/hooks/useNutrition";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
+import { PulseLine } from "@/components/ui/PulseLine";
 import {
   LayoutDashboard,
   Salad,
@@ -220,6 +221,18 @@ export function Sidebar() {
           <div key={item.href}>{renderLink(item)}</div>
         ))}
       </nav>
+
+      {/* Connective tissue + lab identifier — the system signs itself. */}
+      <div className="px-4 pt-3 mt-1">
+        <PulseLine width={190} height={14} opacity={0.4} />
+        <div className="flex items-center justify-between mt-2">
+          <span className="lab-label">BTAI · VITAL SIGNAL</span>
+          <span className="data text-[9px] text-status-green flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-status-green signal-node" />
+            SYS-OK
+          </span>
+        </div>
+      </div>
 
       <button
         onClick={handleLogout}
