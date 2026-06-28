@@ -1,114 +1,64 @@
 "use client";
 
-import { useState } from "react";
-import { Badge } from "@/components/ui/Badge";
-import { Modal } from "@/components/ui/Modal";
-import { MacroBar, MacroRing } from "@/components/nutrition/MacroBar";
 import { DashboardSwitcher } from "@/components/DashboardSwitcher";
-import { Reveal, Stagger, StaggerItem } from "@/components/visual/Motion";
-import { WeightChart } from "@/components/charts/WeightChart";
-import { useProfile, useFoodLog, useWeeklyCalories, useUpdateProfile } from "@/hooks/useNutrition";
-import { useProtocols } from "@/hooks/useCompounds";
-import { useBodyWeights, useWorkouts, useAddBodyWeight } from "@/hooks/useTraining";
-import { useAddHydration } from "@/hooks/useBodyMetrics";
-import { todayISO, formatDate, round, getNextDoseInfo, MACRO_HEX } from "@/lib/utils";
-import { UserPreferences } from "@/types/database";
+import { SignalHero } from "@/components/dashboard/SignalHero";
 import {
-  TrendingUp, TrendingDown, Minus, Dumbbell, FlaskConical, Apple, Activity,
-  Settings2, Droplets, Scale, Utensils, Eye, EyeOff, ChevronUp, ChevronDown, Maximize2,
+  BarChart,
+  Sparkline,
+  BarRow,
+  DashProgress,
+  QuickActions,
+  StatTile,
+  C,
+} from "@/components/dashboard/DashboardPrimitives";
+import { Ring } from "@/components/ui/Ring";
+import { MacroBar } from "@/components/nutrition/MacroBar";
+import { useProfile, useFoodLog, useWeeklyCalories } from "@/hooks/useNutrition";
+import { useBodyWeights, useSteps } from "@/hooks/useTraining";
+import { useSleepLogs, useHydrationLogs } from "@/hooks/useBodyMetrics";
+import { todayISO, formatDate, round } from "@/lib/utils";
+import {
+  Apple, Activity, Scale, Moon, Utensils, ClipboardList, Droplets,
+  Footprints, TestTube, Flame, Trophy, Check,
 } from "lucide-react";
-import Link from "next/link";
-import toast from "react-hot-toast";
 
-type WidgetCfg = { id: string; w: number; h: number; order: number; hidden?: boolean };
-
-const WIDGET_LABELS: Record<string, string> = {
-  calories: "Calorie Intake (7d)",
-  macros: "Today's Macros",
-  "weight-trend": "Weight Trend",
-  "last-workout": "Last Workout",
-  "weight-history": "Weight History",
-};
-
-const DEFAULT_WIDGETS: WidgetCfg[] = [
-  { id: "calories", w: 2, h: 1, order: 0 },
-  { id: "macros", w: 2, h: 1, order: 1 },
-  { id: "weight-trend", w: 2, h: 1, order: 2 },
-  { id: "last-workout", w: 1, h: 1, order: 4 },
-  { id: "weight-history", w: 1, h: 1, order: 5 },
-];
-
-function mergeWidgets(saved?: WidgetCfg[]): WidgetCfg[] {
-  if (!saved || saved.length === 0) return DEFAULT_WIDGETS;
-  const byId = new Map(saved.map((w) => [w.id, w]));
-  // Keep all known widgets; use saved config when present, else default. Append any unknown saved ids last.
-  const merged = DEFAULT_WIDGETS.map((d) => byId.get(d.id) ?? d);
-  return merged.sort((a, b) => a.order - b.order);
-}
-
-// Static tinted-chip styles (kept literal so Tailwind/inline hex never get purged).
-const STAT_CHIP: Record<"blue" | "green" | "red" | "amber", { bg: string; color: string; ring: string }> = {
-  blue: { bg: "#3aa6f71a", color: "#3aa6f7", ring: "#3aa6f733" },
-  green: { bg: "#2fe3a81a", color: "#2fe3a8", ring: "#2fe3a833" },
-  red: { bg: "#f565651a", color: "#f56565", ring: "#f5656533" },
-  amber: { bg: "#f6ad551a", color: "#f6ad55", ring: "#f6ad5533" },
-};
-
-function StatCard({
-  label, value, unit, sub, trend, icon, color = "blue",
-}: {
-  label: string; value: string | number; unit?: string; sub?: string;
-  trend?: "up" | "down" | "neutral"; icon?: React.ReactNode;
-  color?: "blue" | "green" | "red" | "amber";
-}) {
-  const c = STAT_CHIP[color] ?? STAT_CHIP.blue;
+// ── Card shell + action link (the kit's Card + LinkButton) ───────────────────
+function Panel({ title, action, children }: { title?: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="stat-card group">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="lab-label">{label}</div>
-          <div className="metric mt-2 text-[27px]">
-            {value}
-            {unit && <span className="data text-text-2 text-[13px] ml-1 font-normal">{unit}</span>}
-          </div>
-          {sub && (
-            <div className={`data text-[11px] mt-2 flex items-center gap-1 ${
-              trend === "up" ? "text-status-green" : trend === "down" ? "text-status-red" : "text-text-3"
-            }`}>
-              {trend === "up" && <TrendingUp size={10} />}
-              {trend === "down" && <TrendingDown size={10} />}
-              {trend === "neutral" && <Minus size={10} />}
-              {sub}
-            </div>
-          )}
+    <div className="card">
+      {(title || action) && (
+        <div className="flex items-center justify-between mb-3 gap-2">
+          <div className="card-title !mb-0">{title}</div>
+          {action}
         </div>
-        {icon && (
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
-            style={{ background: c.bg, color: c.color, boxShadow: `inset 0 0 0 1px ${c.ring}` }}
-          >
-            {icon}
-          </div>
-        )}
-      </div>
+      )}
+      {children}
     </div>
   );
 }
+
+function ActionLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      className="data text-[11.5px] font-semibold text-text-2 px-2.5 py-1 rounded-lg border border-border whitespace-nowrap transition-all hover:border-accent/40 hover:text-accent-bright hover:bg-accent-dim"
+    >
+      {children}
+    </a>
+  );
+}
+
+const QUALITY: Record<number, string> = { 5: "Excellent", 4: "Great", 3: "Good", 2: "Fair", 1: "Poor" };
 
 export default function DashboardPage() {
   const today = todayISO();
   const { data: profile } = useProfile();
   const { data: todayLog = [] } = useFoodLog(today);
   const { data: weekly = [] } = useWeeklyCalories();
-  const { data: protocols = [] } = useProtocols();
   const { data: weights = [] } = useBodyWeights();
-  const { data: workouts = [] } = useWorkouts();
-
-  const [customizeOpen, setCustomizeOpen] = useState(false);
-  const [weightModal, setWeightModal] = useState(false);
-
-  const widgets = mergeWidgets(profile?.preferences?.dashboard_widgets);
-  const visible = widgets.filter((w) => !w.hidden);
+  const { data: sleepLogs = [] } = useSleepLogs();
+  const { data: todayHydration = [] } = useHydrationLogs(today);
+  const { data: steps = [] } = useSteps();
 
   const totals = todayLog.reduce(
     (acc, e) => ({
@@ -122,166 +72,229 @@ export default function DashboardPage() {
 
   const targetCal = profile?.target_calories || 2500;
   const targetP = profile?.target_protein || 200;
-  const activeProtocols = protocols.filter((p) => p.is_active);
+  const targetCarbs = profile?.target_carbs || 300;
+  const targetFat = profile?.target_fat || 80;
+  const calPct = Math.round((totals.cal / targetCal) * 100) || 0;
+  const protPct = Math.round((totals.p / targetP) * 100) || 0;
+
+  // Weights are ascending (oldest→newest).
   const latestWeight = weights[weights.length - 1];
   const prevWeight = weights[weights.length - 2];
   const bwDelta = latestWeight && prevWeight ? round(latestWeight.weight - prevWeight.weight) : null;
-  const maxBar = Math.max(targetCal, ...weekly.map((w) => w.calories), 1);
-  const calPct = Math.round((totals.cal / targetCal) * 100) || 0;
-  const protPct = Math.round((totals.p / targetP) * 100) || 0;
-  // useWorkouts returns sessions newest-first (session_date desc), so the most
-  // recent workout is index 0.
-  const recentWorkout = workouts[0];
+  const wUnit = latestWeight?.unit || profile?.weight_unit || "lbs";
+  const trendVals = weights.slice(-10).map((w) => w.weight);
+  const weight30dRef = weights.length > 1 ? weights[Math.max(0, weights.length - 30)].weight : null;
+  const delta30 = latestWeight && weight30dRef != null ? round(latestWeight.weight - weight30dRef) : null;
 
-  const overdueDoses = activeProtocols.flatMap((p) =>
-    (p.compounds ?? []).filter(
-      (c) => getNextDoseInfo(c.last_dose?.logged_at || null, c.frequency).status === "overdue"
-    )
-  );
+  // Today's vitals.
+  const sleepToday = sleepLogs[0];
+  const sleepHours = sleepToday?.duration_hours ?? null;
+  const sleepQuality = sleepToday?.quality != null ? QUALITY[sleepToday.quality] || "—" : "—";
+  const hydrationMl = todayHydration.reduce((s, h) => s + Number(h.amount_ml), 0);
+  const hydrationTarget = 3500;
+  const stepsToday = steps[0]?.step_count ?? 0;
+  const stepsTarget = 10000;
 
-  function renderWidget(cfg: WidgetCfg) {
-    switch (cfg.id) {
-      case "calories":
-        return (
-          <div className="card h-full">
-            <div className="card-title">Calorie Intake — Last 7 Days</div>
-            <div className="flex items-end gap-1.5 h-28 pb-6 relative">
-              {weekly.map((d, i) => {
-                const isToday = i === weekly.length - 1;
-                const pct = Math.max(4, Math.round((100 * d.calories) / maxBar));
-                const label = new Date(d.date + "T00:00").toLocaleDateString("en", { weekday: "short" }).slice(0, 2);
-                const over = d.calories > targetCal;
-                return (
-                  <div key={d.date} className="flex-1 flex flex-col items-center justify-end h-full group relative">
-                    <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-bg-3 text-text-1 text-[10px] rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-border">
-                      {d.calories} kcal
-                    </div>
-                    <div className="w-full rounded-t-lg transition-all" style={{
-                      height: `${pct}%`,
-                      background: isToday ? (over ? "#f56565" : "#189bf5") : over ? "rgba(245,101,101,0.25)" : "rgba(24,155,245,0.2)",
-                    }} />
-                    <span className="absolute -bottom-5 text-[9px] text-text-3">{label}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="text-[11px] text-text-3 mt-1">Target: {targetCal} kcal/day</div>
-          </div>
-        );
-      case "macros":
-        return (
-          <div className="card h-full">
-            <div className="card-title">Today&apos;s Macros</div>
-            <MacroBar protein={totals.p} carbs={totals.c} fat={totals.f} calories={totals.cal} />
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <MacroRing label="Protein" value={totals.p} target={targetP} unit="g" color={MACRO_HEX.protein} higherIsBetter />
-              <MacroRing label="Carbs" value={totals.c} target={profile?.target_carbs || 300} unit="g" color={MACRO_HEX.carbs} />
-              <MacroRing label="Fat" value={totals.f} target={profile?.target_fat || 80} unit="g" color={MACRO_HEX.fat} />
-            </div>
-          </div>
-        );
-      case "weight-trend":
-        return (
-          <div className="card h-full">
-            <div className="flex items-center justify-between mb-3">
-              <div className="card-title !mb-0">Weight Trend</div>
-              <Link href="/weight" className="text-[11px] text-accent hover:underline">View all →</Link>
-            </div>
-            <WeightChart data={weights} height={180} />
-          </div>
-        );
-      case "compounds":
-        return (
-          <div className="card h-full">
-            <div className="flex items-center justify-between mb-3">
-              <div className="card-title !mb-0">Active Compounds</div>
-              <Link href="/compounds" className="text-[11px] text-accent hover:underline">Manage →</Link>
-            </div>
-            {activeProtocols.length === 0 ? (
-              <div className="text-text-3 text-sm py-2">No active protocols.</div>
+  // Weekly calories → bars + streak. weekly is oldest→newest (7 entries).
+  const calBars = weekly.map((d, i) => {
+    const diff = d.calories - targetCal;
+    const color = diff > 100 ? C.high : diff < -100 ? C.accent : C.mint;
+    const glow = diff > 100 ? "rgba(245,101,101,0.35)" : diff < -100 ? "rgba(24,155,245,0.35)" : "rgba(47,227,168,0.35)";
+    const label = new Date(d.date + "T00:00").toLocaleDateString("en", { weekday: "short" });
+    return { label, value: d.calories, color, glow, bright: i === weekly.length - 1 };
+  });
+  const statusOf = (cal: number): "met" | "over" | "under" | "none" => {
+    if (!cal) return "none";
+    const diff = cal - targetCal;
+    return diff > 100 ? "over" : diff < -100 ? "under" : "met";
+  };
+  const weekStatuses = weekly.map((d) => ({ s: statusOf(d.calories), label: new Date(d.date + "T00:00").toLocaleDateString("en", { weekday: "narrow" }) }));
+  let currentStreak = 0;
+  for (let i = weekStatuses.length - 1; i >= 0; i--) {
+    if (weekStatuses[i].s === "met") currentStreak++;
+    else break;
+  }
+  let recordStreak = 0,
+    run = 0;
+  for (const w of weekStatuses) {
+    if (w.s === "met") {
+      run++;
+      recordStreak = Math.max(recordStreak, run);
+    } else run = 0;
+  }
+
+  // Hero headline reacts to today's intake.
+  const heroTitle =
+    totals.cal === 0
+      ? "Log your first meal to start the signal"
+      : Math.abs(totals.cal - targetCal) <= 100
+      ? "Your signal is on-track today"
+      : totals.cal < targetCal
+      ? "You're under target today"
+      : "You're over your target today";
+
+  const dateLabel = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+
+  return (
+    <div className="p-6 max-w-[1200px]">
+      <DashboardSwitcher />
+
+      <SignalHero
+        eyebrow={`Health · ${dateLabel}`}
+        title={heroTitle}
+        stat={calPct}
+        statUnit="% of calorie goal"
+        statSub={currentStreak > 0 ? `▲ ${currentStreak}d streak` : undefined}
+        accentVar="#2fe3a8"
+        ringColor={0x189bf5}
+        nodeColor={0x2fe3a8}
+        caption="Macros, weight, sleep and hydration — read as one continuous signal."
+      />
+
+      {/* Top stat cards */}
+      <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
+        <StatTile label="Calories Today" value={Math.round(totals.cal)} unit={`/ ${targetCal}`} sub={`${calPct}% of goal`} trend={calPct > 110 ? "down" : calPct >= 80 ? "up" : "neutral"} tone={calPct > 110 ? "high" : "blue"} icon={<Apple size={18} />} href="/nutrition" />
+        <StatTile label="Protein Today" value={`${Math.round(totals.p)}g`} unit={`/ ${targetP}g`} sub={`${protPct}% of goal`} trend={totals.p >= targetP ? "up" : "neutral"} tone="mint" icon={<Activity size={18} />} href="/nutrition" />
+        <StatTile label="Body Weight" value={latestWeight ? latestWeight.weight : "—"} unit={latestWeight ? wUnit : ""} sub={bwDelta != null ? `${bwDelta >= 0 ? "+" : ""}${bwDelta} vs prev` : "No entries yet"} trend={bwDelta != null && bwDelta > 0 ? "up" : bwDelta != null && bwDelta < 0 ? "down" : "neutral"} tone="blue" icon={<Scale size={18} />} href="/weight" />
+        <StatTile label="Sleep" value={sleepHours != null ? sleepHours : "—"} unit={sleepHours != null ? "h" : ""} sub={sleepQuality} trend="neutral" tone="blue" icon={<Moon size={18} />} href="/sleep" />
+      </div>
+
+      <QuickActions
+        actions={[
+          { label: "Log Food", icon: <Utensils size={15} />, href: "/nutrition" },
+          { label: "Meal Plans", icon: <ClipboardList size={15} />, href: "/meal-plans" },
+          { label: "Hydration", icon: <Droplets size={15} />, href: "/hydration" },
+          { label: "Body Weight", icon: <Scale size={15} />, href: "/weight" },
+          { label: "Sleep", icon: <Moon size={15} />, href: "/sleep" },
+          { label: "Steps", icon: <Footprints size={15} />, href: "/steps" },
+          { label: "Blood Panels", icon: <TestTube size={15} />, href: "/bloodwork" },
+        ]}
+      />
+
+      {/* Main grid: 2fr / 1fr */}
+      <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)" }}>
+        <div className="flex flex-col gap-4 min-w-0">
+          <Panel title="Calorie Intake — Last 7 Days" action={<ActionLink href="/nutrition">Log food →</ActionLink>}>
+            {calBars.length === 0 ? (
+              <div className="text-text-3 text-sm py-8 text-center">No calories logged this week.</div>
             ) : (
-              <div className="space-y-2">
-                {activeProtocols.slice(0, 3).map((p) => {
-                  const urgentCompounds = (p.compounds ?? []).filter((c) => {
-                    const info = getNextDoseInfo(c.last_dose?.logged_at || null, c.frequency);
-                    return info.status === "overdue" || info.status === "urgent";
-                  });
-                  return (
-                    <div key={p.id} className="flex items-center justify-between bg-bg-2 rounded-xl px-3 py-2.5 border border-border">
-                      <div>
-                        <div className="text-sm font-semibold">{p.name}</div>
-                        <div className="text-[11px] text-text-2 mt-0.5">
-                          {p.compounds?.length || 0} compound{(p.compounds?.length || 0) !== 1 ? "s" : ""}
-                          {p.end_date ? ` · ends ${formatDate(p.end_date)}` : ""}
-                        </div>
-                        {urgentCompounds.length > 0 && (
-                          <div className="text-[11px] text-status-red mt-0.5">
-                            {urgentCompounds.length} dose{urgentCompounds.length !== 1 ? "s" : ""} overdue
-                          </div>
-                        )}
-                      </div>
-                      <Badge variant="accent">Active</Badge>
+              <>
+                <BarChart height={140} target={targetCal} targetLabel="Goal" valueFormat={(v) => (v / 1000).toFixed(2) + "k"} data={calBars} />
+                <div className="flex items-center justify-between mt-2.5 flex-wrap gap-2">
+                  <span className="data text-[10.5px] text-text-3 tracking-wide">TARGET · {targetCal} KCAL/DAY</span>
+                  <span className="flex gap-3 data text-[10px] text-text-3">
+                    <span className="inline-flex items-center gap-1.5"><span className="w-[7px] h-[7px] rounded-sm" style={{ background: C.mint }} />±100</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="w-[7px] h-[7px] rounded-sm" style={{ background: C.accent }} />Under</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="w-[7px] h-[7px] rounded-sm" style={{ background: C.high }} />Over</span>
+                  </span>
+                </div>
+              </>
+            )}
+          </Panel>
+
+          <Panel title="Today's Macros" action={<ActionLink href="/nutrition">Edit →</ActionLink>}>
+            <div className="flex gap-6 items-center flex-wrap">
+              <Ring value={totals.p} target={targetP} unit="g protein" size={96} overIsGood color={C.accent} />
+              <div className="flex-1 min-w-[200px]">
+                <MacroBar protein={totals.p} carbs={totals.c} fat={totals.f} calories={totals.cal} />
+                <div className="grid grid-cols-3 gap-2.5 mt-4">
+                  <DashProgress label="Protein" value={totals.p} max={targetP} color={C.sProtein} />
+                  <DashProgress label="Carbs" value={totals.c} max={targetCarbs} color={C.sCarbs} />
+                  <DashProgress label="Fat" value={totals.f} max={targetFat} color={C.sFat} />
+                </div>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel title="Weight Trend" action={<ActionLink href="/weight">View all →</ActionLink>}>
+            {!latestWeight ? (
+              <div className="text-text-3 text-sm py-6">Log your weight to see the trend.</div>
+            ) : (
+              <div className="flex items-center gap-5">
+                <div className="flex-none">
+                  <div className="metric text-[40px] leading-none">
+                    {latestWeight.weight}
+                    <span className="data text-[16px] text-text-2 ml-1">{wUnit}</span>
+                  </div>
+                  {delta30 != null && (
+                    <div className="data text-[11px] mt-1.5" style={{ color: delta30 > 0 ? C.mint : delta30 < 0 ? C.warn : C.t3 }}>
+                      {delta30 > 0 ? "▲ +" : delta30 < 0 ? "▼ " : ""}
+                      {delta30} / 30d
                     </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <Sparkline data={trendVals} />
+                </div>
+              </div>
+            )}
+          </Panel>
+        </div>
+
+        <div className="flex flex-col gap-4 min-w-0">
+          <Panel title="Goal Streak">
+            <div className="flex items-stretch gap-3">
+              <div className="flex-1 flex flex-col items-center justify-center rounded-lg border border-border py-3 px-2" style={{ background: C.s1 }}>
+                <Flame size={20} style={{ color: C.mint }} />
+                <div className="metric text-[32px] mt-1" style={{ color: C.mint }}>{currentStreak}</div>
+                <div className="lab-label mt-1">Current · days</div>
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center rounded-lg border border-border py-3 px-2" style={{ background: C.s1 }}>
+                <Trophy size={20} style={{ color: C.steel }} />
+                <div className="metric text-[32px] mt-1">{recordStreak}</div>
+                <div className="lab-label mt-1">Record · days</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-3.5">
+              <span className="lab-label">This week</span>
+              <div className="flex gap-1.5">
+                {weekStatuses.map((w, i) => {
+                  const c = w.s === "met" ? C.mint : w.s === "over" ? C.high : C.accent;
+                  return (
+                    <span key={i} title={w.s} className="flex flex-col items-center gap-1">
+                      <span className="w-[18px] h-[18px] rounded-full flex items-center justify-center" style={{ background: w.s === "met" ? c : "transparent", border: "1.5px solid " + (w.s === "none" ? C.line2 : c) }}>
+                        {w.s === "met" && <Check size={11} style={{ color: C.ink }} />}
+                      </span>
+                      <span className="data text-[9px] text-text-3">{w.label}</span>
+                    </span>
                   );
                 })}
               </div>
-            )}
-          </div>
-        );
-      case "last-workout":
-        return (
-          <div className="card h-full">
-            <div className="flex items-center justify-between mb-3">
-              <div className="card-title !mb-0">Last Workout</div>
-              <Link href="/workouts" className="text-[11px] text-accent hover:underline">All →</Link>
             </div>
-            {!recentWorkout ? (
-              <div className="text-text-3 text-sm py-2">No workouts logged yet.</div>
-            ) : (
-              <div className="bg-bg-2 rounded-xl px-3 py-3 border border-border">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-accent-dim flex items-center justify-center">
-                    <Dumbbell className="text-accent" size={15} />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold">{recentWorkout.name}</div>
-                    <div className="text-[11px] text-text-2">{formatDate(recentWorkout.session_date)}</div>
-                  </div>
-                </div>
-                <div className="text-[11px] text-text-3">
-                  {recentWorkout.sets?.length || 0} sets
-                  {recentWorkout.sets && recentWorkout.sets.length > 0 && (
-                    <> · {[...new Set(recentWorkout.sets.map((s) => s.exercise_name))].slice(0, 3).join(", ")}</>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      case "weight-history":
-        return (
-          <div className="card h-full">
-            <div className="flex items-center justify-between mb-3">
-              <div className="card-title !mb-0">Weight History</div>
-              <Link href="/weight" className="text-[11px] text-accent hover:underline">All →</Link>
+            <div className="text-[11.5px] text-text-3 mt-3 leading-[1.45]">
+              Hit calories within ±100 to keep the streak. Going over or under by more than 100 resets it.
             </div>
+          </Panel>
+
+          <Panel title="Vitals">
+            <BarRow label="Sleep" value={sleepHours != null ? sleepHours : 0} target={8} unit=" / 8h" color={C.sleep} />
+            <BarRow label="Hydration" value={(hydrationMl / 1000).toFixed(1)} target={hydrationTarget / 1000} unit=" / 3.5L" color={C.sCarbs} />
+            <BarRow label="Steps" value={(stepsToday / 1000).toFixed(1) + "k"} target={stepsTarget / 1000} unit=" / 10k" color={C.sProtein} />
+            <div className="flex items-center gap-3 py-[9px]">
+              <span className="text-[13px] text-text-2 flex-none" style={{ width: 86 }}>Resting HR</span>
+              <span className="data text-[13px] ml-auto text-text-3">— bpm</span>
+            </div>
+          </Panel>
+
+          <Panel title="Recent Weight" action={<ActionLink href="/weight">All →</ActionLink>}>
             {weights.length === 0 ? (
               <div className="text-text-3 text-sm py-2">No entries yet.</div>
             ) : (
-              <div className="space-y-1">
-                {[...weights].slice(-5).reverse().map((w, i) => {
-                  const prevW = weights[weights.length - 1 - i - 1];
-                  const delta = prevW ? round(w.weight - prevW.weight) : null;
+              <div className="flex flex-col">
+                {[...weights].reverse().slice(0, 5).map((w, i, arr) => {
+                  const prev = arr[i + 1];
+                  const delta = prev ? round(w.weight - prev.weight) : null;
                   return (
-                    <div key={w.id} className="flex justify-between items-center py-1.5 border-b border-border/40 last:border-0">
-                      <span className="text-[11px] text-text-2">{formatDate(w.logged_date)}</span>
-                      <div className="flex items-center gap-2">
+                    <div key={w.id} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+                      <span className="data text-[11.5px] text-text-3">{formatDate(w.logged_date)}</span>
+                      <div className="flex items-baseline gap-2">
                         {delta != null && (
-                          <span className={`text-[10px] ${delta > 0 ? "text-status-green" : delta < 0 ? "text-status-red" : "text-text-3"}`}>
-                            {delta > 0 ? "+" : ""}{delta}
+                          <span className="data text-[10.5px]" style={{ color: delta > 0 ? C.warn : delta < 0 ? C.mint : C.t3 }}>
+                            {delta > 0 ? "+" : ""}
+                            {delta}
                           </span>
                         )}
-                        <span className={`text-sm font-semibold ${i === 0 ? "text-accent" : "text-text-1"}`}>
+                        <span className="data text-[13.5px]" style={{ color: i === 0 ? C.accentBright : C.t1 }}>
                           {w.weight} {w.unit}
                         </span>
                       </div>
@@ -290,277 +303,9 @@ export default function DashboardPage() {
                 })}
               </div>
             )}
-          </div>
-        );
-      default:
-        return null;
-    }
-  }
-
-  return (
-    <div className="p-6 max-w-[1200px]">
-      <DashboardSwitcher />
-
-      {/* Hero spotlight — today's headline metric */}
-      <div className="panel hairline-top px-5 py-5 sm:px-6 sm:py-6 mb-5 animate-fade-in">
-        <div className="absolute -top-24 -right-16 w-72 h-72 bg-brand-gradient opacity-20 blur-3xl pointer-events-none" />
-        <div className="relative flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="text-[11px] uppercase tracking-[0.14em] text-text-3 font-semibold">
-              Health Dashboard
-            </div>
-            <h1 className="mt-1.5 text-3xl sm:text-4xl font-display font-bold leading-none tabular-nums">
-              <span className="text-brand">{Math.round(totals.cal).toLocaleString()}</span>
-              <span className="text-text-3 text-2xl font-normal"> / {targetCal.toLocaleString()}</span>
-              <span className="text-base text-text-2 font-normal ml-2">kcal today</span>
-            </h1>
-            <p className="text-sm text-text-2 mt-2">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long", year: "numeric", month: "long", day: "numeric",
-              })}
-              <span className="text-text-3"> · {calPct}% of goal · {Math.round(totals.p)}g protein</span>
-            </p>
-          </div>
-          <button className="btn btn-ghost btn-sm flex items-center gap-1.5" onClick={() => setCustomizeOpen(true)}>
-            <Settings2 size={14} /> Customize
-          </button>
+          </Panel>
         </div>
       </div>
-
-      {/* Quick-log shortcuts */}
-      <QuickLog
-        today={today}
-        weightUnit={latestWeight?.unit || profile?.weight_unit || "lbs"}
-        activeProtocols={activeProtocols}
-        onLogWeight={() => setWeightModal(true)}
-      />
-
-      {/* Top stat cards */}
-      <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <StaggerItem>
-          <StatCard
-            label="Calories Today" value={Math.round(totals.cal)} unit={`/ ${targetCal}`}
-            sub={`${calPct}% of goal`} trend={calPct > 110 ? "down" : calPct >= 80 ? "up" : "neutral"}
-            icon={<Apple size={18} />} color={calPct > 110 ? "red" : "blue"}
-          />
-        </StaggerItem>
-        <StaggerItem>
-          <StatCard
-            label="Protein Today" value={`${Math.round(totals.p)}g`} unit={`/ ${targetP}g`}
-            sub={`${protPct}% of goal`} trend={totals.p >= targetP ? "up" : "neutral"}
-            icon={<Activity size={18} />} color={totals.p >= targetP ? "green" : "blue"}
-          />
-        </StaggerItem>
-        <StaggerItem>
-          <StatCard
-            label="Active Protocols" value={activeProtocols.length}
-            sub={activeProtocols.length ? activeProtocols[0].name : "No active cycles"}
-            icon={<FlaskConical size={18} />} color={overdueDoses.length > 0 ? "red" : "blue"}
-          />
-        </StaggerItem>
-        <StaggerItem>
-          <StatCard
-            label="Body Weight" value={latestWeight ? latestWeight.weight : "—"}
-            unit={latestWeight ? latestWeight.unit : ""}
-            sub={bwDelta != null ? `${bwDelta >= 0 ? "+" : ""}${bwDelta} vs prev` : "No entries yet"}
-            trend={bwDelta != null && bwDelta > 0 ? "up" : bwDelta != null && bwDelta < 0 ? "down" : "neutral"}
-            icon={<TrendingUp size={18} />} color="blue"
-          />
-        </StaggerItem>
-      </Stagger>
-
-      {/* Overdue dose alert */}
-      {overdueDoses.length > 0 && (
-        <div className="mb-4 bg-status-red/10 border border-status-red/30 rounded-xl px-4 py-3 flex items-center gap-3 animate-fade-in">
-          <FlaskConical className="text-status-red flex-shrink-0" size={16} />
-          <span className="text-sm text-status-red font-medium">
-            {overdueDoses.length} overdue dose{overdueDoses.length !== 1 ? "s" : ""}:{" "}
-            {overdueDoses.map((c) => c.compound_name).join(", ")}
-          </span>
-          <Link href="/compounds" className="ml-auto text-[11px] text-status-red underline underline-offset-2">
-            Log now
-          </Link>
-        </div>
-      )}
-
-      {/* Configurable widgets */}
-      {visible.length === 0 ? (
-        <div className="card text-center text-text-3 text-sm py-10">
-          All widgets are hidden.{" "}
-          <button className="text-accent hover:underline" onClick={() => setCustomizeOpen(true)}>
-            Customize your dashboard
-          </button>
-        </div>
-      ) : (
-        <Stagger className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {visible.map((cfg) => (
-            <StaggerItem key={cfg.id} className={cfg.w === 2 ? "lg:col-span-2" : ""}>
-              {renderWidget(cfg)}
-            </StaggerItem>
-          ))}
-        </Stagger>
-      )}
-
-      <CustomizeModal open={customizeOpen} onClose={() => setCustomizeOpen(false)} widgets={widgets} />
-      <LogWeightModal open={weightModal} onClose={() => setWeightModal(false)} date={today} unit={latestWeight?.unit || profile?.weight_unit || "lbs"} />
     </div>
-  );
-}
-
-// ─── Quick-log shortcuts bar ─────────────────────────────────────────────────
-function QuickLog({
-  today, weightUnit, activeProtocols, onLogWeight,
-}: {
-  today: string;
-  weightUnit: string;
-  activeProtocols: ReturnType<typeof useProtocols>["data"];
-  onLogWeight: () => void;
-}) {
-  const addHydration = useAddHydration();
-
-  function quickWater() {
-    addHydration.mutate(
-      { logged_date: today, amount_ml: 250, source: "manual" },
-      { onSuccess: () => toast.success("+250ml water"), onError: (e) => toast.error(e.message) }
-    );
-  }
-
-  const Btn =({ icon, label, onClick, href }: { icon: React.ReactNode; label: string; onClick?: () => void; href?: string }) => {
-    const cls = "flex items-center gap-2 rounded-xl border border-border bg-bg-2/80 hover:border-accent/40 hover:bg-bg-3 hover:shadow-card px-3.5 py-2.5 text-sm text-text-2 hover:text-text-1 transition-all duration-200 active:scale-[0.97]";
-    const inner = <>{icon}<span className="font-medium">{label}</span></>;
-    return href ? <Link href={href} className={cls}>{inner}</Link> : <button onClick={onClick} className={cls}>{inner}</button>;
-  };
-
-  return (
-    <div className="flex flex-wrap gap-2 mb-5">
-      <Btn icon={<Utensils size={15} className="text-accent" />} label="Log Food" href="/nutrition" />
-      <Btn icon={<Scale size={15} className="text-status-teal" />} label="Log Weight" onClick={onLogWeight} />
-      <Btn icon={<Droplets size={15} className="text-status-teal" />} label="+250ml Water" onClick={quickWater} />
-      <Btn icon={<Dumbbell size={15} className="text-accent" />} label="Log Workout" href="/workouts" />
-    </div>
-  );
-}
-
-// ─── Quick body-weight modal ─────────────────────────────────────────────────
-function LogWeightModal({ open, onClose, date, unit }: { open: boolean; onClose: () => void; date: string; unit: string }) {
-  const addWeight = useAddBodyWeight();
-  const [value, setValue] = useState("");
-
-  function save() {
-    const w = parseFloat(value);
-    if (!w || w <= 0) { toast.error("Enter a valid weight"); return; }
-    addWeight.mutate(
-      { logged_date: date, weight: w, unit },
-      {
-        onSuccess: () => { toast.success("Weight logged"); setValue(""); onClose(); },
-        onError: (e) => toast.error(e.message),
-      }
-    );
-  }
-
-  return (
-    <Modal open={open} onClose={onClose} title="Log Body Weight">
-      <div className="space-y-3">
-        <div>
-          <label className="label">Weight ({unit})</label>
-          <input
-            type="number" autoFocus value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && save()}
-            placeholder={`e.g. 185`}
-          />
-        </div>
-        <div className="flex gap-2 pt-1">
-          <button className="btn btn-primary" onClick={save}>Save</button>
-          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-// ─── Dashboard customize modal ───────────────────────────────────────────────
-function CustomizeModal({ open, onClose, widgets }: { open: boolean; onClose: () => void; widgets: WidgetCfg[] }) {
-  const { data: profile } = useProfile();
-  const updateProfile = useUpdateProfile();
-  const [draft, setDraft] = useState<WidgetCfg[]>(widgets);
-  const [initKey, setInitKey] = useState<string | null>(null);
-
-  // Init draft when the modal opens.
-  const sig = open ? widgets.map((w) => `${w.id}:${w.order}:${w.w}:${w.hidden ? 1 : 0}`).join("|") : "closed";
-  if (open && initKey !== sig) {
-    setInitKey(sig);
-    setDraft(widgets);
-  }
-  if (!open && initKey !== null) setInitKey(null);
-
-  function move(idx: number, dir: -1 | 1) {
-    const arr = [...draft];
-    const j = idx + dir;
-    if (j < 0 || j >= arr.length) return;
-    [arr[idx], arr[j]] = [arr[j], arr[idx]];
-    setDraft(arr.map((w, i) => ({ ...w, order: i })));
-  }
-  function toggleHidden(id: string) {
-    setDraft((d) => d.map((w) => (w.id === id ? { ...w, hidden: !w.hidden } : w)));
-  }
-  function toggleWidth(id: string) {
-    setDraft((d) => d.map((w) => (w.id === id ? { ...w, w: w.w === 2 ? 1 : 2 } : w)));
-  }
-  function reset() {
-    setDraft(DEFAULT_WIDGETS.map((w) => ({ ...w })));
-  }
-
-  function save() {
-    const prefs: UserPreferences = { ...(profile?.preferences || {}), dashboard_widgets: draft.map((w, i) => ({ ...w, order: i })) };
-    updateProfile.mutate(
-      { preferences: prefs },
-      {
-        onSuccess: () => { toast.success("Dashboard saved"); onClose(); },
-        onError: (e) => toast.error(e.message),
-      }
-    );
-  }
-
-  return (
-    <Modal open={open} onClose={onClose} title="Customize Dashboard">
-      <div className="space-y-2">
-        <p className="text-xs text-text-3">Show, hide, resize and reorder your dashboard widgets.</p>
-        {draft.map((w, i) => (
-          <div key={w.id} className={`flex items-center gap-2 rounded-xl border border-border px-3 py-2 ${w.hidden ? "opacity-50 bg-bg-2" : "bg-bg-2"}`}>
-            <div className="flex flex-col">
-              <button className="text-text-3 hover:text-text-1 disabled:opacity-30" disabled={i === 0} onClick={() => move(i, -1)}>
-                <ChevronUp size={14} />
-              </button>
-              <button className="text-text-3 hover:text-text-1 disabled:opacity-30" disabled={i === draft.length - 1} onClick={() => move(i, 1)}>
-                <ChevronDown size={14} />
-              </button>
-            </div>
-            <span className="flex-1 text-sm font-medium">{WIDGET_LABELS[w.id] || w.id}</span>
-            <button
-              className={`btn btn-ghost btn-sm !px-1.5 ${w.w === 2 ? "text-accent" : "text-text-3"}`}
-              title={w.w === 2 ? "Full width" : "Half width"}
-              onClick={() => toggleWidth(w.id)}
-            >
-              <Maximize2 size={13} />
-            </button>
-            <button
-              className="btn btn-ghost btn-sm !px-1.5"
-              title={w.hidden ? "Show" : "Hide"}
-              onClick={() => toggleHidden(w.id)}
-            >
-              {w.hidden ? <EyeOff size={14} className="text-text-3" /> : <Eye size={14} className="text-accent" />}
-            </button>
-          </div>
-        ))}
-        <div className="flex gap-2 pt-2">
-          <button className="btn btn-primary" onClick={save} disabled={updateProfile.isPending}>
-            {updateProfile.isPending ? "Saving…" : "Save layout"}
-          </button>
-          <button className="btn btn-ghost" onClick={reset}>Reset</button>
-          <button className="btn btn-ghost ml-auto" onClick={onClose}>Cancel</button>
-        </div>
-      </div>
-    </Modal>
   );
 }
