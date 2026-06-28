@@ -367,6 +367,15 @@ main,
   box-shadow: 0 0 0 3px rgba(24, 155, 245, 0.18), 0 0 14px rgba(24, 155, 245, 0.55);
 }
 
+/* Slow rotation for the dashboard signal ring. */
+.signal-spin {
+  transform-origin: center;
+  animation: signalSpin 24s linear infinite;
+}
+@keyframes signalSpin {
+  to { transform: rotate(360deg); }
+}
+
 /* Hide scrollbars (used by the mobile bottom-bar's horizontal scroll). */
 .no-scrollbar {
   -ms-overflow-style: none;
