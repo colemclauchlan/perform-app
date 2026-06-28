@@ -75,7 +75,7 @@ export function WeightChart({ data, height = 220, overlays = [] }: Props) {
   );
   const weights = data.map((d) => d.weight);
   const trend = computeTrendline(weights);
-  const trendColor = trend[trend.length - 1] <= trend[0] ? "#22d3a5" : "#f56565";
+  const trendColor = trend[trend.length - 1] <= trend[0] ? "#2fe3a8" : "#f56565";
 
   const overlayDatasets = overlays.map((o) => ({
     label: o.label,
@@ -101,12 +101,12 @@ export function WeightChart({ data, height = 220, overlays = [] }: Props) {
       {
         label: "Weight",
         data: weights,
-        borderColor: "#2563eb",
-        backgroundColor: "rgba(37,99,235,0.08)",
+        borderColor: "#189bf5",
+        backgroundColor: "rgba(24,155,245,0.08)",
         tension: 0.3,
         pointRadius: data.length > 30 ? 0 : 4,
         pointHoverRadius: 6,
-        pointBackgroundColor: "#2563eb",
+        pointBackgroundColor: "#189bf5",
         pointBorderColor: "#0d1117",
         pointBorderWidth: 2,
         borderWidth: 2,

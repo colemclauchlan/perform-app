@@ -23,11 +23,11 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip,
 function classify(value: number, fasted: boolean): { label: string; color: string } {
   if (value < 70) return { label: "Low", color: "#f56565" };
   if (fasted) {
-    if (value < 100) return { label: "Normal (fasted)", color: "#22d3a5" };
+    if (value < 100) return { label: "Normal (fasted)", color: "#2fe3a8" };
     if (value < 126) return { label: "Prediabetes range", color: "#f6ad55" };
     return { label: "Diabetes range", color: "#f56565" };
   }
-  if (value < 140) return { label: "Normal", color: "#22d3a5" };
+  if (value < 140) return { label: "Normal", color: "#2fe3a8" };
   if (value < 200) return { label: "Elevated", color: "#f6ad55" };
   return { label: "High", color: "#f56565" };
 }
@@ -84,7 +84,7 @@ export default function BloodSugarPage() {
       {
         label: "Blood sugar (mg/dL)",
         data: sorted.map((l) => l.value),
-        borderColor: "#7c5cff",
+        borderColor: "#189bf5",
         pointBackgroundColor: sorted.map((l) => (l.fasted ? "#2dd4bf" : "#f6ad55")),
         pointBorderColor: sorted.map((l) => (l.fasted ? "#2dd4bf" : "#f6ad55")),
         tension: 0.3,
@@ -126,7 +126,7 @@ export default function BloodSugarPage() {
           <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-text-3 font-semibold mb-2">
-                <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "#7c5cff1a", color: "#9d7bff", boxShadow: "inset 0 0 0 1px #7c5cff33" }}>
+                <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "#189bf51a", color: "#3aa6f7", boxShadow: "inset 0 0 0 1px #189bf533" }}>
                   <Droplet size={13} />
                 </span>
                 Latest reading

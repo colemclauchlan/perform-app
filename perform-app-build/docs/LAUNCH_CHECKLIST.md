@@ -126,7 +126,7 @@ npx cap add ios                    # creates the ios/ Xcode project (one-time)
 
 # App icon is already provided at assets/icon.png (1024x1024 BodyTracker emblem).
 # Splash is optional — see assets/README.md to add assets/splash.png if you want
-# a branded launch image (otherwise a solid #080b12 screen is used).
+# a branded launch image (otherwise a solid #0e1623 screen is used).
 npm run assets:generate            # = capacitor-assets generate --ios
 
 npx cap sync ios                   # copies config + plugins into the native project

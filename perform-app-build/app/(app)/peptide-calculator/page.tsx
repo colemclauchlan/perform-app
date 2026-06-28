@@ -17,7 +17,7 @@ export default function PeptideCalculatorPage() {
             <div className="flex items-start gap-4">
               <div
                 className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-soft"
-                style={{ background: "rgba(124,92,255,0.14)", color: "#9d7bff" }}
+                style={{ background: "rgba(24,155,245,0.14)", color: "#3aa6f7" }}
               >
                 <Syringe size={22} />
               </div>

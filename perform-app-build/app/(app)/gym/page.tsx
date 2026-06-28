@@ -172,7 +172,7 @@ export default function GymDashboardPage() {
                 <div className="text-2xl font-display font-bold mt-1.5 leading-none tabular-nums">{weekStats.sessions}</div>
               </div>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
-                style={{ background: "#3b82f61a", color: "#3b82f6", boxShadow: "inset 0 0 0 1px #3b82f633" }}>
+                style={{ background: "#3aa6f71a", color: "#3aa6f7", boxShadow: "inset 0 0 0 1px #3aa6f733" }}>
                 <Activity size={18} />
               </div>
             </div>
@@ -202,7 +202,7 @@ export default function GymDashboardPage() {
                 </div>
               </div>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
-                style={{ background: "#7c5cff1a", color: "#9d7bff", boxShadow: "inset 0 0 0 1px #7c5cff33" }}>
+                style={{ background: "#189bf51a", color: "#3aa6f7", boxShadow: "inset 0 0 0 1px #189bf533" }}>
                 <Dumbbell size={18} />
               </div>
             </div>

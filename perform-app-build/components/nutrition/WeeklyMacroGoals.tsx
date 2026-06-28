@@ -8,7 +8,7 @@ type Day = { date: string; cal: number; p: number; c: number; f: number };
 // off, red when far off, muted when nothing logged.
 function calTone(pct: number, logged: boolean): string {
   if (!logged) return "#1a2235";
-  if (pct >= 90 && pct <= 110) return "#22d3a5";
+  if (pct >= 90 && pct <= 110) return "#2fe3a8";
   if (pct >= 75 && pct <= 125) return "#fbbf24";
   return "#f56565";
 }
@@ -62,7 +62,7 @@ export function WeeklyMacroGoals({
         })}
       </div>
       <div className="text-[11px] text-text-3 mt-1 flex items-center gap-3 flex-wrap">
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "#22d3a5" }} /> on target</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "#2fe3a8" }} /> on target</span>
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "#fbbf24" }} /> close</span>
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "#f56565" }} /> off</span>
         <span className="flex items-center gap-1"><span className="w-3.5 h-3.5 rounded-full bg-accent flex items-center justify-center"><Check size={9} className="text-white" /></span> protein goal met</span>

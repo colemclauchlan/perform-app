@@ -66,8 +66,8 @@ function StatCard({
   icon?: React.ReactNode;
 }) {
   const CHIP: Record<string, { text: string; bg: string; color: string; ring: string }> = {
-    accent: { text: "text-accent", bg: "#3b82f61a", color: "#3b82f6", ring: "#3b82f633" },
-    green: { text: "text-status-green", bg: "#22d3a51a", color: "#22d3a5", ring: "#22d3a533" },
+    accent: { text: "text-accent", bg: "#3aa6f71a", color: "#3aa6f7", ring: "#3aa6f733" },
+    green: { text: "text-status-green", bg: "#2fe3a81a", color: "#2fe3a8", ring: "#2fe3a833" },
     red: { text: "text-status-red", bg: "#f565651a", color: "#f56565", ring: "#f5656533" },
     amber: { text: "text-status-amber", bg: "#f6ad551a", color: "#f6ad55", ring: "#f6ad5533" },
   };

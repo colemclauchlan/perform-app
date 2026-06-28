@@ -29,7 +29,7 @@ function classify(sys: number, dia: number): { label: string; color: string } {
   if (sys >= 140 || dia >= 90) return { label: "Stage 2 hypertension", color: "#f56565" };
   if (sys >= 130 || dia >= 80) return { label: "Stage 1 hypertension", color: "#f6ad55" };
   if (sys >= 120) return { label: "Elevated", color: "#fbbf24" };
-  return { label: "Normal", color: "#22d3a5" };
+  return { label: "Normal", color: "#2fe3a8" };
 }
 
 function nowLocal() {
@@ -104,8 +104,8 @@ export default function BloodPressurePage() {
       {
         label: "Diastolic",
         data: sorted.map((l) => l.diastolic),
-        borderColor: "#3b82f6",
-        backgroundColor: "#3b82f6",
+        borderColor: "#3aa6f7",
+        backgroundColor: "#3aa6f7",
         tension: 0.3,
         pointRadius: 3,
       },

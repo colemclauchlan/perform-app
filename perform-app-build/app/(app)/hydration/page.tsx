@@ -38,8 +38,8 @@ function WaterBottle({ pct, onAdd }: { pct: number; onAdd: () => void }) {
             <path d="M30 18 q0 -8 8 -8 h16 q8 0 8 8 v6 q0 4 4 8 q12 12 12 30 v54 q0 14 -14 14 h-36 q-14 0 -14 -14 v-54 q0 -18 12 -30 q4 -4 4 -8 z" />
           </clipPath>
           <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={done ? "#22d3a5" : "#38bdf8"} />
-            <stop offset="100%" stopColor={done ? "#10b981" : "#2563eb"} />
+            <stop offset="0%" stopColor={done ? "#2fe3a8" : "#38bdf8"} />
+            <stop offset="100%" stopColor={done ? "#10b981" : "#189bf5"} />
           </linearGradient>
         </defs>
         {/* water (clipped to bottle) */}
@@ -142,7 +142,7 @@ export default function HydrationPage() {
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="#1a2235" strokeWidth="3" />
               <circle
                 cx="18" cy="18" r="15.9" fill="none"
-                stroke="#2563eb" strokeWidth="3"
+                stroke="#189bf5" strokeWidth="3"
                 strokeDasharray={`${pct} ${100 - pct}`}
                 strokeLinecap="round"
                 style={{ transition: "stroke-dasharray 0.6s ease" }}
@@ -184,7 +184,7 @@ export default function HydrationPage() {
             <div className="mt-3 h-2 bg-bg-3 rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full progress-bar"
-                style={{ width: `${pct}%`, background: pct >= 100 ? "#22d3a5" : "#2563eb" }}
+                style={{ width: `${pct}%`, background: pct >= 100 ? "#2fe3a8" : "#189bf5" }}
               />
             </div>
             <div className="text-[11px] text-text-3 mt-1">{DAILY_TARGET_ML - todayTotal > 0 ? `${DAILY_TARGET_ML - todayTotal}ml remaining` : "Goal reached!"}</div>
@@ -277,8 +277,8 @@ export default function HydrationPage() {
                     style={{
                       height: `${pct}%`,
                       background: isToday
-                        ? over ? "#22d3a5" : "#2563eb"
-                        : over ? "rgba(34,211,165,0.25)" : "rgba(37,99,235,0.2)",
+                        ? over ? "#2fe3a8" : "#189bf5"
+                        : over ? "rgba(47,227,168,0.25)" : "rgba(24,155,245,0.2)",
                     }}
                   />
                   <span className="absolute -bottom-5 text-[9px] text-text-3">{label}</span>

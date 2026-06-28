@@ -31,9 +31,9 @@ export function HeroBackdrop({ className = "" }: { className?: string }) {
         className="absolute inset-0 animate-aurora"
         style={{
           background:
-            "radial-gradient(38% 50% at 18% 12%, rgba(59,130,246,0.26), transparent 60%)," +
-            "radial-gradient(42% 52% at 84% 14%, rgba(124,92,255,0.22), transparent 60%)," +
-            "radial-gradient(54% 60% at 50% 110%, rgba(34,211,165,0.14), transparent 60%)",
+            "radial-gradient(38% 50% at 18% 12%, rgba(24,155,245,0.26), transparent 60%)," +
+            "radial-gradient(42% 52% at 84% 14%, rgba(24,155,245,0.22), transparent 60%)," +
+            "radial-gradient(54% 60% at 50% 110%, rgba(47,227,168,0.14), transparent 60%)",
           filter: "blur(16px)",
         }}
       />
@@ -47,7 +47,7 @@ export function HeroBackdrop({ className = "" }: { className?: string }) {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(120% 90% at 50% 0%, transparent 40%, rgba(8,11,18,0.55) 78%, #080b12 100%)",
+            "radial-gradient(120% 90% at 50% 0%, transparent 40%, rgba(14,22,35,0.55) 78%, #0e1623 100%)",
         }}
       />
     </div>

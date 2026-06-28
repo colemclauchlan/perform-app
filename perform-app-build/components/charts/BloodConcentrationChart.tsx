@@ -90,8 +90,8 @@ function buildConcentrationSeries(
 
 // Generate a distinct color for each compound
 const COLORS = [
-  { border: "#2563eb", bg: "rgba(37,99,235,0.15)" },
-  { border: "#22d3a5", bg: "rgba(34,211,165,0.12)" },
+  { border: "#189bf5", bg: "rgba(24,155,245,0.15)" },
+  { border: "#2fe3a8", bg: "rgba(47,227,168,0.12)" },
   { border: "#f6ad55", bg: "rgba(246,173,85,0.12)" },
   { border: "#fc8181", bg: "rgba(252,129,129,0.12)" },
   { border: "#a78bfa", bg: "rgba(167,139,250,0.12)" },

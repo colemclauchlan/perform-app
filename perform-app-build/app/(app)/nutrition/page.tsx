@@ -373,7 +373,7 @@ export default function NutritionPage() {
             <div className="absolute -top-10 -right-8 w-44 h-44 bg-brand-gradient opacity-20 blur-3xl pointer-events-none" />
             <div className="relative">
               <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-text-3 font-semibold mb-2">
-                <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "#2563eb1a", color: "#3b82f6", boxShadow: "inset 0 0 0 1px #2563eb33" }}>
+                <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "#189bf51a", color: "#3aa6f7", boxShadow: "inset 0 0 0 1px #189bf533" }}>
                   <Flame size={13} />
                 </span>
                 Calories today

@@ -8,9 +8,9 @@
 
 html,
 body {
-  background: #080b12;
-  color: #e8edf5;
-  font-family: var(--font-inter), "Inter", system-ui, sans-serif;
+  background: #0e1623; /* Vital Signal void */
+  color: #eef3fa;
+  font-family: var(--font-outfit), "Outfit", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   /* Keep iOS from auto-zooming type in landscape / accessibility modes. */
@@ -52,7 +52,7 @@ h1,
 h2,
 h3,
 .font-display {
-  font-family: var(--font-display), var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-display), var(--font-outfit), system-ui, sans-serif;
   letter-spacing: -0.02em;
 }
 
@@ -72,9 +72,9 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(70% 50% at 50% -8%, rgba(37, 99, 235, 0.12), transparent 68%),
-    radial-gradient(48% 40% at 98% 2%, rgba(124, 92, 255, 0.09), transparent 60%),
-    radial-gradient(58% 50% at 0% 10%, rgba(34, 211, 165, 0.05), transparent 60%);
+    radial-gradient(70% 50% at 50% -8%, rgba(24, 155, 245, 0.12), transparent 68%),
+    radial-gradient(48% 40% at 98% 2%, rgba(19, 70, 216, 0.09), transparent 60%),
+    radial-gradient(58% 50% at 0% 10%, rgba(47, 227, 168, 0.05), transparent 60%);
 }
 
 /* Hairline grain overlay — breaks up flat dark fills so they read as a crafted
@@ -102,21 +102,21 @@ body::after {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e2d45;
+  background: #2d3e58;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2a3f5e;
+  background: #3d5070;
 }
 
 /* Form element base styling */
 input,
 select,
 textarea {
-  background: #131922;
-  border: 1px solid #1e2d45;
+  background: #1a2433;
+  border: 1px solid #2d3e58;
   border-radius: 8px;
-  color: #e8edf5;
+  color: #eef3fa;
   font-size: 14px;
   padding: 9px 11px;
   width: 100%;
@@ -127,20 +127,20 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+  border-color: #189bf5;
+  box-shadow: 0 0 0 3px rgba(24, 155, 245, 0.22);
 }
 input:hover:not(:focus),
 select:hover:not(:focus),
 textarea:hover:not(:focus) {
-  border-color: #2a3f5e;
+  border-color: #3d5070;
 }
 input::placeholder,
 textarea::placeholder {
-  color: #4a5568;
+  color: #6c7f99;
 }
 select option {
-  background: #131922;
+  background: #1a2433;
 }
 textarea {
   resize: vertical;
@@ -199,8 +199,8 @@ textarea {
 }
 
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35); }
-  50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(24, 155, 245, 0.35); }
+  50% { box-shadow: 0 0 0 6px rgba(24, 155, 245, 0); }
 }
 
 /* Defined directly (not just in tailwind.config) so .text-brand / .shine-overlay
@@ -253,7 +253,7 @@ textarea {
 
 /* Skeleton loading shimmer */
 .skeleton {
-  background: linear-gradient(100deg, #131922 30%, #1a2235 50%, #131922 70%);
+  background: linear-gradient(100deg, #1a2433 30%, #27344a 50%, #1a2433 70%);
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;
   border-radius: 8px;
@@ -261,7 +261,7 @@ textarea {
 
 /* Reusable gradient text accent */
 .text-gradient {
-  background: linear-gradient(135deg, #93c5fd 0%, #3b82f6 55%, #818cf8 100%);
+  background: linear-gradient(135deg, #7cc2fb 0%, #189bf5 55%, #1346d8 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -289,7 +289,7 @@ main,
 
 /* Glow effects */
 .glow-blue {
-  box-shadow: 0 0 20px rgba(37, 99, 235, 0.2), 0 0 40px rgba(37, 99, 235, 0.05);
+  box-shadow: 0 0 20px rgba(24, 155, 245, 0.2), 0 0 40px rgba(24, 155, 245, 0.05);
 }
 
 /* Gradient border */
@@ -302,7 +302,7 @@ main,
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, #2563eb, #1e2d45);
+  background: linear-gradient(135deg, #189bf5, #2d3e58);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -335,7 +335,7 @@ main,
     @apply relative overflow-hidden bg-bg-1 border border-border-2/60 rounded-2xl shadow-lift;
     background-image:
       linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 30%),
-      radial-gradient(120% 80% at 50% -20%, rgba(37, 99, 235, 0.12), transparent 60%);
+      radial-gradient(120% 80% at 50% -20%, rgba(24, 155, 245, 0.12), transparent 60%);
   }
   .glass {
     @apply bg-bg-1/60 border border-white/10 backdrop-blur-2xl shadow-lift;
@@ -372,9 +372,9 @@ main,
 
 /* ── Premium utilities (3D text, brand gradient, aurora, shine) ───────────── */
 
-/* Animated brand-gradient text — blue→indigo→violet→green. Use on hero words. */
+/* Animated brand "current" text — Pulse Blue → Deep Royal, no violet. Hero words. */
 .text-brand {
-  background: linear-gradient(120deg, #60a5fa, #6b8bff, #9d7bff, #2dd4bf, #60a5fa);
+  background: linear-gradient(120deg, #7cc2fb, #189bf5, #1346d8, #189bf5, #7cc2fb);
   background-size: 220% 100%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -391,7 +391,7 @@ main,
     0 3px 0 #5f7bb5,
     0 4px 0 #41598f,
     0 6px 12px rgba(0, 0, 0, 0.55),
-    0 0 28px rgba(59, 130, 246, 0.35);
+    0 0 28px rgba(24, 155, 245, 0.35);
 }
 
 /* Animated aurora backdrop for landing/login hero surfaces only. */
@@ -406,9 +406,9 @@ main,
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(38% 50% at 18% 12%, rgba(59, 130, 246, 0.28), transparent 60%),
-    radial-gradient(42% 52% at 84% 14%, rgba(124, 92, 255, 0.24), transparent 60%),
-    radial-gradient(52% 60% at 50% 108%, rgba(34, 211, 165, 0.16), transparent 60%);
+    radial-gradient(38% 50% at 18% 12%, rgba(24, 155, 245, 0.28), transparent 60%),
+    radial-gradient(42% 52% at 84% 14%, rgba(19, 70, 216, 0.24), transparent 60%),
+    radial-gradient(52% 60% at 50% 108%, rgba(47, 227, 168, 0.14), transparent 60%);
   filter: blur(20px);
   animation: auroraDrift 16s ease-in-out infinite;
 }

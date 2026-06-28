@@ -68,7 +68,7 @@ export default function WeightPage() {
     const glp = doses.filter((d) => d.compound_type === "GLP-1");
     const aas = doses.filter((d) => d.compound_type === "Steroid");
     const out: CompoundOverlay[] = [];
-    const g = buildOverlay(glp, dates, "GLP-1 level", "#22d3a5", 165);
+    const g = buildOverlay(glp, dates, "GLP-1 level", "#2fe3a8", 165);
     const a = buildOverlay(aas, dates, "AAS level", "#f59e0b", 100);
     if (g) out.push(g);
     if (a) out.push(a);

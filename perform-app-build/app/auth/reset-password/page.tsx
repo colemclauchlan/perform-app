@@ -61,7 +61,7 @@ export default function ResetPasswordPage() {
         transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
       >
         <div className="flex items-center justify-center mb-7">
-          <Logo variant="full" size={88} className="rounded-xl drop-shadow-[0_8px_30px_rgba(37,99,235,0.35)]" />
+          <Logo variant="full" size={88} className="rounded-xl drop-shadow-[0_8px_30px_rgba(24,155,245,0.35)]" />
         </div>
 
         <div className="glass hairline-top rounded-2xl p-6">

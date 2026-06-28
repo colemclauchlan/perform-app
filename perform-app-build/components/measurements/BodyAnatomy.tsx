@@ -96,7 +96,7 @@ export function BodyAnatomy({
             <stop offset="100%" stopColor="#141d30" />
           </linearGradient>
           <filter id="bodyGlow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#2563eb" floodOpacity="0.35" />
+            <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#189bf5" floodOpacity="0.35" />
           </filter>
         </defs>
         <g fill="url(#bodyFill)" stroke="#3a557f" strokeWidth="2" filter="url(#bodyGlow)">

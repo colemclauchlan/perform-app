@@ -31,7 +31,7 @@ export function BodyGltfModel3DView({
   return (
     <div className={className}>
       <div
-        className="relative rounded-xl border border-border bg-[radial-gradient(120%_90%_at_50%_0%,rgba(37,99,235,0.10),transparent_60%)] overflow-hidden"
+        className="relative rounded-xl border border-border bg-[radial-gradient(120%_90%_at_50%_0%,rgba(24,155,245,0.10),transparent_60%)] overflow-hidden"
         style={{ height }}
       >
         <BodyGltfModel3D points={points} autoRotate={autoRotate} />

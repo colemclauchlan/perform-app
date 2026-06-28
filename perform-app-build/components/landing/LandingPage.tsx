@@ -28,7 +28,7 @@ const FEATURES = [
     icon: Dumbbell,
     title: "Training & Progression",
     desc: "Build workouts, track every set, and watch estimated 1RM and weekly tonnage trend over time.",
-    tint: "#3b82f6",
+    tint: "#3aa6f7",
   },
   {
     icon: Ruler,
@@ -46,13 +46,13 @@ const FEATURES = [
     icon: Syringe,
     title: "Compound Protocols",
     desc: "Plan and log peptide and compound protocols with dosing schedules, half-life plotting, and a reconstitution/dose calculator.",
-    tint: "#7c5cff",
+    tint: "#189bf5",
   },
   {
     icon: Sparkles,
     title: "AI Coach, Chef & Meal Plans",
     desc: "An IFBB-level coach that reads your data for training, nutrition, and recovery — plus an AI chef and AI meal-plan builder that generate plans around your goals.",
-    tint: "#22d3a5",
+    tint: "#2fe3a8",
   },
 ];
 

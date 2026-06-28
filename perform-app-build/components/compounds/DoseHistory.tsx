@@ -91,7 +91,7 @@ export function DoseHistory() {
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span
                       className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: "#3b82f61a", color: "#3b82f6", boxShadow: "inset 0 0 0 1px #3b82f633" }}
+                      style={{ background: "#3aa6f71a", color: "#3aa6f7", boxShadow: "inset 0 0 0 1px #3aa6f733" }}
                     >
                       <Syringe size={13} />
                     </span>

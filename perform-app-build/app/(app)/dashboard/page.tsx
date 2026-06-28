@@ -48,8 +48,8 @@ function mergeWidgets(saved?: WidgetCfg[]): WidgetCfg[] {
 
 // Static tinted-chip styles (kept literal so Tailwind/inline hex never get purged).
 const STAT_CHIP: Record<"blue" | "green" | "red" | "amber", { bg: string; color: string; ring: string }> = {
-  blue: { bg: "#3b82f61a", color: "#3b82f6", ring: "#3b82f633" },
-  green: { bg: "#22d3a51a", color: "#22d3a5", ring: "#22d3a533" },
+  blue: { bg: "#3aa6f71a", color: "#3aa6f7", ring: "#3aa6f733" },
+  green: { bg: "#2fe3a81a", color: "#2fe3a8", ring: "#2fe3a833" },
   red: { bg: "#f565651a", color: "#f56565", ring: "#f5656533" },
   amber: { bg: "#f6ad551a", color: "#f6ad55", ring: "#f6ad5533" },
 };
@@ -158,7 +158,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="w-full rounded-t-lg transition-all" style={{
                       height: `${pct}%`,
-                      background: isToday ? (over ? "#f56565" : "#2563eb") : over ? "rgba(245,101,101,0.25)" : "rgba(37,99,235,0.2)",
+                      background: isToday ? (over ? "#f56565" : "#189bf5") : over ? "rgba(245,101,101,0.25)" : "rgba(24,155,245,0.2)",
                     }} />
                     <span className="absolute -bottom-5 text-[9px] text-text-3">{label}</span>
                   </div>

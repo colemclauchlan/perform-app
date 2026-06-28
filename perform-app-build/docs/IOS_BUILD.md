@@ -42,7 +42,7 @@ In Xcode:
 ## App icon & splash screen
 
 - **Icon:** drop a 1024×1024 PNG (no alpha) into `ios/App/App/Assets.xcassets/AppIcon.appiconset` (use Xcode's single-size slot, or a generator like `@capacitor/assets`). Source art lives in `public/icon-512.png` / `public/bodytracker-icon.png`.
-- **Splash:** background color is set to `#080b12` in `capacitor.config.ts`. For a logo splash, add `@capacitor/splash-screen` assets via `npx capacitor-assets generate --ios`.
+- **Splash:** background color is set to `#0e1623` in `capacitor.config.ts`. For a logo splash, add `@capacitor/splash-screen` assets via `npx capacitor-assets generate --ios`.
 - **Status bar:** the app already uses `black-translucent` + `env(safe-area-inset-*)` padding so content respects the notch and home indicator.
 
 ## App Store metadata (placeholders to fill in App Store Connect)

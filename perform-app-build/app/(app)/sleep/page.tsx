@@ -157,7 +157,7 @@ export default function SleepPage() {
         <div className="h-3 bg-bg-3 rounded-full overflow-hidden">
           <div
             className="h-full rounded-full progress-bar"
-            style={{ width: `${weekPct}%`, background: weekPct >= 100 ? "#22d3a5" : "#2563eb" }}
+            style={{ width: `${weekPct}%`, background: weekPct >= 100 ? "#2fe3a8" : "#189bf5" }}
           />
         </div>
         <div className="mt-3 flex items-center gap-2 text-[11px] text-text-3 bg-bg-2 rounded-lg px-3 py-2 border border-border">
@@ -236,7 +236,7 @@ export default function SleepPage() {
                         className="w-full rounded-t-md transition-all"
                         style={{
                           height: `${pct}%`,
-                          background: enough ? "#22d3a5" : "rgba(37,99,235,0.4)",
+                          background: enough ? "#2fe3a8" : "rgba(24,155,245,0.4)",
                         }}
                       />
                       <span className="absolute -bottom-5 text-[8px] text-text-3">{label}</span>

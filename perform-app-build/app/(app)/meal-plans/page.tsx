@@ -431,7 +431,7 @@ type AIReview = {
 };
 
 function ratingTone(rating: number): string {
-  if (rating >= 8) return "#22d3a5";
+  if (rating >= 8) return "#2fe3a8";
   if (rating >= 6) return "#fbbf24";
   if (rating >= 4) return "#fb923c";
   return "#fb7185";

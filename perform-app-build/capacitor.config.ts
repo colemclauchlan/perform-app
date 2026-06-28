@@ -23,19 +23,19 @@ const config: CapacitorConfig = {
   ios: {
     // Respect the notch / home indicator; pages already use env(safe-area-inset-*).
     contentInset: "always",
-    backgroundColor: "#080b12",
+    backgroundColor: "#0e1623",
     // Prevent the rubber-band overscroll from revealing a white background.
     scrollEnabled: true,
     // Render at phone width (no desktop user-agent / layout in the WebView).
     preferredContentMode: "mobile",
   },
-  backgroundColor: "#080b12",
+  backgroundColor: "#0e1623",
   plugins: {
     SplashScreen: {
       // We hide it from CapacitorInit once React paints, so it never flashes
       // a blank frame between the launch image and the app.
       launchAutoHide: false,
-      backgroundColor: "#080b12",
+      backgroundColor: "#0e1623",
       showSpinner: false,
     },
     Keyboard: {

@@ -82,8 +82,8 @@ export function WorkoutVolumeChart({
       {
         label: "Tonnage",
         data,
-        backgroundColor: "rgba(37,99,235,0.55)",
-        hoverBackgroundColor: "#2563eb",
+        backgroundColor: "rgba(24,155,245,0.55)",
+        hoverBackgroundColor: "#189bf5",
         borderRadius: 6,
         maxBarThickness: 36,
       },

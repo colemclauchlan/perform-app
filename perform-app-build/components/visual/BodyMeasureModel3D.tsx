@@ -133,7 +133,7 @@ function Callout({ point }: { point: MeasurePoint }) {
     <>
       <mesh position={[w(fx), w(fy), w(fz)]}>
         <sphereGeometry args={[0.018, 16, 16]} />
-        <meshBasicMaterial color="#2563eb" toneMapped={false} />
+        <meshBasicMaterial color="#189bf5" toneMapped={false} />
       </mesh>
       <Html
         position={[w(fx), w(fy), w(fz)]}

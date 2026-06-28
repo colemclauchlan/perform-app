@@ -9,7 +9,7 @@ icon and splash size into the native `ios/` project automatically when you run
 | File | Size | Status |
 | --- | --- | --- |
 | `icon.png` | **1024 × 1024** | ✅ **Provided** — the BodyTracker emblem on a solid white background (no alpha, App-Store-safe). Replace it if you want a different icon; keep it 1024×1024 with no transparency. |
-| `splash.png` | **2732 × 2732** | ⬜ **Optional.** A launch image. If you don't add one, iOS shows a solid `#080b12` launch screen (configured in `capacitor.config.ts`), which is fine. To brand it, drop a 2732×2732 PNG with the logo centered in the middle ~⅓ (edges get cropped per device). |
+| `splash.png` | **2732 × 2732** | ⬜ **Optional.** A launch image. If you don't add one, iOS shows a solid `#0e1623` launch screen (configured in `capacitor.config.ts`), which is fine. To brand it, drop a 2732×2732 PNG with the logo centered in the middle ~⅓ (edges get cropped per device). |
 | `splash-dark.png` | 2732 × 2732 | ⬜ Optional dark-appearance splash. Falls back to `splash.png`. |
 
 ## Steps (Mac)

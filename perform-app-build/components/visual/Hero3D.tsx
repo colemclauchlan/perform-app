@@ -50,9 +50,9 @@ export default function Hero3D() {
     >
       <ambientLight intensity={0.55} />
       <pointLight position={[4, 3, 5]} intensity={2.2} color="#7aa2ff" />
-      <pointLight position={[-5, -2, 2]} intensity={1.5} color="#7c5cff" />
+      <pointLight position={[-5, -2, 2]} intensity={1.5} color="#189bf5" />
       <Core />
-      <Sparkles count={64} scale={[11, 6, 4]} size={2.1} speed={0.35} color="#9d7bff" opacity={0.7} />
+      <Sparkles count={64} scale={[11, 6, 4]} size={2.1} speed={0.35} color="#3aa6f7" opacity={0.7} />
     </Canvas>
   );
 }

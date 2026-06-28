@@ -5,8 +5,8 @@
 
 type Level = "primary" | "secondary" | "off";
 
-const PRIMARY = "#22d3a5";
-const SECONDARY = "#2563eb";
+const PRIMARY = "#2fe3a8";
+const SECONDARY = "#189bf5";
 const OFF = "rgba(255,255,255,0.06)";
 const STROKE = "rgba(255,255,255,0.14)";
 

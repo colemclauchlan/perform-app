@@ -138,7 +138,7 @@ export function Sidebar() {
         className={cn(
           "flex items-center gap-2.5 px-3 py-2 mx-1 text-[13px] transition-all border-l-2 rounded-r-lg group",
           active
-            ? "text-accent bg-accent-dim border-accent font-medium shadow-[inset_0_0_18px_-8px_rgba(37,99,235,0.5)]"
+            ? "text-accent bg-accent-dim border-accent font-medium shadow-[inset_0_0_18px_-8px_rgba(24,155,245,0.5)]"
             : "text-text-2 border-transparent hover:text-text-1 hover:bg-bg-2 hover:translate-x-0.5"
         )}
       >
@@ -155,7 +155,7 @@ export function Sidebar() {
         <Logo
           variant="icon"
           size={72}
-          className="rounded-full ring-1 ring-white/10 drop-shadow-[0_6px_20px_rgba(37,99,235,0.35)] transition-transform group-hover:scale-105"
+          className="rounded-full ring-1 ring-white/10 drop-shadow-[0_6px_20px_rgba(24,155,245,0.35)] transition-transform group-hover:scale-105"
         />
       </Link>
 
@@ -201,7 +201,7 @@ export function Sidebar() {
                 className={cn(
                   "flex-1 flex items-center gap-2.5 px-2 py-2 mr-1 text-[13px] transition-all border-l-2 rounded-r-lg",
                   active
-                    ? "text-accent bg-accent-dim border-accent font-medium shadow-[inset_0_0_18px_-8px_rgba(37,99,235,0.5)]"
+                    ? "text-accent bg-accent-dim border-accent font-medium shadow-[inset_0_0_18px_-8px_rgba(24,155,245,0.5)]"
                     : "text-text-2 border-transparent hover:text-text-1 hover:bg-bg-2"
                 )}
               >

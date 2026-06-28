@@ -46,7 +46,7 @@ const ANCHORS: Record<string, { y: number; x: number }> = {
 // bigger and clearer than a plain dot, with an invisible larger hit area.
 function Marker({ active, onOver, onOut, onClick }: { active: boolean; onOver: () => void; onOut: () => void; onClick: () => void }) {
   const r = active ? 0.036 : 0.028;
-  const col = active ? "#9ecbff" : "#3b82f6";
+  const col = active ? "#9ecbff" : "#3aa6f7";
   return (
     <Billboard>
       <mesh>

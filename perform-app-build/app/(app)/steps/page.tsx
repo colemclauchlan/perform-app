@@ -154,7 +154,7 @@ export default function StepsPage() {
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="#1a2235" strokeWidth="3" />
               <circle
                 cx="18" cy="18" r="15.9" fill="none"
-                stroke={avgPct >= 100 ? "#22d3a5" : "#2563eb"} strokeWidth="3"
+                stroke={avgPct >= 100 ? "#2fe3a8" : "#189bf5"} strokeWidth="3"
                 strokeDasharray={`${avgPct} ${100 - avgPct}`}
                 strokeLinecap="round"
                 style={{ transition: "stroke-dasharray 0.6s ease" }}
@@ -202,7 +202,7 @@ export default function StepsPage() {
                   </div>
                   <div
                     className="w-full rounded-t transition-all"
-                    style={{ height: `${h}%`, background: hit ? "#22d3a5" : "rgba(37,99,235,0.5)" }}
+                    style={{ height: `${h}%`, background: hit ? "#2fe3a8" : "rgba(24,155,245,0.5)" }}
                   />
                 </div>
               );

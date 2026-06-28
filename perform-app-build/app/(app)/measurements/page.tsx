@@ -193,12 +193,12 @@ export default function MeasurementsPage() {
                 icon={<CalendarDays size={14} />}
                 label="Last logged"
                 value={latest ? formatDate(latest.logged_date) : "—"}
-                tone="#2563eb"
+                tone="#189bf5"
                 small
               />
               <div className="pt-2 mt-1 border-t border-border/60 flex flex-col gap-1.5 text-[11px] text-text-2">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ background: "#2563eb", boxShadow: "0 0 6px #2563ebaa" }} /> Tracked point
+                  <span className="w-2 h-2 rounded-full" style={{ background: "#189bf5", boxShadow: "0 0 6px #189bf5aa" }} /> Tracked point
                 </span>
                 <span className="flex items-center gap-1.5">
                   <TrendingUp size={11} className="text-status-green" /> Up since last log
@@ -290,12 +290,12 @@ export default function MeasurementsPage() {
                     datasets: [
                       {
                         data: trendSeries.values,
-                        borderColor: "#2563eb",
-                        backgroundColor: "rgba(37,99,235,0.14)",
+                        borderColor: "#189bf5",
+                        backgroundColor: "rgba(24,155,245,0.14)",
                         fill: true,
                         tension: 0.35,
                         pointRadius: 3,
-                        pointBackgroundColor: "#2563eb",
+                        pointBackgroundColor: "#189bf5",
                       },
                     ],
                   }}

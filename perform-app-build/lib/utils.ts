@@ -64,8 +64,8 @@ export function formatRelativeDays(iso: string): string {
 
 // Muscle group → accent color, shared across workout + exercise library.
 export const MUSCLE_COLORS: Record<string, string> = {
-  Chest: "#2563eb",
-  Back: "#22d3a5",
+  Chest: "#189bf5",
+  Back: "#2fe3a8",
   Shoulders: "#f6ad55",
   Biceps: "#a78bfa",
   Triceps: "#fc8181",
@@ -217,7 +217,7 @@ export function computeMacros(
 // styles and `text-*` classes stay in sync.
 export const MACRO_HEX = {
   calories: "#f6ad55", // status-amber
-  protein: "#2563eb", //  accent
+  protein: "#189bf5", //  accent
   carbs: "#2dd4bf", //    status-teal
   fat: "#fc8181", //      status-coral
 } as const;

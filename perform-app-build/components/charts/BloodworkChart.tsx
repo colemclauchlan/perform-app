@@ -25,8 +25,8 @@ ChartJS.register(
 
 // A rotating palette so each toggled marker gets a distinct colour.
 const PALETTE = [
-  "#3b82f6",
-  "#22d3a5",
+  "#3aa6f7",
+  "#2fe3a8",
   "#f6ad55",
   "#f56565",
   "#a78bfa",

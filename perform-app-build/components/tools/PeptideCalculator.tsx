@@ -87,8 +87,8 @@ function SyringeGraphic({ iu }: { iu: number }) {
           className="absolute left-0 right-0 bottom-0 transition-all duration-300"
           style={{
             height: `${fillPct * 100}%`,
-            background: "linear-gradient(180deg, rgba(59,130,246,0.55), rgba(37,99,235,0.75))",
-            boxShadow: "inset 0 2px 6px rgba(59,130,246,0.5)",
+            background: "linear-gradient(180deg, rgba(24,155,245,0.55), rgba(24,155,245,0.75))",
+            boxShadow: "inset 0 2px 6px rgba(24,155,245,0.5)",
           }}
         />
         {/* draw line */}
