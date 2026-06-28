@@ -1,0 +1,38 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="BodyTrack:AI mark">
+  <defs>
+    <linearGradient id="vsBlue" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#1346d8"></stop>
+      <stop offset="1" stop-color="#3aa6f7"></stop>
+    </linearGradient>
+    <linearGradient id="vsSteel" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef3f8"></stop>
+      <stop offset="1" stop-color="#9fb0c0"></stop>
+    </linearGradient>
+    <radialGradient id="vsNode" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff"></stop>
+      <stop offset="0.45" stop-color="#7cc2fb"></stop>
+      <stop offset="1" stop-color="#189bf5"></stop>
+    </radialGradient>
+    <filter id="vsGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="3.4" result="b"></feGaussianBlur>
+      <feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+    </filter>
+  </defs>
+
+  
+  <g fill="none" stroke-width="9" stroke-linecap="round">
+    
+    <path d="M92 26 A76 76 0 0 0 100 178" stroke="url(#vsBlue)"></path>
+    
+    <path d="M108 26 A76 76 0 0 1 100 178" stroke="url(#vsSteel)"></path>
+  </g>
+
+  
+  <line x1="100" y1="40" x2="100" y2="92" stroke="#cfe0f2" stroke-width="3" stroke-linecap="round"></line>
+
+  
+  <polyline points="40,118 70,118 80,118 88,96 100,140 112,104 122,118 160,118" fill="none" stroke="url(#vsSteel)" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+
+  
+  <circle cx="100" cy="96" r="7.5" fill="url(#vsNode)" filter="url(#vsGlow)"></circle>
+</svg>

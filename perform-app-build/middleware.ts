@@ -45,7 +45,8 @@ export async function middleware(request: NextRequest) {
       pathname === "/" ||
       pathname.startsWith("/privacy") ||
       pathname.startsWith("/terms") ||
-      pathname.startsWith("/support");
+      pathname.startsWith("/support") ||
+      pathname.startsWith("/design-system");
     // Recovery: a logged-in (recovery-session) user must be allowed to reach the
     // password-reset screen instead of being bounced to the dashboard.
     const isResetRoute = pathname.startsWith("/auth/reset-password");

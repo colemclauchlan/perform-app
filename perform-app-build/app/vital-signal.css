@@ -1,0 +1,251 @@
+/* ============================================================
+   BodyTrack:AI — VITAL SIGNAL tokens, ported into our theme layer.
+   Every value mirrors design-system/tokens/*.css (the source of truth).
+   Scoped under `.vital-signal` for now so the existing app is untouched
+   until the identity is approved; promote to :root to adopt app-wide.
+   Fonts are wired via next/font (--font-display / --font-outfit /
+   --font-geist-mono set on <html> in layout.tsx).
+   ============================================================ */
+
+.vital-signal {
+  /* ---- Brand primitives ---- */
+  --pulse-blue: #189bf5;
+  --deep-royal: #1346d8;
+  --vital-mint: #2fe3a8;
+  --bone: #eef3f8;
+  --steel: #9fb0c0;
+  --ink: #0c1422;
+
+  /* Blue ramp */
+  --blue-100: #bfe0fd;
+  --blue-200: #7cc2fb;
+  --blue-300: #3aa6f7;
+  --blue-400: #189bf5;
+  --blue-500: #1372d4;
+  --blue-600: #1346d8;
+  --blue-700: #0e34a0;
+
+  /* ---- Ink / surface ramp ---- */
+  --void: #0e1623;
+  --surface-0: #131d2c;
+  --surface-1: #1a2433;
+  --surface-2: #1f2b3c;
+  --surface-3: #27344a;
+  --surface-4: #323f59;
+
+  /* ---- Hairlines ---- */
+  --line: #2d3e58;
+  --line-2: #3d5070;
+  --line-glow: rgba(24, 155, 245, 0.4);
+
+  /* ---- Text on dark ---- */
+  --text-1: #eef3fa;
+  --text-2: #aebccd;
+  --text-3: #6c7f99;
+  --text-4: #475670;
+  --text-on-blue: #ffffff;
+  --text-on-bone: #0c1422;
+
+  /* ---- Accents ---- */
+  --accent: var(--pulse-blue);
+  --accent-press: var(--deep-royal);
+  --accent-bright: #3aa6f7;
+  --accent-dim: rgba(24, 155, 245, 0.12);
+  --accent-dim-2: rgba(24, 155, 245, 0.2);
+  --accent-glow: rgba(24, 155, 245, 0.3);
+
+  /* ---- Living mint (rationed) ---- */
+  --mint: var(--vital-mint);
+  --mint-dim: rgba(47, 227, 168, 0.12);
+  --mint-glow: rgba(47, 227, 168, 0.28);
+
+  /* ---- Status ---- */
+  --ok: #2fe3a8;
+  --ok-dim: rgba(47, 227, 168, 0.12);
+  --warn: #f6ad55;
+  --warn-dim: rgba(246, 173, 85, 0.12);
+  --high: #f56565;
+  --high-dim: rgba(245, 101, 101, 0.12);
+  --info: #63b3ed;
+  --info-dim: rgba(99, 179, 237, 0.12);
+
+  /* ---- Macro / data-series ---- */
+  --series-protein: #189bf5;
+  --series-carbs: #2dd4bf;
+  --series-fat: #f6ad55;
+  --series-1: #189bf5;
+  --series-2: #2fe3a8;
+  --series-3: #f6ad55;
+  --series-4: #63b3ed;
+  --series-5: #b794f6;
+
+  /* ---- Compound-type coding ---- */
+  --type-steroid: #189bf5;
+  --type-peptide: #2dd4bf;
+  --type-ai-serm: #f6ad55;
+  --type-ancillary: #f56565;
+  --type-sarm: #2fe3a8;
+  --type-supplement: #63b3ed;
+
+  /* ---- Signature gradients ---- */
+  --grad-current: linear-gradient(135deg, #189bf5 0%, #1346d8 100%);
+  --grad-current-soft: linear-gradient(135deg, rgba(24, 155, 245, 0.18), rgba(19, 70, 216, 0.06));
+  --grad-steel: linear-gradient(160deg, #eef3f8 0%, #9fb0c0 55%, #6b7c91 100%);
+  --grad-void: radial-gradient(130% 120% at 50% 0%, #25324a 0%, #18222f 55%, #0e1623 100%);
+  --grad-wordmark: linear-gradient(180deg, #eef3f8 0%, #9fb0c0 100%);
+
+  /* ---- Semantic surface aliases ---- */
+  --bg-app: var(--void);
+  --bg-canvas: var(--surface-0);
+  --surface-panel: var(--surface-1);
+  --surface-card: var(--surface-2);
+  --surface-raised: var(--surface-3);
+  --border: var(--line);
+  --border-strong: var(--line-2);
+
+  /* ---- Type families (wired to next/font; display = Space Grotesk on :root) ---- */
+  --font-ui: var(--font-outfit), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), "JetBrains Mono", ui-monospace, monospace;
+
+  /* ---- Weights ---- */
+  --w-light: 300;
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-semibold: 600;
+  --w-bold: 700;
+  --w-black: 900;
+
+  /* ---- Display scale (Space Grotesk) ---- */
+  --display-2xl: 84px;
+  --display-xl: 64px;
+  --display-lg: 48px;
+  --display-md: 36px;
+  --display-sm: 28px;
+
+  /* ---- UI / body scale (Outfit) ---- */
+  --text-2xl: 24px;
+  --text-xl: 20px;
+  --text-lg: 17px;
+  --text-md: 15px;
+  --text-sm: 13px;
+  --text-xs: 11px;
+
+  /* ---- Data scale (Geist Mono) ---- */
+  --data-lg: 28px;
+  --data-md: 16px;
+  --data-sm: 13px;
+  --data-xs: 11px;
+
+  /* ---- Line heights ---- */
+  --lh-tight: 1.04;
+  --lh-snug: 1.25;
+  --lh-base: 1.5;
+  --lh-data: 1.2;
+
+  /* ---- Tracking ---- */
+  --track-display: -0.02em;
+  --track-tight: -0.01em;
+  --track-normal: 0;
+  --track-label: 0.14em;
+  --track-data: 0.02em;
+
+  /* ---- Spacing (4px scale) ---- */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --gap-card: 16px;
+  --pad-card: 16px;
+  --pad-card-lg: 20px;
+  --pad-page: 24px;
+  --pad-section: 48px;
+  --sidebar-w: 220px;
+  --content-max: 1200px;
+  --content-narrow: 760px;
+  --topbar-h: 56px;
+
+  /* ---- Radii ---- */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-2xl: 22px;
+  --r-pill: 999px;
+
+  /* ---- Border widths ---- */
+  --bw-hair: 1px;
+  --bw-2: 2px;
+
+  /* ---- Elevation (deep void shadows) ---- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.55);
+  --shadow-modal: 0 24px 80px rgba(0, 0, 0, 0.65);
+  --inset-well: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+
+  /* ---- Charged glows ---- */
+  --glow-blue: 0 0 0 1px rgba(24, 155, 245, 0.35), 0 0 24px rgba(24, 155, 245, 0.22);
+  --glow-blue-soft: 0 0 28px rgba(24, 155, 245, 0.16);
+  --glow-mint: 0 0 0 1px rgba(47, 227, 168, 0.4), 0 0 22px rgba(47, 227, 168, 0.25);
+  --glow-node: 0 0 12px rgba(58, 166, 247, 0.9), 0 0 28px rgba(24, 155, 245, 0.5);
+  --focus-ring: 0 0 0 3px rgba(24, 155, 245, 0.22);
+
+  /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 0.12s;
+  --dur: 0.2s;
+  --dur-slow: 0.4s;
+  --dur-bar: 0.8s;
+
+  /* ---- Container base look ---- */
+  background: var(--grad-void);
+  color: var(--text-1);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+}
+
+/* ---- Typography helpers (from tokens/typography.css) ---- */
+.vital-signal .vs-display {
+  font-family: var(--font-display);
+  font-weight: var(--w-bold);
+  letter-spacing: var(--track-display);
+  line-height: var(--lh-tight);
+  color: var(--text-1);
+}
+.vital-signal .vs-label {
+  font-family: var(--font-mono);
+  font-size: var(--data-xs);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.vital-signal .vs-data {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--track-data);
+  color: var(--text-1);
+}
+.vital-signal .vs-body {
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  font-weight: var(--w-regular);
+  line-height: var(--lh-base);
+  color: var(--text-2);
+}
+
+@keyframes vs-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

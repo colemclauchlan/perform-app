@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Inter, Space_Grotesk, Outfit } from "next/font/google";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
+import "./vital-signal.css";
 import { Toaster } from "react-hot-toast";
 import { Providers } from "@/components/Providers";
 
@@ -15,10 +17,19 @@ const inter = Inter({
 // engineered character instead of the default Inter-everywhere look.
 const display = Space_Grotesk({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
   variable: "--font-display",
 });
+
+// Vital Signal design-system faces: Outfit (UI/body) + Geist Mono (data/timers/IDs).
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-outfit",
+});
+
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
@@ -88,7 +99,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${display.variable}`}>
+    <html lang="en" className={`${inter.variable} ${display.variable} ${outfit.variable} ${GeistMono.variable}`}>
       <body>
         <Providers>
           {children}

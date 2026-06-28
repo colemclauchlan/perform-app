@@ -40,3 +40,7 @@ Thumbs.db
 /skill-observations
 /CLAUDE.md
 /.remember
+
+# Vital Signal design-system reference (heavy: mp4/png + reference .jsx) — kept
+# locally as source of truth; the app uses the ported tokens/components instead.
+/design-system
