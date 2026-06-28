@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardSwitcher } from "@/components/DashboardSwitcher";
 import { SignalHero } from "@/components/dashboard/SignalHero";
 import {
   BarChart,
@@ -136,6 +137,11 @@ export default function DashboardPage() {
 
   return (
     <div className="p-6 max-w-[1200px]">
+      {/* Mobile-only dashboard switcher (desktop switches via the sidebar). */}
+      <div className="md:hidden mb-4">
+        <DashboardSwitcher />
+      </div>
+
       <SignalHero
         eyebrow={`Health · ${dateLabel}`}
         title={heroTitle}
@@ -148,8 +154,8 @@ export default function DashboardPage() {
         caption="Macros, weight, sleep and hydration — read as one continuous signal."
       />
 
-      {/* Top stat cards */}
-      <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
+      {/* Top stat cards — 2×2 on mobile, 4-across on desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4">
         <StatTile label="Calories Today" value={Math.round(totals.cal)} unit={`/ ${targetCal}`} sub={`${calPct}% of goal`} trend={calPct > 110 ? "down" : calPct >= 80 ? "up" : "neutral"} tone={calPct > 110 ? "high" : "blue"} icon={<Apple size={18} />} href="/nutrition" />
         <StatTile label="Protein Today" value={`${Math.round(totals.p)}g`} unit={`/ ${targetP}g`} sub={`${protPct}% of goal`} trend={totals.p >= targetP ? "up" : "neutral"} tone="mint" icon={<Activity size={18} />} href="/nutrition" />
         <StatTile label="Body Weight" value={latestWeight ? latestWeight.weight : "—"} unit={latestWeight ? wUnit : ""} sub={bwDelta != null ? `${bwDelta >= 0 ? "+" : ""}${bwDelta} vs prev` : "No entries yet"} trend={bwDelta != null && bwDelta > 0 ? "up" : bwDelta != null && bwDelta < 0 ? "down" : "neutral"} tone="blue" icon={<Scale size={18} />} href="/weight" />
@@ -168,9 +174,9 @@ export default function DashboardPage() {
         ]}
       />
 
-      {/* Main grid: 2fr / 1fr */}
-      <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)" }}>
-        <div className="flex flex-col gap-4 min-w-0">
+      {/* Main grid: stacks on mobile, 2fr / 1fr on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 flex flex-col gap-4 min-w-0">
           <Panel title="Calorie Intake — Last 7 Days" action={<ActionLink href="/nutrition">Log food →</ActionLink>}>
             {calBars.length === 0 ? (
               <div className="text-text-3 text-sm py-8 text-center">No calories logged this week.</div>

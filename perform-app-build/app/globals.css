@@ -367,6 +367,15 @@ main,
   box-shadow: 0 0 0 3px rgba(24, 155, 245, 0.18), 0 0 14px rgba(24, 155, 245, 0.55);
 }
 
+/* Hide scrollbars (used by the mobile bottom-bar's horizontal scroll). */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Tab panel */
 .tab-panel {
   animation: fadeIn 0.2s ease-out forwards;
