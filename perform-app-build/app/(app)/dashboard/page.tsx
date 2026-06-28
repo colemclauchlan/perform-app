@@ -270,10 +270,6 @@ export default function DashboardPage() {
             <BarRow label="Sleep" value={sleepHours != null ? sleepHours : 0} target={8} unit=" / 8h" color={C.sleep} />
             <BarRow label="Hydration" value={(hydrationMl / 1000).toFixed(1)} target={hydrationTarget / 1000} unit=" / 3.5L" color={C.sCarbs} />
             <BarRow label="Steps" value={(stepsToday / 1000).toFixed(1) + "k"} target={stepsTarget / 1000} unit=" / 10k" color={C.sProtein} />
-            <div className="flex items-center gap-3 py-[9px]">
-              <span className="text-[13px] text-text-2 flex-none" style={{ width: 86 }}>Resting HR</span>
-              <span className="data text-[13px] ml-auto text-text-3">— bpm</span>
-            </div>
           </Panel>
 
           <Panel title="Recent Weight" action={<ActionLink href="/weight">All →</ActionLink>}>
