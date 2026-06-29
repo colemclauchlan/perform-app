@@ -11,7 +11,7 @@ import {
   LayoutDashboard, HeartPulse, Dumbbell, FlaskConical, Sparkles, Salad,
   Utensils, ClipboardList, Droplets, Camera, ListChecks, Calculator,
   TestTubes, Droplet, Activity, Scale, Ruler, Moon, Footprints, BookOpen,
-  Apple, Pill, Settings, ChevronDown, LogOut,
+  Apple, Pill, Settings, ChevronDown, LogOut, GripVertical,
 } from "lucide-react";
 
 type Leaf = { href: string; label: string; icon: React.ComponentType<{ size?: number }> };
@@ -96,6 +96,21 @@ const NAV: Group[] = [
   },
 ];
 
+const NAV_ORDER_KEY = "btai-nav-order-v1";
+
+// Merge any saved per-group order with the defaults so new items still appear.
+function buildOrder(saved: Record<string, string[]> | null): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  NAV.forEach((g) => {
+    const savedList = (saved && saved[g.group]) || [];
+    out[g.group] = savedList.filter((id) => g.items.some((it) => it.id === id));
+    g.items.forEach((it) => {
+      if (!out[g.group].includes(it.id)) out[g.group].push(it.id);
+    });
+  });
+  return out;
+}
+
 function LogoLockup() {
   return (
     <span className="inline-flex items-center gap-2.5">
@@ -116,6 +131,40 @@ export function Sidebar({ activePath }: { activePath?: string } = {}) {
   const childActive = (p: Parent) => p.children?.some((c) => pathname === c.href || pathname.startsWith(c.href + "/")) ?? false;
 
   const [open, setOpen] = useState<Record<string, boolean>>({ dashboards: true });
+
+  // Per-group item order (drag to reorder). Starts from defaults; hydrates from
+  // localStorage after mount to avoid an SSR/client mismatch.
+  const [order, setOrder] = useState<Record<string, string[]>>(() => buildOrder(null));
+  const [drag, setDrag] = useState<{ group: string; id: string } | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(NAV_ORDER_KEY);
+      if (raw) setOrder(buildOrder(JSON.parse(raw)));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  function persist(next: Record<string, string[]>) {
+    setOrder(next);
+    try {
+      localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  }
+  function reorder(group: string, fromId: string, toId: string) {
+    if (fromId === toId) return;
+    const list = [...(order[group] || [])];
+    const fi = list.indexOf(fromId);
+    const ti = list.indexOf(toId);
+    if (fi < 0 || ti < 0) return;
+    list.splice(fi, 1);
+    list.splice(ti, 0, fromId);
+    persist({ ...order, [group]: list });
+  }
 
   // Auto-expand the group that owns the active route.
   useEffect(() => {
@@ -144,71 +193,111 @@ export function Sidebar({ activePath }: { activePath?: string } = {}) {
       </Link>
 
       <nav className="flex-1 overflow-y-auto">
-        {NAV.map((g) => (
-          <div key={g.group} className="mb-1">
-            <div className="lab-label px-4 pt-3.5 pb-1.5 text-[9.5px] tracking-[0.16em]">{g.group}</div>
-            {g.items.map((it) => {
-              const Icon = it.icon;
-              const hasChildren = !!it.children?.length;
-              const expanded = !!open[it.id];
-              const selfActive = it.href ? pathname === it.href || pathname.startsWith(it.href + "/") : false;
-              const highlight = selfActive || (hasChildren && childActive(it) && !expanded);
-              const row = (
-                <span
-                  className={cn(
-                    "flex items-center gap-2 w-[calc(100%-8px)] mx-1 px-2.5 py-2 rounded-r-md border-l-2 text-[13px] transition-colors cursor-pointer",
-                    highlight
-                      ? "bg-accent-dim border-accent text-accent-bright font-semibold"
-                      : "border-transparent text-text-2 hover:text-text-1 hover:bg-bg-2"
-                  )}
-                >
-                  <Icon size={15} />
-                  <span className="flex-1">{it.label}</span>
-                  {hasChildren && (
-                    <ChevronDown
-                      size={13}
-                      className={cn("text-text-3 transition-transform", expanded && "rotate-180")}
-                    />
-                  )}
-                </span>
-              );
-              return (
-                <div key={it.id}>
-                  {hasChildren ? (
-                    <button type="button" className="block w-full text-left" onClick={() => setOpen((o) => ({ ...o, [it.id]: !o[it.id] }))}>
-                      {row}
-                    </button>
-                  ) : (
-                    <Link href={it.href!}>{row}</Link>
-                  )}
-                  {hasChildren && expanded && (
-                    <div>
-                      {it.children!.map((c) => {
-                        const CIcon = c.icon;
-                        const cActive = pathname === c.href || pathname.startsWith(c.href + "/");
-                        return (
-                          <Link
-                            key={c.href}
-                            href={c.href}
-                            className={cn(
-                              "flex items-center gap-2 w-[calc(100%-8px)] mx-1 pl-8 pr-3 py-[7px] rounded-r-md border-l-2 text-[12.5px] transition-colors",
-                              cActive
-                                ? "bg-accent-dim border-accent text-accent-bright font-semibold"
-                                : "border-transparent text-text-2 hover:text-text-1 hover:bg-bg-2"
-                            )}
-                          >
-                            <CIcon size={14} />
-                            <span className="flex-1">{c.label}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+        {NAV.map((g) => {
+          const byId = Object.fromEntries(g.items.map((it) => [it.id, it] as const));
+          const ids = order[g.group] || g.items.map((it) => it.id);
+          return (
+            <div key={g.group} className="mb-1">
+              <div className="lab-label px-4 pt-3.5 pb-1.5 text-[9.5px] tracking-[0.16em] flex items-center gap-1.5">
+                {g.group}
+                {g.items.length > 1 && (
+                  <span className="normal-case tracking-normal text-text-4/70 text-[9px]">· drag to reorder</span>
+                )}
+              </div>
+              {ids.map((id) => {
+                const it = byId[id];
+                if (!it) return null;
+                const Icon = it.icon;
+                const hasChildren = !!it.children?.length;
+                const expanded = !!open[it.id];
+                const selfActive = it.href ? pathname === it.href || pathname.startsWith(it.href + "/") : false;
+                const highlight = selfActive || (hasChildren && childActive(it) && !expanded);
+                const isDragging = drag?.id === it.id;
+                const isOver = overId === it.id && !!drag && drag.id !== it.id && drag.group === g.group;
+                const row = (
+                  <span
+                    className={cn(
+                      "group/row flex items-center gap-1.5 w-[calc(100%-8px)] mx-1 pl-1.5 pr-2.5 py-2 rounded-r-md border-l-2 text-[13px] transition-colors cursor-pointer",
+                      highlight
+                        ? "bg-accent-dim border-accent text-accent-bright font-semibold"
+                        : "border-transparent text-text-2 hover:text-text-1 hover:bg-bg-2"
+                    )}
+                  >
+                    <span className="w-3 flex-none flex justify-center text-text-4 opacity-0 group-hover/row:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                      <GripVertical size={13} />
+                    </span>
+                    <Icon size={15} />
+                    <span className="flex-1">{it.label}</span>
+                    {hasChildren && (
+                      <ChevronDown size={13} className={cn("text-text-3 transition-transform", expanded && "rotate-180")} />
+                    )}
+                  </span>
+                );
+                return (
+                  <div
+                    key={it.id}
+                    draggable
+                    onDragStart={(e) => {
+                      setDrag({ group: g.group, id: it.id });
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragEnter={() => {
+                      if (drag && drag.group === g.group) setOverId(it.id);
+                    }}
+                    onDragOver={(e) => {
+                      if (drag && drag.group === g.group) e.preventDefault();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (drag && drag.group === g.group) reorder(g.group, drag.id, it.id);
+                      setDrag(null);
+                      setOverId(null);
+                    }}
+                    onDragEnd={() => {
+                      setDrag(null);
+                      setOverId(null);
+                    }}
+                    className={cn(isDragging && "opacity-40", isOver && "border-t-2 border-accent")}
+                  >
+                    {hasChildren ? (
+                      <button type="button" className="block w-full text-left" onClick={() => setOpen((o) => ({ ...o, [it.id]: !o[it.id] }))}>
+                        {row}
+                      </button>
+                    ) : (
+                      <Link href={it.href!} draggable={false}>
+                        {row}
+                      </Link>
+                    )}
+                    {hasChildren && expanded && (
+                      <div>
+                        {it.children!.map((c) => {
+                          const CIcon = c.icon;
+                          const cActive = pathname === c.href || pathname.startsWith(c.href + "/");
+                          return (
+                            <Link
+                              key={c.href}
+                              href={c.href}
+                              draggable={false}
+                              className={cn(
+                                "flex items-center gap-2 w-[calc(100%-8px)] mx-1 pl-9 pr-3 py-[7px] rounded-r-md border-l-2 text-[12.5px] transition-colors",
+                                cActive
+                                  ? "bg-accent-dim border-accent text-accent-bright font-semibold"
+                                  : "border-transparent text-text-2 hover:text-text-1 hover:bg-bg-2"
+                              )}
+                            >
+                              <CIcon size={14} />
+                              <span className="flex-1">{c.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </nav>
 
       <div className="px-4 pt-2">
