@@ -99,7 +99,8 @@ export default function CoachPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-7rem)] max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
+        {/* Title shows on mobile only — desktop gets it from the TopBar. */}
+        <div className="flex items-center gap-3 md:hidden">
           <div className="w-11 h-11 rounded-xl bg-accent-gradient flex items-center justify-center shadow-glow">
             <Sparkles size={20} className="text-white" />
           </div>
@@ -108,6 +109,7 @@ export default function CoachPage() {
             <p className="text-xs text-text-3 mt-1">Powered by Claude · sees your tracked data</p>
           </div>
         </div>
+        <div className="hidden md:block" />
         {!empty && (
           <button
             onClick={() => {
