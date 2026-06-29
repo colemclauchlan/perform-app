@@ -249,6 +249,11 @@ export default function NutritionPage() {
 
   const calRemaining = Math.round(calGoal - totals.cal);
   const calPctOfGoal = calGoal > 0 ? Math.min(100, Math.round((totals.cal / calGoal) * 100)) : 0;
+  // Status color (kit): red when >100 over, blue when >100 under, mint when on-track.
+  const calDiff = totals.cal - calGoal;
+  const calColor = calDiff > 100 ? "#f56565" : calDiff < -100 ? "#189bf5" : "#2fe3a8";
+  // Per-meal accent for the food-log left borders.
+  const mealColor: Record<string, string> = { Breakfast: "#f6ad55", Lunch: "#2fe3a8", Dinner: "#189bf5", Snacks: "#a78bfa", Snack: "#a78bfa" };
 
   function log_(entry: Record<string, unknown>) {
     addLog.mutate(entry, {
@@ -267,13 +272,14 @@ export default function NutritionPage() {
 
   return (
     <div className="p-6 max-w-[1200px]">
-      {/* Header — logging is inline below, no modal trigger */}
+      {/* Header — title shows on mobile only (desktop gets it from the TopBar) */}
       <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
-        <div className="relative pl-3.5">
+        <div className="md:hidden relative pl-3.5">
           <span className="absolute left-0 top-1 bottom-1 w-1 rounded-full bg-brand-gradient" />
           <h1 className="text-2xl font-display font-bold tracking-tight leading-none">Nutrition</h1>
           <p className="text-sm text-text-2 mt-1.5">Search a food and log it in one tap</p>
         </div>
+        <div className="hidden md:block" />
         <div className="flex gap-2 items-center">
           <button className="btn btn-ghost btn-sm" onClick={() => changeDate(-1)} title="Previous day">
             <ChevronLeft size={14} />
@@ -320,9 +326,12 @@ export default function NutritionPage() {
                       : calPct >= 25 ? "bg-status-amber/15 text-status-amber"
                       : "bg-status-green/15 text-status-green";
                   return (
-                    <div key={meal}>
+                    <div key={meal} className="pl-3 border-l-2" style={{ borderColor: mealColor[meal] || "#6c7f99" }}>
                       <div className="flex items-center justify-between mb-1.5">
-                        <div className="text-[11px] uppercase tracking-wider text-text-3">{meal}</div>
+                        <div className="lab-label flex items-center gap-2">
+                          <span className="w-[7px] h-[7px] rounded-full" style={{ background: mealColor[meal] || "#6c7f99" }} />
+                          {meal}
+                        </div>
                         <div className="flex items-center gap-1.5">
                           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${shareTone}`}>{calPct}% kcal</span>
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-accent-dim text-accent">{pPct}% protein</span>
@@ -379,22 +388,23 @@ export default function NutritionPage() {
                 Calories today
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="font-display text-4xl sm:text-5xl font-bold tabular-nums text-brand leading-none">
+                <span className="font-display text-4xl sm:text-5xl font-bold tabular-nums text-text-1 leading-none">
                   {Math.round(totals.cal).toLocaleString()}
                 </span>
-                <span className="text-text-3 text-base font-medium tabular-nums">/ {calGoal.toLocaleString()}</span>
+                <span className="text-text-3 text-base font-medium tabular-nums">/ {calGoal.toLocaleString()} kcal</span>
               </div>
-              <div className="text-sm text-text-2 mt-2 tabular-nums">
-                {calRemaining > 0 ? (
-                  <><span className="text-text-1 font-semibold">{calRemaining.toLocaleString()}</span> kcal remaining</>
-                ) : calRemaining === 0 ? (
-                  <span className="text-status-amber font-semibold">Daily target reached</span>
-                ) : (
-                  <span className="text-status-red font-semibold">{Math.abs(calRemaining).toLocaleString()} kcal over</span>
-                )}
+              <div className="data text-[12px] mt-2 flex items-center gap-1.5" style={{ color: calColor }}>
+                <span className="w-[7px] h-[7px] rounded-full" style={{ background: calColor }} />
+                {calRemaining >= 0
+                  ? `${calRemaining.toLocaleString()} kcal left`
+                  : `${Math.abs(calRemaining).toLocaleString()} kcal over`}
+                <span className="text-text-3 ml-auto">{calPctOfGoal}%</span>
               </div>
-              <div className="relative mt-4 h-2 rounded-full bg-bg-3 overflow-hidden">
-                <div className="absolute inset-y-0 left-0 rounded-full bg-accent-gradient progress-bar" style={{ width: `${calPctOfGoal}%` }} />
+              <div className="relative mt-3 h-2.5 rounded-full bg-bg-4 overflow-hidden">
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full progress-bar"
+                  style={{ width: `${calPctOfGoal}%`, background: calColor, boxShadow: `0 0 14px ${calColor}` }}
+                />
               </div>
             </div>
           </div>
